@@ -70,22 +70,6 @@ namespace kgs_api.Controllers
             [FromQuery] NearbyQuery query, CancellationToken ct)
             => Ok(await _assets.FindNearbyAsync(query, ct));
 
-        // -------------------- A3. LINK PROPERTY --------------------
-
-        [HttpPost("{assetId:guid}/link-property/{propertyId:int}")]
-        public async Task<IActionResult> LinkProperty(Guid assetId, int propertyId, CancellationToken ct)
-        {
-            await _assets.LinkPropertyAsync(assetId, propertyId, ct);
-            return NoContent();
-        }
-
-        [HttpDelete("{assetId:guid}/link-property")]
-        public async Task<IActionResult> UnlinkProperty(Guid assetId, CancellationToken ct)
-        {
-            await _assets.UnlinkPropertyAsync(assetId, ct);
-            return NoContent();
-        }
-
         // -------------------- A4. MEDIA (ảnh theo thời gian) --------------------
 
         [HttpPost("{assetId:guid}/media")]

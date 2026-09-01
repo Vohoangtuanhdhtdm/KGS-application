@@ -11,7 +11,7 @@ namespace kgs_api.Services
 {
     public sealed class MarketplaceEngagementService : IMarketplaceEngagementService
     {
-        private readonly IRepository<Property> _properties;
+        private readonly IRepository<Listing> _listings;
         private readonly IRepository<SavedListing> _saved;
         private readonly IRepository<ListingInquiry> _inquiries;
         private readonly IRepository<ContactParty> _contacts;
@@ -20,7 +20,7 @@ namespace kgs_api.Services
         private readonly ICurrentUserService _currentUser;
 
         public MarketplaceEngagementService(
-            IRepository<Property> properties,
+            IRepository<Listing> listings,
             IRepository<SavedListing> saved,
             IRepository<ListingInquiry> inquiries,
             IRepository<ContactParty> contacts,
@@ -28,40 +28,40 @@ namespace kgs_api.Services
             IUnitOfWork uow,
             ICurrentUserService currentUser)
         {
-            _properties = properties; _saved = saved; _inquiries = inquiries;
+            _listings = listings; _saved = saved; _inquiries = inquiries;
             _contacts = contacts; _users = users; _uow = uow; _currentUser = currentUser;
         }
 
         // ==================== E1. TIN ĐÃ LƯU ====================
 
-        public async Task SaveAsync(int propertyId, CancellationToken ct = default)
+        public async Task SaveAsync(Guid listingId, CancellationToken ct = default)
         {
             var userId = _currentUser.UserId;
 
             // Chỉ lưu được tin đã duyệt — tin Pending/Rejected không tồn tại với người xem.
-            var exists = await _properties.Query()
-                .AnyAsync(p => p.Id == propertyId && p.Status == PropertyStatus.Approved, ct);
+            var exists = await _listings.Query()
+                .AnyAsync(l => l.Id == listingId && l.Status == ListingStatus.Approved, ct);
             if (!exists) throw new NotFoundException("Không tìm thấy tin đăng.");
 
             // Idempotent: lưu lại tin đã lưu là no-op, không phải lỗi.
             var already = await _saved.Query()
-                .AnyAsync(s => s.UserId == userId && s.PropertyId == propertyId, ct);
+                .AnyAsync(s => s.UserId == userId && s.ListingId == listingId, ct);
             if (already) return;
 
             await _saved.AddAsync(new SavedListing
             {
                 UserId = userId,
-                PropertyId = propertyId,
+                ListingId = listingId,
                 SavedAt = DateTime.UtcNow
             }, ct);
             await _uow.SaveChangesAsync(ct);
         }
 
-        public async Task UnsaveAsync(int propertyId, CancellationToken ct = default)
+        public async Task UnsaveAsync(Guid listingId, CancellationToken ct = default)
         {
             var userId = _currentUser.UserId;
             var row = await _saved.Query()
-                .FirstOrDefaultAsync(s => s.UserId == userId && s.PropertyId == propertyId, ct);
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.ListingId == listingId, ct);
             if (row is null) return;   // idempotent
 
             _saved.Remove(row);
@@ -73,13 +73,16 @@ namespace kgs_api.Services
             var userId = _currentUser.UserId;
 
             return await _saved.Query().AsNoTracking()
-                .Where(s => s.UserId == userId && s.Property.Status == PropertyStatus.Approved)
+                .Where(s => s.UserId == userId && s.Listing.Status == ListingStatus.Approved)
                 .OrderByDescending(s => s.SavedAt)
                 .Select(s => new SavedListingDto(
-                    s.PropertyId, s.Property.Slug!, s.Property.Title, s.Property.Type,
-                    s.Property.Price, s.Property.RentPaymentCycle,
-                    s.Property.City, s.Property.District, s.Property.Bedrooms, s.Property.Area,
-                    s.Property.Images!.OrderBy(i => i.SortOrder).Select(i => i.File.Url).FirstOrDefault(),
+                    s.ListingId, s.Listing.Slug!, s.Listing.Title, s.Listing.Type,
+                    s.Listing.Price, s.Listing.RentPaymentCycle,
+                    // Địa chỉ và đặc điểm đọc xuyên qua Listing.Asset — không còn cột trùng lặp
+                    s.Listing.Asset.Address.City, s.Listing.Asset.Address.District,
+                    s.Listing.Asset.Bedrooms,
+                    s.Listing.AssetUnit != null ? s.Listing.AssetUnit.Area : s.Listing.Asset.Area,
+                    s.Listing.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).FirstOrDefault(),
                     s.SavedAt))
                 .ToListAsync(ct);
         }
@@ -90,19 +93,19 @@ namespace kgs_api.Services
         {
             var userId = _currentUser.UserId;
 
-            var property = await _properties.Query().AsNoTracking()
-                .Where(p => p.Slug == slug && p.Status == PropertyStatus.Approved)
-                .Select(p => new { p.Id, p.UserId, p.Title })
+            var listing = await _listings.Query().AsNoTracking()
+                .Where(l => l.Slug == slug && l.Status == ListingStatus.Approved)
+                .Select(l => new { l.Id, OwnerId = l.Asset.UserId, l.Title })
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException("Không tìm thấy tin đăng.");
 
-            if (property.UserId == userId)
+            if (listing.OwnerId == userId)
                 throw new ValidationFailedException("Đây là tin đăng của bạn — không thể tự gửi yêu cầu cho chính mình.");
 
             // Chống spam: một yêu cầu đang mở trên mỗi tin. Yêu cầu đã Đóng hoặc đã
             // Chuyển thành khách thuê thì được gửi lại (khách quay lại hỏi lần nữa).
             var hasOpen = await _inquiries.Query().AnyAsync(i =>
-                i.PropertyId == property.Id
+                i.ListingId == listing.Id
                 && i.FromUserId == userId
                 && (i.Status == InquiryStatus.New
                     || i.Status == InquiryStatus.Contacted
@@ -112,9 +115,9 @@ namespace kgs_api.Services
 
             var inquiry = new ListingInquiry
             {
-                PropertyId = property.Id,
+                ListingId = listing.Id,
                 FromUserId = userId,
-                ToUserId = property.UserId,
+                ToUserId = listing.OwnerId,
                 Message = request.Message?.Trim(),
                 PreferredViewingAt = request.PreferredViewingAt is null
                     ? null
@@ -221,13 +224,13 @@ namespace kgs_api.Services
 
         private static IQueryable<SentInquiryDto> ProjectSent(IQueryable<ListingInquiry> q) =>
             q.Select(i => new SentInquiryDto(
-                i.Id, i.PropertyId, i.Property.Slug!, i.Property.Title,
-                i.Property.Images!.OrderBy(x => x.SortOrder).Select(x => x.File.Url).FirstOrDefault(),
+                i.Id, i.ListingId, i.Listing.Slug!, i.Listing.Title,
+                i.Listing.Images.OrderBy(x => x.SortOrder).Select(x => x.File.Url).FirstOrDefault(),
                 i.Message, i.PreferredViewingAt, i.Status, i.CreatedAt));
 
         private static IQueryable<ReceivedInquiryDto> ProjectReceived(IQueryable<ListingInquiry> q) =>
             q.Select(i => new ReceivedInquiryDto(
-                i.Id, i.PropertyId, i.Property.Slug!, i.Property.Title,
+                i.Id, i.ListingId, i.Listing.Slug!, i.Listing.Title,
                 i.FromUser.Name, i.FromUser.PhoneNumber, i.FromUser.Email,
                 i.Message, i.PreferredViewingAt, i.Status, i.ConvertedContactPartyId, i.CreatedAt));
     }

@@ -1,11 +1,16 @@
 import { api, toQuery } from "./http";
 import type { PagedResult } from "./assets";
-import type { ListingTypeCode, PaymentCycleCode, PropertyStatusCode } from "@/constants/enums";
+import type { ListingTypeCode, PaymentCycleCode, ListingStatusCode } from "@/constants/enums";
 import { PAYMENT_CYCLE } from "@/constants/enums";
 import { formatCurrency } from "@/lib/format";
 
 // ---- Types ----
-export interface PublicPropertySummaryDto {
+//
+// Sau khi gộp Property vào Asset, tin đăng không còn giữ bản sao địa chỉ/diện tích/toạ độ.
+// Backend đọc xuyên qua Listing.Asset rồi trả về trong DTO, nên hình dạng phía client gần
+// như không đổi — điều đổi là chúng luôn khớp với tài sản thay vì đóng băng lúc đăng tin.
+
+export interface PublicListingSummaryDto {
   id: string;
   slug: string;
   title: string;
@@ -20,25 +25,24 @@ export interface PublicPropertySummaryDto {
   thumbnailUrl: string | null;
   latitude: number | null;
   longitude: number | null;
-  // patch-10: có giá trị khi tìm kèm toạ độ (Giai đoạn 2), null khi lọc theo City/District như hiện tại
   distanceMeters: number | null;
-  // Giả định optional — API hiện tại (theo đặc tả patch-10) không xác nhận có field này ở
-  // summary DTO; để optional + render có điều kiện, không giả định sai nếu backend chưa trả về.
-  createdAt?: string | null;
+  /** Tên phòng khi tin đăng cho một phòng cụ thể, null khi đăng nguyên căn. */
+  unitName: string | null;
+  publishedAt: string | null;
 }
 
-export interface PublicPropertyDetailDto {
+export interface PublicListingDetailDto {
   id: string;
   slug: string;
   title: string;
+  description: string;
   type: ListingTypeCode;
   price: number;
   rentPaymentCycle: PaymentCycleCode | null;
-  description: string | null;
   city: string;
   district: string;
-  ward: string | null;
-  addressDetail: string | null;
+  ward: string;
+  addressDetail: string;
   area: number | null;
   frontage: number | null;
   floors: number | null;
@@ -47,26 +51,34 @@ export interface PublicPropertyDetailDto {
   houseDirection: string | null;
   legalStatus: string | null;
   furnitureState: string | null;
-  propertyType: string | null;
+  assetType: number;
+  assetTypeLabel: string;
+  unitName: string | null;
   latitude: number | null;
   longitude: number | null;
   imageUrls: string[];
+  viewCount: number;
+  publishedAt: string | null;
   ownerName: string;
   ownerPhone: string;
-  createdAt: string;
 }
 
 export interface OwnerListingDto {
   id: string;
-  slug: string;
+  slug: string | null;
   title: string;
   type: ListingTypeCode;
-  status: PropertyStatusCode;
+  status: ListingStatusCode;
   price: number;
   rentPaymentCycle: PaymentCycleCode | null;
   viewCount: number;
   createdAt: string;
-  linkedAssetId: string | null;
+  publishedAt: string | null;
+  assetId: string;
+  assetName: string;
+  unitName: string | null;
+  /** Lý do admin từ chối, hoặc ghi chú khi tin bị đưa về chờ duyệt lại. */
+  moderationNote: string | null;
 }
 
 export interface PublicListingFilters {
@@ -77,8 +89,6 @@ export interface PublicListingFilters {
   priceMax?: number | "";
   bedroomsMin?: number | "";
   keyword?: string;
-  // patch-10, tuỳ chọn — chưa dùng ở Giai đoạn 1 (bố cục cốt lõi), để dành Giai đoạn 2
-  // (geocoding địa chỉ, "Tìm trong khu vực này")
   latitude?: number | "";
   longitude?: number | "";
   radiusMeters?: number | "";
@@ -86,21 +96,22 @@ export interface PublicListingFilters {
   pageSize?: number;
 }
 
-export interface CreatePropertyListingInput {
+export interface CreateListingInput {
   type: ListingTypeCode;
+  /** null = đăng nguyên căn; có giá trị = đăng riêng một tầng/phòng. */
+  assetUnitId?: string | null;
   title: string;
   description: string;
   price: number;
   rentPaymentCycle?: PaymentCycleCode | null;
-  floors?: number | null;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
-  frontage?: number | null;
-  houseDirection?: string | null;
-  legalStatus?: string | null;
-  furnitureState?: string | null;
-  propertyType?: string | null;
   selectedAssetMediaIds: string[];
+}
+
+export interface UpdateListingInput {
+  title: string;
+  description: string;
+  price: number;
+  rentPaymentCycle?: PaymentCycleCode | null;
 }
 
 // ---- Helper hiển thị giá theo loại tin ----
@@ -124,18 +135,21 @@ export function formatListingPrice(
 }
 
 // ---- API ----
-export const propertiesApi = {
+export const listingsApi = {
   // Công khai — không cần đăng nhập
   search: (f: PublicListingFilters = {}) =>
-    api<PagedResult<PublicPropertySummaryDto>>(
-      `/property-listings/search${toQuery({ ...f, page: f.page ?? 1, pageSize: f.pageSize ?? 12 })}`,
+    api<PagedResult<PublicListingSummaryDto>>(
+      `/listings/search${toQuery({ ...f, page: f.page ?? 1, pageSize: f.pageSize ?? 12 })}`,
       { skipAuth: true },
     ),
-  detail: (slug: string) =>
-    api<PublicPropertyDetailDto>(`/property-listings/${slug}`, { skipAuth: true }),
+  detail: (slug: string) => api<PublicListingDetailDto>(`/listings/${slug}`, { skipAuth: true }),
 
   // Cần đăng nhập
-  myListings: () => api<OwnerListingDto[]>("/property-listings/my-listings"),
-  createFromAsset: (assetId: string, body: CreatePropertyListingInput) =>
-    api<OwnerListingDto>(`/assets/${assetId}/property-listing`, { method: "POST", body }),
+  mine: () => api<OwnerListingDto[]>("/listings/mine"),
+  byAsset: (assetId: string) => api<OwnerListingDto[]>(`/assets/${assetId}/listings`),
+  create: (assetId: string, body: CreateListingInput) =>
+    api<OwnerListingDto>(`/assets/${assetId}/listings`, { method: "POST", body }),
+  update: (listingId: string, body: UpdateListingInput) =>
+    api<OwnerListingDto>(`/listings/${listingId}`, { method: "PUT", body }),
+  close: (listingId: string) => api<void>(`/listings/${listingId}/close`, { method: "POST" }),
 };

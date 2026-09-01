@@ -20,6 +20,7 @@ namespace kgs_api.Domain.Entity
 
         public Address Address { get; set; } = new();          // Value Object
         public double? Area { get; set; }                       // m²
+        public double? Frontage { get; set; }                   // mặt tiền (m) — chuyển từ Property sang
 
         [Column(TypeName = "decimal(18,2)")] public decimal? CurrentValue { get; set; } // giá trị hiện tại
         public DateTime? AcquisitionDate { get; set; }          // ngày mua (Owned) / ngày bắt đầu thuê (Leasehold)
@@ -36,9 +37,6 @@ namespace kgs_api.Domain.Entity
         public string? LegalStatus { get; set; }       // "Sổ hồng riêng", "Đang chờ sổ"...
         public string? FurnitureState { get; set; }    // "Đầy đủ", "Cơ bản", "Không nội thất"
 
-        // Liên kết tin đăng công khai — giữ nguyên từ UserAsset
-        public int? LinkedPropertyId { get; set; }
-        public Property? LinkedProperty { get; set; }
         public Point? Location { get; set; }
 
         // Navigations
@@ -49,5 +47,10 @@ namespace kgs_api.Domain.Entity
         public ICollection<Equipment> Equipments { get; set; } = new List<Equipment>();
         public ICollection<MaintenanceRecord> MaintenanceRecords { get; set; } = new List<MaintenanceRecord>();
         public ICollection<CashFlowEntry> CashFlows { get; set; } = new List<CashFlowEntry>();
+
+        // Tin đăng công khai của tài sản này. Quan hệ đã ĐẢO CHIỀU so với
+        // Asset.LinkedPropertyId cũ: nay Listing trỏ về Asset, và một tài sản có thể
+        // có nhiều tin — một tin cho nguyên căn, hoặc mỗi phòng một tin.
+        public ICollection<Listing> Listings { get; set; } = new List<Listing>();
     }
 }

@@ -55,13 +55,9 @@ namespace kgs_api.Controllers
 
             if (force && existing > 0)
             {
-                // Xoá theo đúng thứ tự tránh vi phạm FK — Property trước (không có gì phụ thuộc chờ),
-                // rồi tới Asset (cascade dọn theo toàn bộ bảng con), Reminder/CashFlow độc lập,
-                // Contact xoá sau cùng vì FK Restrict từ LeaseContract.
-                var oldProperties = await _db.Properties.Where(p => p.UserId == userId).ToListAsync(ct);
-                _db.Properties.RemoveRange(oldProperties); // cascade xoá PropertyImages theo
-                await _db.SaveChangesAsync(ct);
-
+                // Xoá theo đúng thứ tự tránh vi phạm FK — Asset trước (cascade dọn theo toàn
+                // bộ bảng con, nay gồm cả Listings và ListingImages), Reminder/CashFlow độc
+                // lập, Contact xoá sau cùng vì FK Restrict từ LeaseContract.
                 var oldAssets = await _db.Assets.Where(a => a.UserId == userId).ToListAsync(ct);
                 _db.Assets.RemoveRange(oldAssets);
                 var oldReminders = await _db.Reminders.Where(r => r.UserId == userId).ToListAsync(ct);
@@ -307,138 +303,81 @@ namespace kgs_api.Controllers
                 SizeBytes = 250_000
             };
 
-            // Tin 1 — Bán, GẦN trung tâm (~1.2km), Approved, gắn với asset1
-            var property1 = new Property
+            // Tin đăng nay là BẢN ĐĂNG của tài sản: không còn sao chép địa chỉ, diện tích,
+            // toạ độ hay đặc điểm sang một bảng thứ hai. Nhờ vậy khối seed này ngắn đi
+            // khoảng hai phần ba so với trước, và không thể có chuyện tin đăng nói một
+            // đằng còn tài sản nói một nẻo — đúng lỗi mà bản seed cũ đang mắc phải
+            // (Property của nhà Quận 7 gắn toạ độ nằm ở Quận 4).
+            var listing1 = new Listing
             {
+                Asset = asset1,
                 Title = "Bán nhà phố Quận 7 view đẹp — Demo",
                 Description = "Nhà 3 tầng, khu an ninh, gần trường học. Dữ liệu demo để kiểm thử tìm kiếm theo bán kính.",
                 Price = 8_500_000_000m,
                 Type = ListingType.Sale,
-                City = asset1.Address.City,
-                District = asset1.Address.District,
-                Ward = asset1.Address.Ward,
-                AddressDetail = asset1.Address.Detail,
-                Area = asset1.Area ?? 0,
-                Frontage = 5,
-                Floors = asset1.Floors ?? 0,
-                Bedrooms = asset1.Bedrooms ?? 0,
-                Bathrooms = asset1.Bathrooms ?? 0,
-                HouseDirection = asset1.HouseDirection ?? "",
-                LegalStatus = asset1.LegalStatus ?? "",
-                FurnitureState = asset1.FurnitureState ?? "",
-                PropertyType = "Nhà riêng",
-                Location = Point(106.6980, 10.7830), // ~1.2km từ trung tâm Q1
-                Status = PropertyStatus.Approved,
+                Status = ListingStatus.Approved,
                 Slug = $"ban-nha-pho-quan-7-demo-{Guid.NewGuid().ToString("N")[..6]}",
                 ViewCount = 12,
-                CreatedAt = now.AddDays(-6),
-                UserId = userId,
-                Images = new List<PropertyImages> { new() { File = SeedImage(img1, "nha-q7"), SortOrder = 0 } }
+                PublishedAt = now.AddDays(-6),
+                Images = new List<ListingImage> { new() { File = SeedImage(img1, "nha-q7"), SortOrder = 0 } }
             };
 
-            // Tin 2 — Cho thuê, TRUNG BÌNH (~3km), Approved, gắn với asset2
-            var property2 = new Property
+            // Tin 2 — CHO THUÊ THEO PHÒNG. Đây là thứ hệ thống cũ không làm được: tin đăng
+            // gắn với AssetUnit chứ không phải cả toà nhà. Đúng nghiệp vụ của người thuê
+            // nguyên căn rồi chia phòng cho thuê lại.
+            var listing2 = new Listing
             {
-                Title = "Cho thuê căn hộ đầy đủ nội thất — Demo",
-                Description = "Căn hộ dịch vụ, nội thất cơ bản, gần chợ và trường học. Dữ liệu demo.",
+                Asset = asset2,
+                AssetUnit = unit2,
+                Title = "Cho thuê phòng 102 — chung cư mini Bình Thạnh",
+                Description = "Phòng 30m², nội thất cơ bản, giờ giấc tự do, gần chợ và trường học. Dữ liệu demo.",
                 Price = 6_500_000m,
                 Type = ListingType.Rent,
                 RentPaymentCycle = PaymentCycle.Monthly,
-                City = asset2.Address.City,
-                District = asset2.Address.District,
-                Ward = asset2.Address.Ward,
-                AddressDetail = asset2.Address.Detail,
-                Area = asset2.Area ?? 0,
-                Frontage = 4,
-                Floors = asset2.Floors ?? 0,
-                Bedrooms = asset2.Bedrooms ?? 0,
-                Bathrooms = asset2.Bathrooms ?? 0,
-                HouseDirection = asset2.HouseDirection ?? "",
-                LegalStatus = asset2.LegalStatus ?? "",
-                FurnitureState = asset2.FurnitureState ?? "",
-                PropertyType = "Căn hộ",
-                Location = Point(106.7150, 10.7980), // ~3km từ trung tâm Q1
-                Status = PropertyStatus.Approved,
-                Slug = $"cho-thue-can-ho-demo-{Guid.NewGuid().ToString("N")[..6]}",
-                ViewCount = 27,
-                CreatedAt = now.AddDays(-3),
-                UserId = userId,
-                Images = new List<PropertyImages> { new() { File = SeedImage(img2, "can-ho-bt"), SortOrder = 0 } }
+                Status = ListingStatus.Approved,
+                Slug = $"cho-thue-phong-102-binh-thanh-demo-{Guid.NewGuid().ToString("N")[..6]}",
+                ViewCount = 34,
+                PublishedAt = now.AddDays(-3),
+                Images = new List<ListingImage> { new() { File = SeedImage(img2, "phong-102"), SortOrder = 0 } }
             };
 
-            // Tin 3 — Bán, XA hơn (~6km), Approved, gắn với asset3 (Đất — không có phòng ngủ/tắm)
-            var property3 = new Property
+            var listing3 = new Listing
             {
+                Asset = asset3,
                 Title = "Bán đất nền TP. Thủ Đức, sổ riêng — Demo",
-                Description = "Lô đất vuông vắn, gần khu dân cư, tiềm năng tăng giá tốt. Dữ liệu demo.",
-                Price = 4_500_000_000m,
+                Description = "Lô góc 100m², sổ hồng riêng, đường 12m. Dữ liệu demo.",
+                Price = 4_200_000_000m,
                 Type = ListingType.Sale,
-                City = asset3.Address.City,
-                District = asset3.Address.District,
-                Ward = asset3.Address.Ward,
-                AddressDetail = asset3.Address.Detail,
-                Area = asset3.Area ?? 0,
-                Frontage = 6,
-                Floors = 0,
-                Bedrooms = 0,
-                Bathrooms = 0,
-                HouseDirection = "",
-                LegalStatus = "Sổ đỏ riêng",
-                FurnitureState = "",
-                PropertyType = "Đất",
-                Location = Point(106.6800, 10.8250), // ~6km từ trung tâm Q1
-                Status = PropertyStatus.Approved,
+                Status = ListingStatus.Approved,
                 Slug = $"ban-dat-nen-thu-duc-demo-{Guid.NewGuid().ToString("N")[..6]}",
                 ViewCount = 8,
-                CreatedAt = now.AddDays(-15),
-                UserId = userId,
-                Images = new List<PropertyImages> { new() { File = SeedImage(img3, "dat-tdu"), SortOrder = 0 } }
+                PublishedAt = now.AddDays(-15),
+                Images = new List<ListingImage> { new() { File = SeedImage(img3, "dat-thu-duc"), SortOrder = 0 } }
             };
 
-            // Tin 4 — Bán, RẤT XA (~12km, test bị LOẠI khi bán kính nhỏ), CHỜ DUYỆT (test hàng đợi Admin)
-            var property4 = new Property
+            // Tin 4 — CHỜ DUYỆT: phải KHÔNG xuất hiện ở marketplace công khai.
+            var listing4 = new Listing
             {
+                Asset = asset4,
                 Title = "Bán căn hộ Quận 2 (chờ duyệt) — Demo",
-                Description = "Căn hộ 2 phòng ngủ, view sông. Dữ liệu demo để test hàng chờ duyệt Admin.",
-                Price = 3_000_000_000m,
+                Description = "Căn hộ 2 phòng ngủ, bàn giao nội thất. Tin này dùng để kiểm thử luồng kiểm duyệt.",
+                Price = 3_900_000_000m,
                 Type = ListingType.Sale,
-                City = asset4.Address.City,
-                District = asset4.Address.District,
-                Ward = asset4.Address.Ward,
-                AddressDetail = asset4.Address.Detail,
-                Area = asset4.Area ?? 0,
-                Frontage = 0,
-                Floors = asset4.Floors ?? 0,
-                Bedrooms = asset4.Bedrooms ?? 0,
-                Bathrooms = asset4.Bathrooms ?? 0,
-                HouseDirection = asset4.HouseDirection ?? "",
-                LegalStatus = asset4.LegalStatus ?? "",
-                FurnitureState = asset4.FurnitureState ?? "",
-                PropertyType = "Căn hộ",
-                Location = Point(106.8000, 10.8700), // ~12km từ trung tâm Q1
-                Status = PropertyStatus.Pending, // ← CHƯA duyệt, có chủ đích
-                Slug = $"ban-can-ho-q2-demo-{Guid.NewGuid().ToString("N")[..6]}",
+                Status = ListingStatus.Pending,
+                Slug = $"ban-can-ho-quan-2-cho-duyet-demo-{Guid.NewGuid().ToString("N")[..6]}",
                 ViewCount = 0,
-                CreatedAt = now.AddHours(-2),
-                UserId = userId,
-                Images = new List<PropertyImages> { new() { File = SeedImage(img4, "can-ho-q2"), SortOrder = 0 } }
+                Images = new List<ListingImage> { new() { File = SeedImage(img4, "can-ho-q2"), SortOrder = 0 } }
             };
 
-            await _db.Properties.AddRangeAsync(new[] { property1, property2, property3, property4 }, ct);
+            await _db.Listings.AddRangeAsync(new[] { listing1, listing2, listing3, listing4 }, ct);
 
-            // Lưu Property TRƯỚC để có Id thật (int identity), rồi mới gán ngược Asset.LinkedPropertyId
-            // — đúng thứ tự đã sửa ở patch-8 (gán trước khi có Id thật gây vi phạm khoá ngoại).
-            await _db.SaveChangesAsync(ct);
-
-            asset1.LinkedPropertyId = property1.Id;
-            asset2.LinkedPropertyId = property2.Id;
-            asset3.LinkedPropertyId = property3.Id;
-            asset4.LinkedPropertyId = property4.Id;
+            // MỘT SaveChanges. Bản cũ phải gọi hai lần vì Property có khoá int identity và
+            // Asset.LinkedPropertyId cần Id thật; quan hệ nay đã đảo chiều nên hết ràng buộc đó.
             await _db.SaveChangesAsync(ct);
 
             return Ok(new
             {
-                message = "Đã tạo dữ liệu mẫu thành công (đã cập nhật: có Property/marketplace).",
+                message = "Đã tạo dữ liệu mẫu thành công (Listing = bản đăng của Asset).",
                 created = new
                 {
                     assets = 4,
@@ -450,20 +389,26 @@ namespace kgs_api.Controllers
                     equipments = 4,
                     maintenanceRecords = 2,
                     documents = 3,
-                    usagePeriods = 2,
-                    saleListingsNoiBo = 1,
-                    properties = 4
+                    listings = 4
                 },
                 assetIds = new[] { asset1.Id, asset2.Id, asset3.Id, asset4.Id },
-                propertySlugs = new { property1 = property1.Slug, property2 = property2.Slug, property3 = property3.Slug, property4LaChoDuyet = property4.Slug },
+                listingSlugs = new
+                {
+                    banNhaQ7 = listing1.Slug,
+                    choThuePhong102 = listing2.Slug,
+                    banDatThuDuc = listing3.Slug,
+                    choDuyet = listing4.Slug
+                },
                 nextSteps = new[]
                 {
-                    "GET /api/property-listings/search — phải thấy 3 tin (property4 đang Pending, chưa hiện)",
-                    "GET /api/property-listings/search?latitude=10.7769&longitude=106.7009&radiusMeters=2000 — chỉ thấy property1 (~1.2km)",
-                    "GET /api/property-listings/search?latitude=10.7769&longitude=106.7009&radiusMeters=5000 — thấy property1 + property2",
-                    "GET /api/property-listings/search?latitude=10.7769&longitude=106.7009&radiusMeters=10000 — thấy cả 3 (property4 vẫn KHÔNG hiện vì Pending)",
-                    "Đăng nhập Admin → GET /api/admin/properties/pending → thấy property4 → duyệt thử",
-                    "GET /api/assets/nearby?latitude=10.7769&longitude=106.7009&radiusMeters=15000 — test PostGIS cho Asset (đã có từ trước)",
+                    "GET /api/listings/search — phải thấy 3 tin (tin chờ duyệt không hiện)",
+                    "GET /api/listings/search?latitude=10.7769&longitude=106.7009&radiusMeters=5000 — chỉ thấy phòng 102 Bình Thạnh (~2.9km)",
+                    "GET /api/listings/search?latitude=10.7769&longitude=106.7009&radiusMeters=10000 — thêm nhà phố Quận 7 (~5.7km)",
+                    "GET /api/listings/search?latitude=10.7769&longitude=106.7009&radiusMeters=15000 — thấy cả 3 tin",
+                    "Toạ độ nay lấy TỪ TÀI SẢN, không còn cột riêng trên tin đăng — sửa vị trí tài sản là tin đăng đổi theo",
+                    "Tin phòng 102 gắn AssetUnit: đây là đăng tin THEO PHÒNG, thứ bản cũ không làm được",
+                    "Đăng nhập Admin → GET /api/admin/listings/pending → thấy tin Quận 2 → duyệt thử",
+                    "GET /api/assets/nearby?latitude=10.7769&longitude=106.7009&radiusMeters=15000 — PostGIS cho Asset",
                     "GET /api/contracts/expiring?days=30 — phải thấy HĐ Nhà phố Quận 7",
                     "GET /api/reports/tax?year=" + now.Year + " — báo cáo thuế"
                 }
@@ -478,10 +423,8 @@ namespace kgs_api.Controllers
 
             var userId = _currentUser.UserId;
 
-            var properties = await _db.Properties.Where(p => p.UserId == userId).ToListAsync(ct);
-            _db.Properties.RemoveRange(properties);
-            await _db.SaveChangesAsync(ct);
-
+            // Listings cascade theo Assets (FK OnDelete.Cascade) nên không cần xoá riêng —
+            // trước đây Property đứng độc lập nên phải xoá bằng tay trước.
             var assets = await _db.Assets.Where(a => a.UserId == userId).ToListAsync(ct);
             var reminders = await _db.Reminders.Where(r => r.UserId == userId).ToListAsync(ct);
             var cashFlows = await _db.CashFlowEntries.Where(c => c.UserId == userId).ToListAsync(ct);
@@ -496,8 +439,8 @@ namespace kgs_api.Controllers
 
             return Ok(new
             {
-                message = "Đã xoá sạch dữ liệu nghiệp vụ của tài khoản (kể cả Property).",
-                removed = new { assets = assets.Count, contacts = contacts.Count, reminders = reminders.Count, cashFlows = cashFlows.Count, properties = properties.Count }
+                message = "Đã xoá sạch dữ liệu nghiệp vụ của tài khoản (tin đăng cascade theo tài sản).",
+                removed = new { assets = assets.Count, contacts = contacts.Count, reminders = reminders.Count, cashFlows = cashFlows.Count }
             });
         }
 

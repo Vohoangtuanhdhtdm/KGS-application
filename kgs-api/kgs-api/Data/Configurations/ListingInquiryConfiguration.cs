@@ -1,4 +1,4 @@
-using kgs_api.Domain.Entity.SubEntity;
+﻿using kgs_api.Domain.Entity.SubEntity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,8 +10,8 @@ namespace kgs_api.Data.Configurations
         {
             b.ToTable("ListingInquiries");
 
-            b.HasOne(x => x.Property).WithMany()
-             .HasForeignKey(x => x.PropertyId)
+            b.HasOne(x => x.Listing).WithMany()
+             .HasForeignKey(x => x.ListingId)
              .OnDelete(DeleteBehavior.Cascade);
 
             b.HasOne(x => x.FromUser).WithMany()
@@ -30,7 +30,7 @@ namespace kgs_api.Data.Configurations
 
             // Chống spam: mỗi người chỉ một yêu cầu ĐANG MỞ trên một tin.
             // Partial unique index — yêu cầu đã Đóng/Đã chuyển không chặn gửi lại.
-            b.HasIndex(x => new { x.PropertyId, x.FromUserId })
+            b.HasIndex(x => new { x.ListingId, x.FromUserId })
              .IsUnique()
              .HasDatabaseName("UX_ListingInquiries_OpenPerUser")
              .HasFilter("\"Status\" IN (1, 2, 3)");

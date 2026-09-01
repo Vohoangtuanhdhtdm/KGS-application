@@ -1,4 +1,4 @@
-using kgs_api.Common;
+﻿using kgs_api.Common;
 using System.ComponentModel.DataAnnotations;
 using static kgs_api.Domain.Enums;
 
@@ -14,8 +14,8 @@ namespace kgs_api.Domain.Entity.SubEntity
     /// bằng chứng đầu tiên cho thấy hệ thống thực sự "kết nối" được ai với ai.</summary>
     public class ListingInquiry : BaseAuditableEntity
     {
-        public int PropertyId { get; set; }
-        public Property Property { get; set; } = null!;
+        public Guid ListingId { get; set; }
+        public Listing Listing { get; set; } = null!;
 
         [Required] public string FromUserId { get; set; } = string.Empty;   // người đi tìm thuê
         public ApplicationUser FromUser { get; set; } = null!;

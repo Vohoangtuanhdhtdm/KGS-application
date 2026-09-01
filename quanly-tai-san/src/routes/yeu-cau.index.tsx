@@ -182,10 +182,10 @@ function InquiryCard({
           Hỏi về{" "}
           <Link
             to="/tin-dang/$slug"
-            params={{ slug: q.propertySlug }}
+            params={{ slug: q.listingSlug }}
             className="text-primary hover:underline"
           >
-            {q.propertyTitle}
+            {q.listingTitle}
           </Link>
         </p>
 
@@ -293,10 +293,10 @@ function SentList() {
             <div className="min-w-0 space-y-1">
               <Link
                 to="/tin-dang/$slug"
-                params={{ slug: q.propertySlug }}
+                params={{ slug: q.listingSlug }}
                 className="font-medium hover:underline"
               >
-                {q.propertyTitle}
+                {q.listingTitle}
               </Link>
               {q.message && (
                 <p className="text-sm text-muted-foreground line-clamp-2">{q.message}</p>

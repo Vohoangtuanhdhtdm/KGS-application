@@ -9,8 +9,8 @@ namespace kgs_api.Interfaces
     public interface IMarketplaceEngagementService
     {
         // ---- Tin đã lưu ----
-        Task SaveAsync(int propertyId, CancellationToken ct = default);
-        Task UnsaveAsync(int propertyId, CancellationToken ct = default);
+        Task SaveAsync(Guid listingId, CancellationToken ct = default);
+        Task UnsaveAsync(Guid listingId, CancellationToken ct = default);
         Task<IReadOnlyList<SavedListingDto>> GetSavedAsync(CancellationToken ct = default);
 
         // ---- Yêu cầu xem nhà ----

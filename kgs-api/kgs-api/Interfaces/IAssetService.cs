@@ -12,7 +12,5 @@ namespace kgs_api.Interfaces
         Task<AssetDetailDto> GetByIdAsync(Guid assetId, CancellationToken ct = default);
         Task<PagedResult<AssetSummaryDto>> SearchAsync(AssetSearchQuery query, CancellationToken ct = default);
         Task<IReadOnlyList<AssetNearbyDto>> FindNearbyAsync(NearbyQuery query, CancellationToken ct = default);
-        Task LinkPropertyAsync(Guid assetId, int propertyId, CancellationToken ct = default);
-        Task UnlinkPropertyAsync(Guid assetId, CancellationToken ct = default);
     }
 }

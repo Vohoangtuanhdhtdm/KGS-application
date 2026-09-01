@@ -194,15 +194,15 @@ export type DocumentTypeCode = keyof typeof DOCUMENT_TYPE;
 export const LISTING_TYPE = { 1: "Bán", 2: "Cho thuê" } as const;
 export type ListingTypeCode = keyof typeof LISTING_TYPE;
 
-export const PROPERTY_STATUS = {
+export const LISTING_STATUS = {
   1: "Chờ duyệt",
-  2: "Đã duyệt",
+  2: "Đang hiển thị",
   3: "Bị từ chối",
-  4: "Đã bán",
+  4: "Đã đóng",
 } as const;
-export type PropertyStatusCode = keyof typeof PROPERTY_STATUS;
+export type ListingStatusCode = keyof typeof LISTING_STATUS;
 
-export const PROPERTY_STATUS_CLASS: Record<PropertyStatusCode, string> = {
+export const LISTING_STATUS_CLASS: Record<ListingStatusCode, string> = {
   1: "bg-muted text-muted-foreground border-border",
   2: "bg-success/15 text-success border-success/30",
   3: "bg-destructive/15 text-destructive border-destructive/30",

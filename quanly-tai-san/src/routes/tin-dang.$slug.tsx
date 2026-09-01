@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { propertiesApi, formatListingPrice } from "@/lib/api/properties";
+import { listingsApi, formatListingPrice } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatDate } from "@/lib/format";
 import { PublicHeader } from "@/components/public/PublicHeader";
@@ -39,7 +39,7 @@ function PublicListingDetailPage() {
   const { slug } = Route.useParams();
   const query = useQuery({
     queryKey: ["public-listing", slug],
-    queryFn: () => propertiesApi.detail(slug),
+    queryFn: () => listingsApi.detail(slug),
     retry: 1,
   });
 
@@ -99,7 +99,7 @@ function PublicListingDetailPage() {
     ["Hướng nhà", p.houseDirection],
     ["Pháp lý", p.legalStatus],
     ["Nội thất", p.furnitureState],
-    ["Loại BĐS", p.propertyType],
+    ["Loại BĐS", p.assetTypeLabel],
   ];
 
   return (
@@ -121,7 +121,7 @@ function PublicListingDetailPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge>{p.type === 1 ? "Bán" : "Cho thuê"}</Badge>
                 <span className="text-xs text-muted-foreground">
-                  Đăng ngày {formatDate(p.createdAt)}
+                  Đăng ngày {formatDate(p.publishedAt)}
                 </span>
               </div>
               <h1 className="text-2xl font-semibold">{p.title}</h1>
@@ -184,7 +184,7 @@ function PublicListingDetailPage() {
           {/* Card liên hệ — sticky bên phải desktop */}
           <div className="hidden lg:block sticky top-20">
             <ContactCard ownerName={p.ownerName} ownerPhone={p.ownerPhone} onCopy={copyPhone}>
-              <EngagementActions propertyId={Number(p.id)} slug={p.slug} />
+              <EngagementActions listingId={p.id} slug={p.slug} />
             </ContactCard>
           </div>
         </div>
@@ -251,7 +251,7 @@ function ContactCard({
  * Đây là chỗ marketplace nối vào nghiệp vụ — yêu cầu gửi từ đây sẽ xuất hiện trong
  * hộp thư của chủ nhà, nơi họ chuyển thành đối tác rồi ký hợp đồng.
  */
-function EngagementActions({ propertyId, slug }: { propertyId: number; slug: string }) {
+function EngagementActions({ listingId, slug }: { listingId: string; slug: string }) {
   const { isAuthenticated } = useAuth();
   const qc = useQueryClient();
   const [saved, setSaved] = useState(false);
@@ -260,7 +260,7 @@ function EngagementActions({ propertyId, slug }: { propertyId: number; slug: str
   const [viewingAt, setViewingAt] = useState("");
 
   const save = useMutation({
-    mutationFn: () => (saved ? savedListingsApi.unsave(propertyId) : savedListingsApi.save(propertyId)),
+    mutationFn: () => (saved ? savedListingsApi.unsave(listingId) : savedListingsApi.save(listingId)),
     onSuccess: () => {
       setSaved((v) => !v);
       qc.invalidateQueries({ queryKey: ["saved-listings"] });

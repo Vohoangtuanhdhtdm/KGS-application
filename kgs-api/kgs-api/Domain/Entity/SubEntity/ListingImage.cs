@@ -1,12 +1,12 @@
-﻿using kgs_api.Common;
+using kgs_api.Common;
 using kgs_api.Domain.ValueObjects;
 
 namespace kgs_api.Domain.Entity.SubEntity
 {
-    public class PropertyImages : BaseAuditableEntity
+    public class ListingImage : BaseAuditableEntity
     {
-        public int PropertyId { get; set; }
-        public Property Property { get; set; } = null!;
+        public Guid ListingId { get; set; }
+        public Listing Listing { get; set; } = null!;
         public StoredFile File { get; set; } = new();
         public int SortOrder { get; set; }
     }

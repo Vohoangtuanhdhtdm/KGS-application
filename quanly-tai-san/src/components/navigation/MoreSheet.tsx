@@ -35,7 +35,7 @@ export function MoreSheet({ onClose, onPick }: MoreSheetProps) {
   const items = isAdmin
     ? [
         ...BASE_ITEMS,
-        { label: "Duyệt tin đăng", icon: ShieldCheck, path: "/admin/properties" } as MoreItem,
+        { label: "Duyệt tin đăng", icon: ShieldCheck, path: "/admin/listings" } as MoreItem,
       ]
     : BASE_ITEMS;
 

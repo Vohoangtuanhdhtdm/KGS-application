@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { savedListingsApi } from "@/lib/api/engagement";
-import { formatListingPrice } from "@/lib/api/properties";
+import { formatListingPrice } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatDate } from "@/lib/format";
 import { LISTING_TYPE } from "@/constants/enums";
@@ -28,7 +28,7 @@ export function SavedListingsPage({ embedded = false }: { embedded?: boolean } =
   });
 
   const unsave = useMutation({
-    mutationFn: (propertyId: number) => savedListingsApi.unsave(propertyId),
+    mutationFn: (listingId: string) => savedListingsApi.unsave(listingId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["saved-listings"] });
       toast.success("Đã bỏ lưu tin");
@@ -73,7 +73,7 @@ export function SavedListingsPage({ embedded = false }: { embedded?: boolean } =
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {rows.map((l) => (
-            <Card key={l.propertyId} className="overflow-hidden">
+            <Card key={l.listingId} className="overflow-hidden">
               <CardContent className="p-0 flex">
                 <Link
                   to="/tin-dang/$slug"
@@ -108,7 +108,7 @@ export function SavedListingsPage({ embedded = false }: { embedded?: boolean } =
                       size="icon"
                       className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
                       disabled={unsave.isPending}
-                      onClick={() => unsave.mutate(l.propertyId)}
+                      onClick={() => unsave.mutate(l.listingId)}
                       aria-label="Bỏ lưu tin"
                     >
                       <Trash2 className="h-4 w-4" />

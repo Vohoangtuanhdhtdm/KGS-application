@@ -74,7 +74,7 @@ namespace kgs_api.Extensions
             services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
-            services.AddScoped<IPropertyListingService, PropertyListingService>();
+            services.AddScoped<IListingService, ListingService>();
           
 
 

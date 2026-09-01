@@ -29,11 +29,6 @@ namespace kgs_api.Data.Configurations
              .HasForeignKey(a => a.UserId)
              .OnDelete(DeleteBehavior.Cascade);          // xoá user → xoá tài sản riêng tư của họ
 
-            b.HasOne(a => a.LinkedProperty)
-             .WithMany()
-             .HasForeignKey(a => a.LinkedPropertyId)
-             .OnDelete(DeleteBehavior.SetNull);          // xoá tin đăng KHÔNG xoá tài sản
-
             // Index cho các truy vấn nóng nhất
             b.HasIndex(a => a.UserId);
             b.HasIndex(a => new { a.UserId, a.Status });

@@ -4,7 +4,7 @@ import type { ListingTypeCode, PaymentCycleCode } from "@/constants/enums";
 // ---- Tin đã lưu ----
 
 export interface SavedListingDto {
-  propertyId: number;
+  listingId: string;
   slug: string;
   title: string;
   type: ListingTypeCode;
@@ -44,9 +44,9 @@ export interface CreateInquiryInput {
 
 export interface SentInquiryDto {
   id: string;
-  propertyId: number;
-  propertySlug: string;
-  propertyTitle: string;
+  listingId: string;
+  listingSlug: string;
+  listingTitle: string;
   thumbnailUrl: string | null;
   message: string | null;
   preferredViewingAt: string | null;
@@ -56,9 +56,9 @@ export interface SentInquiryDto {
 
 export interface ReceivedInquiryDto {
   id: string;
-  propertyId: number;
-  propertySlug: string;
-  propertyTitle: string;
+  listingId: string;
+  listingSlug: string;
+  listingTitle: string;
   fromUserName: string;
   fromUserPhone: string | null;
   fromUserEmail: string | null;
@@ -77,13 +77,13 @@ export interface ConvertInquiryResultDto {
 
 export const savedListingsApi = {
   list: () => api<SavedListingDto[]>("/saved-listings"),
-  save: (propertyId: number) => api<void>(`/saved-listings/${propertyId}`, { method: "POST" }),
-  unsave: (propertyId: number) => api<void>(`/saved-listings/${propertyId}`, { method: "DELETE" }),
+  save: (listingId: string) => api<void>(`/saved-listings/${listingId}`, { method: "POST" }),
+  unsave: (listingId: string) => api<void>(`/saved-listings/${listingId}`, { method: "DELETE" }),
 };
 
 export const inquiriesApi = {
   create: (slug: string, body: CreateInquiryInput) =>
-    api<SentInquiryDto>(`/property-listings/${slug}/inquiries`, { method: "POST", body }),
+    api<SentInquiryDto>(`/listings/${slug}/inquiries`, { method: "POST", body }),
   sent: () => api<SentInquiryDto[]>("/inquiries/sent"),
   received: (status?: InquiryStatusCode) =>
     api<ReceivedInquiryDto[]>(`/inquiries/received${toQuery({ status })}`),
