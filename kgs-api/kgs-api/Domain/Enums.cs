@@ -78,6 +78,11 @@
 
         public enum ContactType { Tenant = 1, Landlord = 2, Broker = 3, Vendor = 4, Other = 99 }
 
+        // Vòng đời một yêu cầu xem nhà gửi từ marketplace.
+        // Converted = đã sinh ContactParty, sẵn sàng ký hợp đồng — đây là trạng thái
+        // duy nhất chứng minh hệ thống kết nối thành công chủ nhà với người thuê.
+        public enum InquiryStatus { New = 1, Contacted = 2, Viewed = 3, Converted = 4, Closed = 5 }
+
 
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)

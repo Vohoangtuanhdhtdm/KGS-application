@@ -1,4 +1,4 @@
-﻿using kgs_api.Dtos;
+using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -41,6 +41,14 @@ namespace kgs_api.Controllers
             [FromQuery] bool? isActive, [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
             CancellationToken ct = default)
             => Ok(await _reminders.ListAsync(isActive, page, pageSize, ct));
+
+        /// <summary>Xác nhận đã thu tiền (LeaseOut) hoặc đã trả tiền cho chủ nhà (LeaseIn).
+        /// Sinh bút toán vào sổ cái và đẩy nhắc lịch sang kỳ kế tiếp — báo cáo lợi nhuận
+        /// tự cập nhật ngay mà không phải vào màn hình Thu chi nhập tay.</summary>
+        [HttpPost("{reminderId:guid}/settle")]
+        public async Task<ActionResult<CashFlowDto>> Settle(
+            Guid reminderId, [FromBody] SettleReminderRequest request, CancellationToken ct)
+            => Ok(await _reminders.SettleAsync(reminderId, request, ct));
 
         /// <summary>Nhắc lịch sắp đến hạn trong N ngày — dùng cho widget "sắp tới" trên dashboard.</summary>
         [HttpGet("upcoming")]

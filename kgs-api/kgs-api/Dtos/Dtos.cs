@@ -305,4 +305,49 @@ namespace kgs_api.Dtos
     public sealed record EquipmentDto(
         Guid Id, Guid? AssetUnitId, string Name, int Quantity,
         EquipmentCondition Condition, EquipmentSource Source, string? Notes);
+
+    // ============================================================
+    // E1. SAVED LISTING — tin đã lưu (phía người đi tìm thuê)
+    // ============================================================
+    public sealed record SavedListingDto(
+        int PropertyId, string Slug, string Title, ListingType Type,
+        decimal Price, PaymentCycle? RentPaymentCycle,
+        string City, string District, int Bedrooms, double Area,
+        string? ThumbnailUrl, DateTime SavedAt);
+
+    // ============================================================
+    // E2. LISTING INQUIRY — yêu cầu xem nhà, cầu nối marketplace ↔ hợp đồng
+    // ============================================================
+    public sealed record CreateInquiryRequest(
+        [MaxLength(1000)] string? Message,
+        DateTime? PreferredViewingAt);
+
+    public sealed record UpdateInquiryStatusRequest(InquiryStatus Status);
+
+    /// <summary>Yêu cầu chủ nhà NHẬN được. Có thông tin liên hệ của người gửi vì
+    /// họ đã chủ động gửi yêu cầu — khác với tin đăng công khai.</summary>
+    public sealed record ReceivedInquiryDto(
+        Guid Id, int PropertyId, string PropertySlug, string PropertyTitle,
+        string FromUserName, string? FromUserPhone, string? FromUserEmail,
+        string? Message, DateTime? PreferredViewingAt,
+        InquiryStatus Status, Guid? ConvertedContactPartyId, DateTime CreatedAt);
+
+    /// <summary>Yêu cầu người tìm thuê ĐÃ GỬI. Không kèm liên hệ của chủ nhà —
+    /// thông tin đó đã có sẵn trên trang chi tiết tin đăng.</summary>
+    public sealed record SentInquiryDto(
+        Guid Id, int PropertyId, string PropertySlug, string PropertyTitle,
+        string? ThumbnailUrl, string? Message, DateTime? PreferredViewingAt,
+        InquiryStatus Status, DateTime CreatedAt);
+
+    /// <summary>Kết quả chuyển yêu cầu thành đối tác — client dùng ContactPartyId
+    /// để mở thẳng màn hình tạo hợp đồng với đối tác đã điền sẵn.</summary>
+    public sealed record ConvertInquiryResultDto(
+        Guid InquiryId, Guid ContactPartyId, string ContactFullName);
+
+    // ============================================================
+    // E3. SETTLE REMINDER — xác nhận đã thu / đã trả tiền thuê
+    // ============================================================
+    public sealed record SettleReminderRequest(
+        [Range(0.01, (double)decimal.MaxValue)] decimal? Amount,
+        DateTime? OccurredAt);
 }
