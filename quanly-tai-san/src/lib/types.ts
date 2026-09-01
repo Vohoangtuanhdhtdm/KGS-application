@@ -173,12 +173,3 @@ export interface MaintenanceRecord {
   cost: number;
   contractorId?: string;
 }
-
-export interface SaleListing {
-  id: string;
-  assetId: string;
-  price: number;
-  status: "Đang rao" | "Tạm dừng" | "Đã bán" | "Đã huỷ";
-  listedDate: string;
-  sentToBrokers: { brokerId: string; sentAt: string }[];
-}

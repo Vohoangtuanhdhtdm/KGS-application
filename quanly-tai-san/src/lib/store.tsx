@@ -10,7 +10,6 @@ import {
   seedMedia,
   seedEquipment,
   seedMaintenance,
-  seedSaleListings,
 } from "./mock-data";
 import type {
   Asset,
@@ -23,7 +22,6 @@ import type {
   AssetMedia,
   Equipment,
   MaintenanceRecord,
-  SaleListing,
 } from "./types";
 
 interface Store {
@@ -37,7 +35,6 @@ interface Store {
   media: AssetMedia[];
   equipment: Equipment[];
   maintenance: MaintenanceRecord[];
-  saleListings: SaleListing[];
 
   addAsset: (a: Asset) => void;
   updateAsset: (id: string, patch: Partial<Asset>) => void;
@@ -77,7 +74,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [media] = useState<AssetMedia[]>(seedMedia);
   const [equipment, setEquipment] = useState<Equipment[]>(seedEquipment);
   const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>(seedMaintenance);
-  const [saleListings, setSaleListings] = useState<SaleListing[]>(seedSaleListings);
 
   const value: Store = {
     assets,
@@ -90,7 +86,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     media,
     equipment,
     maintenance,
-    saleListings,
 
     addAsset: (a) => setAssets((prev) => [a, ...prev]),
     updateAsset: (id, patch) =>
@@ -204,7 +199,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     addDocument: (d) => setDocuments((prev) => [d, ...prev]),
   };
   void setUnits;
-  void setSaleListings;
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
 

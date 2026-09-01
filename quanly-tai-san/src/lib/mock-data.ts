@@ -9,7 +9,6 @@ import type {
   AssetMedia,
   Equipment,
   MaintenanceRecord,
-  SaleListing,
 } from "./types";
 
 const today = new Date();
@@ -647,19 +646,5 @@ export const seedMaintenance: MaintenanceRecord[] = [
     endDate: iso(today.getFullYear(), Math.max(1, today.getMonth() - 1), 22),
     cost: 4500000,
     contractorId: "c10",
-  },
-];
-
-export const seedSaleListings: SaleListing[] = [
-  {
-    id: "s1",
-    assetId: "a4",
-    price: 3200000000,
-    status: "Đang rao",
-    listedDate: iso(today.getFullYear(), Math.max(1, today.getMonth() - 1), 5),
-    sentToBrokers: [
-      { brokerId: "c8", sentAt: iso(today.getFullYear(), Math.max(1, today.getMonth() - 1), 6) },
-      { brokerId: "c9", sentAt: iso(today.getFullYear(), Math.max(1, today.getMonth() - 1), 8) },
-    ],
   },
 ];
