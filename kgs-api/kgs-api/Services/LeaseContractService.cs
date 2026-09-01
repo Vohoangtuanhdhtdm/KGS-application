@@ -1,5 +1,6 @@
 ﻿using kgs_api.Domain.Entity;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Domain.Rules;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
@@ -41,8 +42,6 @@ namespace kgs_api.Services
 
             var start = EnsureUtc(request.StartDate);
             var end = EnsureUtc(request.EndDate);
-            if (end <= start)
-                throw new ValidationFailedException("Ngày kết thúc phải sau ngày bắt đầu.");
 
             var asset = await _assets.Query()
                 .FirstOrDefaultAsync(a => a.Id == request.AssetId && a.UserId == userId, ct)
@@ -64,16 +63,13 @@ namespace kgs_api.Services
             if (!counterpartyExists)
                 throw new NotFoundException("Không tìm thấy đối tác (người thuê / chủ nhà).");
 
-            // Chặn trùng kỳ hạn: cùng asset + cùng unit (hoặc cùng nguyên căn) + cùng chiều
-            // + đang Active + khoảng thời gian giao nhau
-            var overlaps = await _contracts.Query().AnyAsync(c =>
-                c.AssetId == asset.Id
-                && c.AssetUnitId == request.AssetUnitId
-                && c.Direction == request.Direction
-                && c.Status == ContractStatus.Active
-                && c.StartDate < end && start < c.EndDate, ct);
-            if (overlaps)
-                throw new ConflictException("Đã tồn tại hợp đồng đang hiệu lực trùng kỳ hạn trên tài sản/phòng này.");
+            // Toàn bộ quy tắc kỳ hạn nằm trong ContractPeriodValidator: chồng kỳ hạn,
+            // xung đột nguyên căn ↔ phòng, và ràng buộc cho thuê lại không vượt quá
+            // hạn hợp đồng đi thuê với chủ nhà.
+            var activeSlots = await LoadActiveSlotsAsync(asset.Id, ct);
+            ContractPeriodValidator.EnsureCanPlace(
+                activeSlots, asset.OwnershipType, request.Direction,
+                request.AssetUnitId, start, end);
 
             var contract = new LeaseContract
             {
@@ -115,8 +111,19 @@ namespace kgs_api.Services
 
             var start = EnsureUtc(request.NewStartDate);
             var end = EnsureUtc(request.NewEndDate);
-            if (end <= start)
-                throw new ValidationFailedException("Ngày kết thúc phải sau ngày bắt đầu.");
+
+            // Trước đây luồng gia hạn KHÔNG kiểm tra kỳ hạn — gia hạn có thể đè lên một
+            // hợp đồng khác đã ký sẵn cho cùng phòng. Loại trừ chính HĐ đang gia hạn vì
+            // nó sắp chuyển sang trạng thái Renewed.
+            var ownership = await _assets.Query().AsNoTracking()
+                .Where(a => a.Id == old.AssetId)
+                .Select(a => a.OwnershipType)
+                .FirstAsync(ct);
+
+            var activeSlots = await LoadActiveSlotsAsync(old.AssetId, ct);
+            ContractPeriodValidator.EnsureCanPlace(
+                activeSlots, ownership, old.Direction,
+                old.AssetUnitId, start, end, excludeContractId: old.Id);
 
             var renewed = new LeaseContract
             {
@@ -265,6 +272,21 @@ namespace kgs_api.Services
                 c.PaymentCycle, c.PaymentDueDay, c.DepositAmount,
                 c.NextRentIncreaseDate, c.TaxResponsibility,
                 c.ParentContractId, c.Notes));
+
+        /// <summary>Nạp mọi hợp đồng Active của một tài sản dưới dạng ContractSlot cho validator.
+        /// Materialize bằng kiểu vô danh rồi map sau — giữ đúng quy ước đã áp dụng ở các
+        /// truy vấn khác trong dự án, tránh dựng struct trong biểu thức dịch sang SQL.</summary>
+        private async Task<IReadOnlyList<ContractSlot>> LoadActiveSlotsAsync(Guid assetId, CancellationToken ct)
+        {
+            var rows = await _contracts.Query().AsNoTracking()
+                .Where(c => c.AssetId == assetId && c.Status == ContractStatus.Active)
+                .Select(c => new { c.Id, c.Direction, c.AssetUnitId, c.StartDate, c.EndDate })
+                .ToListAsync(ct);
+
+            return rows
+                .Select(r => new ContractSlot(r.Id, r.Direction, r.AssetUnitId, r.StartDate, r.EndDate))
+                .ToList();
+        }
 
         private async Task<LeaseContract> GetOwnedContractAsync(Guid contractId, CancellationToken ct)
             => await _contracts.Query()

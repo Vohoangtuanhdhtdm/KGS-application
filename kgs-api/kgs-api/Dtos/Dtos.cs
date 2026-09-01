@@ -239,7 +239,10 @@ namespace kgs_api.Dtos
         Guid AssetId, string AssetName, DateTime From, DateTime To,
         decimal TotalIncome, decimal TotalExpense, decimal Profit,
         IReadOnlyList<CategoryAmountDto> IncomeBreakdown,
-        IReadOnlyList<CategoryAmountDto> ExpenseBreakdown);
+        IReadOnlyList<CategoryAmountDto> ExpenseBreakdown,
+        // Tiền cọc KHÔNG phải doanh thu/chi phí — là khoản phải trả lại. Tách khỏi
+        // Profit và báo riêng. Tham số mới BẮT BUỘC đặt ở CUỐI record positional.
+        decimal DepositHeld);
 
     public sealed record TaxReportDto(
         int Year, decimal TotalTax, IReadOnlyList<CategoryAmountDto> ByTaxType);

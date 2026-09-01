@@ -2,6 +2,7 @@
 using Hangfire.PostgreSql;
 using kgs_api.Data;
 using kgs_api.Domain.Entity;
+using kgs_api.Infrastructure.Persistence.Interceptors;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
 using kgs_api.Services;
@@ -23,11 +24,17 @@ namespace kgs_api.Extensions
         {
             var connectionString = config.GetConnectionString("PostgresDb") ?? throw new InvalidOperationException("Connection string 'PostgresDb' not found.");
 
-            // Database
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(connectionString, o => o.UseNetTopologySuite()));
-
             services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+            // Database — interceptor tự điền CreatedAt/UpdatedAt/CreatedBy/UpdatedBy.
+            // Trước đây interceptor được viết nhưng KHÔNG đăng ký, nên toàn bộ cột audit
+            // giữ nguyên default(DateTime) và AssetService.SearchAsync sắp xếp theo
+            // CreatedAt trả về thứ tự vô nghĩa.
+            services.AddScoped<AuditableEntityInterceptor>();
+            services.AddDbContext<ApplicationDbContext>((sp, options) =>
+                options.UseNpgsql(connectionString, o => o.UseNetTopologySuite())
+                       .AddInterceptors(sp.GetRequiredService<AuditableEntityInterceptor>()));
 
             services.AddSingleton(NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326));
 
@@ -64,7 +71,6 @@ namespace kgs_api.Extensions
             services.AddScoped<IAuthService, AuthService>();
 
             //Đăng ký DI
-            services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
@@ -145,6 +151,7 @@ namespace kgs_api.Extensions
             // Đăng ký các background job
             services.AddScoped<ReminderProcessingJob>();
             services.AddScoped<FileCleanupJob>();
+            services.AddScoped<ContractExpiryJob>();
 
            
 
