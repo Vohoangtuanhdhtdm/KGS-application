@@ -1,0 +1,22 @@
+// Guarded, code-split wrapper around PropertyMap for SSR safety — cùng pattern với ClientMap.tsx.
+import { lazy, Suspense, useEffect, useState } from "react";
+import type { ComponentProps } from "react";
+
+const PropertyMap = lazy(() => import("./PropertyMap"));
+
+function useIsClient() {
+  const [ok, setOk] = useState(false);
+  useEffect(() => setOk(true), []);
+  return ok;
+}
+
+export function PropertyMapClient(props: ComponentProps<typeof PropertyMap>) {
+  const ready = useIsClient();
+  const fallback = <div className="h-full w-full bg-muted animate-pulse" />;
+  if (!ready) return fallback;
+  return (
+    <Suspense fallback={fallback}>
+      <PropertyMap {...props} />
+    </Suspense>
+  );
+}

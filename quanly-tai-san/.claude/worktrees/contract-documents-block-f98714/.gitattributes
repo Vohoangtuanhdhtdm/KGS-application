@@ -1,0 +1,28 @@
+# Chuẩn hoá kết thúc dòng.
+#
+# Nội dung trong repo vốn đã là LF (`git ls-files --eol` cho i/lf trên toàn bộ file text).
+# Vấn đề nằm ở lúc CHECKOUT: repo không có file này nên trên Windows `core.autocrlf=true`
+# đổi LF thành CRLF khi ghi ra working tree — 136 file. Prettier/ESLint đọc working tree
+# nên `npm run lint` báo 16.397 lỗi `prettier/prettier` chỉ vì ký tự ␍: lint mất tác dụng
+# như một cổng kiểm tra, và những cảnh báo thật (react-hooks, v.v.) chìm nghỉm trong đó.
+#
+# `eol=lf` ép working tree cũng là LF, đè lên `core.autocrlf` của từng máy. Nhờ vậy mọi
+# người checkout ra cùng một nội dung, không phụ thuộc cấu hình git cá nhân.
+* text=auto eol=lf
+
+# Nhị phân: không đụng vào, cũng không diff dạng văn bản
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+
+# File sinh tự động — đánh dấu để không rối review
+routeTree.gen.ts linguist-generated=true
+package-lock.json linguist-generated=true

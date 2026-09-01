@@ -1,0 +1,6 @@
+@kgs_api_HostAddress = http://localhost:5247
+
+GET {{kgs_api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
