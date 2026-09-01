@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using kgs_api.Data;
 namespace kgs_api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260901042218_DropSaleListingAndUsagePeriod")]
+    partial class DropSaleListingAndUsagePeriod
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -910,64 +913,6 @@ namespace kgs_api.Migrations
                         });
                 });
 
-            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.ListingInquiry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("ConvertedContactPartyId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("FromUserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTime?>("PreferredViewingAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ToUserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConvertedContactPartyId");
-
-                    b.HasIndex("FromUserId", "CreatedAt");
-
-                    b.HasIndex("PropertyId", "FromUserId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_ListingInquiries_OpenPerUser")
-                        .HasFilter("\"Status\" IN (1, 2, 3)");
-
-                    b.HasIndex("ToUserId", "CreatedAt");
-
-                    b.ToTable("ListingInquiries", (string)null);
-                });
-
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.MaintenanceRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1121,26 +1066,6 @@ namespace kgs_api.Migrations
                     b.HasIndex("UserId", "IsActive");
 
                     b.ToTable("Reminders", (string)null);
-                });
-
-            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.SavedListing", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
-                    b.Property<int>("PropertyId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("SavedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("UserId", "PropertyId");
-
-                    b.HasIndex("PropertyId");
-
-                    b.HasIndex("UserId", "SavedAt");
-
-                    b.ToTable("SavedListings", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -1549,32 +1474,6 @@ namespace kgs_api.Migrations
                     b.Navigation("ParentContract");
                 });
 
-            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.ListingInquiry", b =>
-                {
-                    b.HasOne("kgs_api.Domain.Entity.SubEntity.ContactParty", "ConvertedContactParty")
-                        .WithMany()
-                        .HasForeignKey("ConvertedContactPartyId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("kgs_api.Domain.Entity.ApplicationUser", "FromUser")
-                        .WithMany()
-                        .HasForeignKey("FromUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("kgs_api.Domain.Entity.Property", "Property")
-                        .WithMany()
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ConvertedContactParty");
-
-                    b.Navigation("FromUser");
-
-                    b.Navigation("Property");
-                });
-
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.MaintenanceRecord", b =>
                 {
                     b.HasOne("kgs_api.Domain.Entity.Asset", "Asset")
@@ -1663,25 +1562,6 @@ namespace kgs_api.Migrations
                     b.Navigation("Asset");
 
                     b.Navigation("LeaseContract");
-                });
-
-            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.SavedListing", b =>
-                {
-                    b.HasOne("kgs_api.Domain.Entity.Property", "Property")
-                        .WithMany()
-                        .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("kgs_api.Domain.Entity.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Property");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.ApplicationUser", b =>

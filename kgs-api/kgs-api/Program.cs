@@ -6,7 +6,6 @@ using kgs_api.Services;
 using kgs_api.Utility;
 using Microsoft.OpenApi.Models;
 using static kgs_api.Common.Common;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,11 +58,21 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors(builder => builder
+// Đặt TRƯỚC MapControllers cho rõ ý: mọi DomainException từ service được map sang
+// ProblemDetails 400/404/409 thay vì rơi ra ngoài thành 500.
+app.UseMiddleware<DomainExceptionMiddleware>();
+
+// Origin đọc từ cấu hình — hard-code localhost:8081 sẽ chặn đứng frontend sau khi
+// deploy lên AWS/CloudFront. Xem appsettings.json > Cors:AllowedOrigins.
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:8081" };
+
+app.UseCors(policy => policy
     .AllowAnyHeader()
     .AllowAnyMethod()
     .AllowCredentials()
-    .WithOrigins("http://localhost:8081"));
+    .WithOrigins(allowedOrigins));
 
 
 app.UseAuthentication();
@@ -82,6 +91,11 @@ using (var scope = app.Services.CreateScope())
         "reminders", j => j.RunAsync(CancellationToken.None), "*/15 * * * *");
     recurringJobs.AddOrUpdate<FileCleanupJob>(
         "file-cleanup", j => j.RunAsync(CancellationToken.None), "*/30 * * * *");
+
+    // 00:30 UTC = 07:30 giờ Việt Nam — đóng hợp đồng hết hạn trước giờ làm việc,
+    // để danh sách phòng trống buổi sáng đã đúng.
+    recurringJobs.AddOrUpdate<ContractExpiryJob>(
+        "contract-expiry", j => j.RunAsync(CancellationToken.None), "30 0 * * *");
 }
 
 
@@ -90,7 +104,6 @@ using (var scope = app.Services.CreateScope())
 
 
 app.MapControllers();
-app.UseMiddleware<DomainExceptionMiddleware>();
 // Hangfire Dashboard (optional, cho dev)
 if (app.Environment.IsDevelopment())
 {

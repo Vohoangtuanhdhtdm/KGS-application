@@ -183,15 +183,10 @@ function PublishDialog({
     if (!hasAllSpecs(asset)) setSpecsOverride(true);
   }
 
-  // Prefill giá từ rao bán nội bộ (404 = chưa có → bỏ qua im lặng)
-  const saleQ = useQuery({
-    queryKey: ["asset-sale-listing", assetId],
-    queryFn: () => assetsApi.saleListing.get(assetId),
-    enabled: open,
-    retry: 1,
-  });
-  if (open && !prefilled && saleQ.data?.askingPrice && price === null) {
-    setPrice(saleQ.data.askingPrice);
+  // Prefill giá từ giá trị hiện tại của tài sản. Trước đây lấy từ module rao bán
+  // nội bộ — module đó đã được gỡ vì nằm ngoài trục nghiệp vụ cho thuê.
+  if (open && !prefilled && asset?.currentValue && price === null) {
+    setPrice(asset.currentValue);
     setPrefilled(true);
   }
 

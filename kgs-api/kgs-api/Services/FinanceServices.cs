@@ -147,6 +147,21 @@ namespace kgs_api.Services
         private readonly IRepository<Asset> _assets;
         private readonly ICurrentUserService _currentUser;
 
+        /// <summary>Các loại thuế gộp vào báo cáo thuế theo năm.</summary>
+        private static readonly CashFlowCategory[] TaxCategories =
+        {
+            CashFlowCategory.RegistrationTax,
+            CashFlowCategory.NonAgriculturalLandTax,
+            CashFlowCategory.BusinessLicenseTax,
+            CashFlowCategory.PersonalIncomeTax,
+            CashFlowCategory.ValueAddedTax,
+            CashFlowCategory.OtherTax
+        };
+
+        /// <summary>Tiền cọc — nhận rồi phải trả lại, không vào báo cáo lãi/lỗ.</summary>
+        private static bool IsDeposit(CashFlowCategory category)
+            => category is CashFlowCategory.DepositReceived or CashFlowCategory.DepositPaid;
+
         public ReportService(IRepository<CashFlowEntry> entries, IRepository<Asset> assets, ICurrentUserService currentUser)
         {
             _entries = entries; _assets = assets; _currentUser = currentUser;
@@ -193,26 +208,41 @@ namespace kgs_api.Services
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException("Không tìm thấy tài sản.");
 
-            // Index (AssetId, OccurredAt) → một lần quét khoảng, group 2 chiều
+            // Index (AssetId, OccurredAt) → một lần quét khoảng, group 2 chiều.
+            // Lọc thêm UserId: quyền sở hữu đã được kiểm ở truy vấn assetName phía trên,
+            // nhưng lọc lại ở đây là phòng thủ theo chiều sâu — nếu ai đó sửa đoạn trên,
+            // báo cáo vẫn không rò rỉ dữ liệu của user khác.
             var breakdown = await _entries.Query().AsNoTracking()
                 .Where(e => e.AssetId == query.AssetId
+                         && e.UserId == _currentUser.UserId
                          && e.OccurredAt >= from && e.OccurredAt < to)
                 .GroupBy(e => new { e.Direction, e.Category })
                 .Select(g => new { g.Key.Direction, g.Key.Category, Amount = g.Sum(x => x.Amount) })
                 .ToListAsync(ct);
 
-            var income = breakdown.Where(b => b.Direction == CashFlowDirection.Income)
+            // Tiền cọc là khoản phải trả lại, không phải doanh thu/chi phí — tách khỏi P&L.
+            // Cộng cọc vào lợi nhuận sẽ thổi phồng con số "lãi thật" mà cả sản phẩm đang bán.
+            var deposits = breakdown.Where(b => IsDeposit(b.Category)).ToList();
+            var pnl = breakdown.Where(b => !IsDeposit(b.Category)).ToList();
+
+            var income = pnl.Where(b => b.Direction == CashFlowDirection.Income)
                 .Select(b => new CategoryAmountDto(b.Category, b.Amount))
                 .OrderByDescending(b => b.Amount).ToList();
-            var expense = breakdown.Where(b => b.Direction == CashFlowDirection.Expense)
+            var expense = pnl.Where(b => b.Direction == CashFlowDirection.Expense)
                 .Select(b => new CategoryAmountDto(b.Category, b.Amount))
                 .OrderByDescending(b => b.Amount).ToList();
 
             var totalIncome = income.Sum(x => x.Amount);
             var totalExpense = expense.Sum(x => x.Amount);
 
+            // Cọc đang giữ = đã nhận của khách thuê − đã đặt cho chủ nhà.
+            // Âm nghĩa là đang đặt cọc ra ngoài nhiều hơn nhận vào (thường gặp ở tài sản Leasehold).
+            var depositHeld =
+                deposits.Where(d => d.Category == CashFlowCategory.DepositReceived).Sum(d => d.Amount)
+              - deposits.Where(d => d.Category == CashFlowCategory.DepositPaid).Sum(d => d.Amount);
+
             return new ProfitReportDto(query.AssetId, assetName, from, to,
-                totalIncome, totalExpense, totalIncome - totalExpense, income, expense);
+                totalIncome, totalExpense, totalIncome - totalExpense, income, expense, depositHeld);
         }
 
         public async Task<TaxReportDto> GetTaxReportAsync(int year, CancellationToken ct = default)
@@ -223,11 +253,12 @@ namespace kgs_api.Services
             var from = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             var to = from.AddYears(1);
 
-            // Bước 1 — group + sum, kiểu vô danh nguyên thuỷ
+            // Bước 1 — group + sum, kiểu vô danh nguyên thuỷ.
+            // Danh sách TƯỜNG MINH thay cho khoảng số enum (>= RegistrationTax && <= OtherTax):
+            // thêm một category mới vào khoảng 20–29 mà quên là báo cáo thuế sai âm thầm.
             var grouped = await _entries.Query().AsNoTracking()
                 .Where(e => e.UserId == _currentUser.UserId
-                         && e.Category >= CashFlowCategory.RegistrationTax
-                         && e.Category <= CashFlowCategory.OtherTax
+                         && TaxCategories.Contains(e.Category)
                          && e.OccurredAt >= from && e.OccurredAt < to)
                 .GroupBy(e => e.Category)
                 .Select(g => new { Category = g.Key, Amount = g.Sum(x => x.Amount) })

@@ -3,8 +3,9 @@ import { ContractListPage } from "@/routes/hop-dong.index";
 import { CashflowPage } from "@/routes/thu-chi.index";
 import { RemindersPage } from "@/routes/nhac-lich.index";
 import { ContactsPage } from "@/routes/doi-tac.index";
-import { SalePage } from "@/routes/rao-ban.index";
 import { MyListingsPage } from "@/routes/my-listings";
+import { InquiriesPage } from "@/routes/yeu-cau.index";
+import { SavedListingsPage } from "@/routes/da-luu.index";
 
 /**
  * Các tính năng phụ mở dạng sheet đè lên bản đồ.
@@ -24,13 +25,14 @@ export const SHEET_ROUTES: SheetRoute[] = [
   { key: "thu-chi", title: "Sổ thu chi", path: "/thu-chi", Component: CashflowPage },
   { key: "nhac-lich", title: "Nhắc lịch", path: "/nhac-lich", Component: RemindersPage },
   { key: "doi-tac", title: "Sổ đối tác", path: "/doi-tac", Component: ContactsPage },
-  { key: "rao-ban", title: "Rao bán", path: "/rao-ban", Component: SalePage },
   {
     key: "my-listings",
     title: "Tin đăng của tôi",
     path: "/my-listings",
     Component: MyListingsPage,
   },
+  { key: "yeu-cau", title: "Yêu cầu xem nhà", path: "/yeu-cau", Component: InquiriesPage },
+  { key: "da-luu", title: "Tin đã lưu", path: "/da-luu", Component: SavedListingsPage },
 ];
 
 export const SHEET_KEYS = SHEET_ROUTES.map((r) => r.key);

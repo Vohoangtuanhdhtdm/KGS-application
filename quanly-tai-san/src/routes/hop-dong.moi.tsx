@@ -45,7 +45,12 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ArrowLeft, ArrowRight, Check, Plus, Sparkles, ChevronDown } from "lucide-react";
 
-const searchSchema = z.object({ assetId: z.string().optional() });
+// counterpartyId: điền sẵn đối tác khi đi từ màn hình Yêu cầu xem nhà sang
+// (sau khi bấm "Chuyển thành khách thuê") — không phải gõ lại tên khách.
+const searchSchema = z.object({
+  assetId: z.string().optional(),
+  counterpartyId: z.string().optional(),
+});
 
 export const Route = createFileRoute("/hop-dong/moi")({
   head: () => ({ meta: [{ title: "Tạo hợp đồng mới — Quản Lý Tài Sản" }] }),
@@ -68,7 +73,7 @@ function NewContract() {
 
   // Step 2
   const [direction, setDirection] = useState<ContractDirectionCode>(1);
-  const [counterpartyId, setCounterpartyId] = useState<string>("");
+  const [counterpartyId, setCounterpartyId] = useState<string>(search.counterpartyId ?? "");
   const [addContactOpen, setAddContactOpen] = useState(false);
 
   // Step 3

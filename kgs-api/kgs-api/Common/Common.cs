@@ -40,6 +40,11 @@ namespace kgs_api.Common
         {
             /// <summary>Id của user đang đăng nhập. Ném UnauthorizedAccessException nếu chưa đăng nhập.</summary>
             string UserId { get; }
+
+            /// <summary>Id của user đang đăng nhập, hoặc null khi không có HttpContext.
+            /// Dùng ở những nơi chạy NGOÀI request — job nền Hangfire, interceptor EF —
+            /// nơi "chưa đăng nhập" là trạng thái bình thường chứ không phải lỗi.</summary>
+            string? UserIdOrNull { get; }
         }
 
         public sealed class CurrentUserService : ICurrentUserService
@@ -48,8 +53,11 @@ namespace kgs_api.Common
             public CurrentUserService(IHttpContextAccessor http) => _http = http;
 
             public string UserId =>
-                _http.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                UserIdOrNull
                 ?? throw new UnauthorizedAccessException("Người dùng chưa đăng nhập.");
+
+            public string? UserIdOrNull =>
+                _http.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
         // ============================================================

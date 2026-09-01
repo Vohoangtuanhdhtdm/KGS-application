@@ -20,18 +20,19 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminPropertiesRouteImport } from './routes/admin.properties'
 import { Route as BanDoIndexRouteImport } from './routes/ban-do.index'
+import { Route as DaLuuIndexRouteImport } from './routes/da-luu.index'
 import { Route as DoiTacIndexRouteImport } from './routes/doi-tac.index'
 import { Route as HopDongIndexRouteImport } from './routes/hop-dong.index'
 import { Route as HopDongIdRouteImport } from './routes/hop-dong.$id'
 import { Route as HopDongMoiRouteImport } from './routes/hop-dong.moi'
 import { Route as NhacLichIndexRouteImport } from './routes/nhac-lich.index'
-import { Route as RaoBanIndexRouteImport } from './routes/rao-ban.index'
 import { Route as TaiSanIndexRouteImport } from './routes/tai-san.index'
 import { Route as TaiSanIdRouteImport } from './routes/tai-san.$id'
 import { Route as TaiSanMoiRouteImport } from './routes/tai-san.moi'
 import { Route as ThuChiIndexRouteImport } from './routes/thu-chi.index'
 import { Route as TinDangIndexRouteImport } from './routes/tin-dang.index'
 import { Route as TinDangSlugRouteImport } from './routes/tin-dang.$slug'
+import { Route as YeuCauIndexRouteImport } from './routes/yeu-cau.index'
 import { Route as TaiSanIdSuaRouteImport } from './routes/tai-san.$id_.sua'
 
 const IndexRoute = IndexRouteImport.update({
@@ -89,6 +90,11 @@ const BanDoIndexRoute = BanDoIndexRouteImport.update({
   path: '/ban-do/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DaLuuIndexRoute = DaLuuIndexRouteImport.update({
+  id: '/da-luu/',
+  path: '/da-luu/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DoiTacIndexRoute = DoiTacIndexRouteImport.update({
   id: '/doi-tac/',
   path: '/doi-tac/',
@@ -112,11 +118,6 @@ const HopDongMoiRoute = HopDongMoiRouteImport.update({
 const NhacLichIndexRoute = NhacLichIndexRouteImport.update({
   id: '/nhac-lich/',
   path: '/nhac-lich/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RaoBanIndexRoute = RaoBanIndexRouteImport.update({
-  id: '/rao-ban/',
-  path: '/rao-ban/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TaiSanIndexRoute = TaiSanIndexRouteImport.update({
@@ -149,6 +150,11 @@ const TinDangSlugRoute = TinDangSlugRouteImport.update({
   path: '/tin-dang/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const YeuCauIndexRoute = YeuCauIndexRouteImport.update({
+  id: '/yeu-cau/',
+  path: '/yeu-cau/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TaiSanIdSuaRoute = TaiSanIdSuaRouteImport.update({
   id: '/tai-san/$id_/sua',
   path: '/tai-san/$id/sua',
@@ -172,13 +178,14 @@ export interface FileRoutesByFullPath {
   '/tai-san/moi': typeof TaiSanMoiRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/ban-do/': typeof BanDoIndexRoute
+  '/da-luu/': typeof DaLuuIndexRoute
   '/doi-tac/': typeof DoiTacIndexRoute
   '/hop-dong/': typeof HopDongIndexRoute
   '/nhac-lich/': typeof NhacLichIndexRoute
-  '/rao-ban/': typeof RaoBanIndexRoute
   '/tai-san/': typeof TaiSanIndexRoute
   '/thu-chi/': typeof ThuChiIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
+  '/yeu-cau/': typeof YeuCauIndexRoute
   '/tai-san/$id/sua': typeof TaiSanIdSuaRoute
 }
 export interface FileRoutesByTo {
@@ -198,13 +205,14 @@ export interface FileRoutesByTo {
   '/tai-san/moi': typeof TaiSanMoiRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/ban-do': typeof BanDoIndexRoute
+  '/da-luu': typeof DaLuuIndexRoute
   '/doi-tac': typeof DoiTacIndexRoute
   '/hop-dong': typeof HopDongIndexRoute
   '/nhac-lich': typeof NhacLichIndexRoute
-  '/rao-ban': typeof RaoBanIndexRoute
   '/tai-san': typeof TaiSanIndexRoute
   '/thu-chi': typeof ThuChiIndexRoute
   '/tin-dang': typeof TinDangIndexRoute
+  '/yeu-cau': typeof YeuCauIndexRoute
   '/tai-san/$id/sua': typeof TaiSanIdSuaRoute
 }
 export interface FileRoutesById {
@@ -225,13 +233,14 @@ export interface FileRoutesById {
   '/tai-san/moi': typeof TaiSanMoiRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/ban-do/': typeof BanDoIndexRoute
+  '/da-luu/': typeof DaLuuIndexRoute
   '/doi-tac/': typeof DoiTacIndexRoute
   '/hop-dong/': typeof HopDongIndexRoute
   '/nhac-lich/': typeof NhacLichIndexRoute
-  '/rao-ban/': typeof RaoBanIndexRoute
   '/tai-san/': typeof TaiSanIndexRoute
   '/thu-chi/': typeof ThuChiIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
+  '/yeu-cau/': typeof YeuCauIndexRoute
   '/tai-san/$id_/sua': typeof TaiSanIdSuaRoute
 }
 export interface FileRouteTypes {
@@ -253,13 +262,14 @@ export interface FileRouteTypes {
     | '/tai-san/moi'
     | '/tin-dang/$slug'
     | '/ban-do/'
+    | '/da-luu/'
     | '/doi-tac/'
     | '/hop-dong/'
     | '/nhac-lich/'
-    | '/rao-ban/'
     | '/tai-san/'
     | '/thu-chi/'
     | '/tin-dang/'
+    | '/yeu-cau/'
     | '/tai-san/$id/sua'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -279,13 +289,14 @@ export interface FileRouteTypes {
     | '/tai-san/moi'
     | '/tin-dang/$slug'
     | '/ban-do'
+    | '/da-luu'
     | '/doi-tac'
     | '/hop-dong'
     | '/nhac-lich'
-    | '/rao-ban'
     | '/tai-san'
     | '/thu-chi'
     | '/tin-dang'
+    | '/yeu-cau'
     | '/tai-san/$id/sua'
   id:
     | '__root__'
@@ -305,13 +316,14 @@ export interface FileRouteTypes {
     | '/tai-san/moi'
     | '/tin-dang/$slug'
     | '/ban-do/'
+    | '/da-luu/'
     | '/doi-tac/'
     | '/hop-dong/'
     | '/nhac-lich/'
-    | '/rao-ban/'
     | '/tai-san/'
     | '/thu-chi/'
     | '/tin-dang/'
+    | '/yeu-cau/'
     | '/tai-san/$id_/sua'
   fileRoutesById: FileRoutesById
 }
@@ -332,13 +344,14 @@ export interface RootRouteChildren {
   TaiSanMoiRoute: typeof TaiSanMoiRoute
   TinDangSlugRoute: typeof TinDangSlugRoute
   BanDoIndexRoute: typeof BanDoIndexRoute
+  DaLuuIndexRoute: typeof DaLuuIndexRoute
   DoiTacIndexRoute: typeof DoiTacIndexRoute
   HopDongIndexRoute: typeof HopDongIndexRoute
   NhacLichIndexRoute: typeof NhacLichIndexRoute
-  RaoBanIndexRoute: typeof RaoBanIndexRoute
   TaiSanIndexRoute: typeof TaiSanIndexRoute
   ThuChiIndexRoute: typeof ThuChiIndexRoute
   TinDangIndexRoute: typeof TinDangIndexRoute
+  YeuCauIndexRoute: typeof YeuCauIndexRoute
   TaiSanIdSuaRoute: typeof TaiSanIdSuaRoute
 }
 
@@ -421,6 +434,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BanDoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/da-luu/': {
+      id: '/da-luu/'
+      path: '/da-luu'
+      fullPath: '/da-luu/'
+      preLoaderRoute: typeof DaLuuIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/doi-tac/': {
       id: '/doi-tac/'
       path: '/doi-tac'
@@ -454,13 +474,6 @@ declare module '@tanstack/react-router' {
       path: '/nhac-lich'
       fullPath: '/nhac-lich/'
       preLoaderRoute: typeof NhacLichIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/rao-ban/': {
-      id: '/rao-ban/'
-      path: '/rao-ban'
-      fullPath: '/rao-ban/'
-      preLoaderRoute: typeof RaoBanIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tai-san/': {
@@ -505,6 +518,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TinDangSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/yeu-cau/': {
+      id: '/yeu-cau/'
+      path: '/yeu-cau'
+      fullPath: '/yeu-cau/'
+      preLoaderRoute: typeof YeuCauIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tai-san/$id_/sua': {
       id: '/tai-san/$id_/sua'
       path: '/tai-san/$id/sua'
@@ -532,13 +552,14 @@ const rootRouteChildren: RootRouteChildren = {
   TaiSanMoiRoute: TaiSanMoiRoute,
   TinDangSlugRoute: TinDangSlugRoute,
   BanDoIndexRoute: BanDoIndexRoute,
+  DaLuuIndexRoute: DaLuuIndexRoute,
   DoiTacIndexRoute: DoiTacIndexRoute,
   HopDongIndexRoute: HopDongIndexRoute,
   NhacLichIndexRoute: NhacLichIndexRoute,
-  RaoBanIndexRoute: RaoBanIndexRoute,
   TaiSanIndexRoute: TaiSanIndexRoute,
   ThuChiIndexRoute: ThuChiIndexRoute,
   TinDangIndexRoute: TinDangIndexRoute,
+  YeuCauIndexRoute: YeuCauIndexRoute,
   TaiSanIdSuaRoute: TaiSanIdSuaRoute,
 }
 export const routeTree = rootRouteImport

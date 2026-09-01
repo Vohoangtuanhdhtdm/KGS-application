@@ -10,7 +10,6 @@
 
         public enum AssetStatus { InUse = 1, RentedOut = 2, ForSale = 3, Vacant = 4, Sold = 5, LeaseEnded = 6 }
 
-        public enum OccupantType { Self = 1, Family = 2, Acquaintance = 3, Tenant = 4 } // đang sử dụng: bản thân/con cái/người quen
 
         public enum UnitStatus { Vacant = 1, Occupied = 2, UnderMaintenance = 3 }
 
@@ -79,7 +78,11 @@
 
         public enum ContactType { Tenant = 1, Landlord = 2, Broker = 3, Vendor = 4, Other = 99 }
 
-        public enum SaleListingStatus { Active = 1, Paused = 2, Sold = 3, Cancelled = 4 }
+        // Vòng đời một yêu cầu xem nhà gửi từ marketplace.
+        // Converted = đã sinh ContactParty, sẵn sàng ký hợp đồng — đây là trạng thái
+        // duy nhất chứng minh hệ thống kết nối thành công chủ nhà với người thuê.
+        public enum InquiryStatus { New = 1, Contacted = 2, Viewed = 3, Converted = 4, Closed = 5 }
+
 
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)

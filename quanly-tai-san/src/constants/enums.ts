@@ -175,36 +175,6 @@ export const EQUIPMENT_SOURCE = {
 } as const;
 export type EquipmentSourceCode = keyof typeof EQUIPMENT_SOURCE;
 
-export const OCCUPANT_TYPE = {
-  1: "Bản thân",
-  2: "Con cái/người thân",
-  3: "Người quen",
-  4: "Người thuê",
-} as const;
-export type OccupantTypeCode = keyof typeof OCCUPANT_TYPE;
-
-export const OCCUPANT_TYPE_CLASS: Record<OccupantTypeCode, string> = {
-  1: "bg-primary/10 text-primary border-primary/30",
-  2: "bg-info/15 text-info border-info/30",
-  3: "bg-secondary text-secondary-foreground border-border",
-  4: "bg-success/15 text-success border-success/30",
-};
-
-export const SALE_LISTING_STATUS = {
-  1: "Đang rao",
-  2: "Tạm dừng",
-  3: "Đã bán",
-  4: "Đã huỷ",
-} as const;
-export type SaleListingStatusCode = keyof typeof SALE_LISTING_STATUS;
-
-export const SALE_LISTING_STATUS_CLASS: Record<SaleListingStatusCode, string> = {
-  1: "bg-success/15 text-success border-success/30",
-  2: "bg-warning/20 text-warning-foreground border-warning/40",
-  3: "bg-info/15 text-info border-info/30",
-  4: "bg-muted text-muted-foreground border-border",
-};
-
 export const DOCUMENT_TYPE = {
   1: "Sổ đỏ/sổ hồng",
   2: "HĐ mua bán",

@@ -17,13 +17,17 @@ namespace kgs_api.Services
     {
         private readonly IRepository<Reminder> _reminders;
         private readonly IRepository<Asset> _assets;
+        private readonly IRepository<LeaseContract> _contracts;
+        private readonly IRepository<CashFlowEntry> _entries;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
 
         public ReminderService(IRepository<Reminder> reminders, IRepository<Asset> assets,
+            IRepository<LeaseContract> contracts, IRepository<CashFlowEntry> entries,
             IUnitOfWork uow, ICurrentUserService currentUser)
         {
-            _reminders = reminders; _assets = assets; _uow = uow; _currentUser = currentUser;
+            _reminders = reminders; _assets = assets; _contracts = contracts;
+            _entries = entries; _uow = uow; _currentUser = currentUser;
         }
 
         public async Task<ReminderDto> CreateAsync(ReminderCreateRequest request, CancellationToken ct = default)
@@ -106,6 +110,88 @@ namespace kgs_api.Services
             return new PagedResult<ReminderDto>(items, page, pageSize, total);
         }
 
+        // ==================== D2. XÁC NHẬN ĐÃ THU / ĐÃ TRẢ ====================
+
+        public async Task<CashFlowDto> SettleAsync(Guid reminderId, SettleReminderRequest request, CancellationToken ct = default)
+        {
+            var reminder = await GetOwnedAsync(reminderId, ct);
+
+            if (reminder.Type is not (ReminderType.RentCollection or ReminderType.RentPayment))
+                throw new ValidationFailedException(
+                    "Chỉ nhắc lịch thu/trả tiền thuê mới ghi được bút toán tự động.");
+
+            if (reminder.LeaseContractId is null)
+                throw new ValidationFailedException(
+                    "Nhắc lịch này không gắn với hợp đồng nào nên không suy ra được số tiền.");
+
+            var contract = await _contracts.Query().AsNoTracking()
+                .Where(c => c.Id == reminder.LeaseContractId.Value)
+                .Select(c => new { c.Id, c.AssetId, c.AssetUnitId, c.Direction, c.RentAmount, c.PaymentCycle, AssetName = c.Asset.Name })
+                .FirstOrDefaultAsync(ct)
+                ?? throw new NotFoundException("Không tìm thấy hợp đồng của nhắc lịch này.");
+
+            // Kỳ mà khoản tiền này chi trả — lấy từ DueDate hiện tại của nhắc lịch.
+            var periodStart = reminder.DueDate;
+            var periodEnd = AdvanceByCycle(periodStart, contract.PaymentCycle);
+
+            // Chống ghi trùng: bấm hai lần, hoặc hai tab cùng mở, không được tạo hai
+            // bút toán cho cùng một kỳ của cùng một hợp đồng.
+            var already = await _entries.Query().AnyAsync(e =>
+                e.LeaseContractId == contract.Id && e.PeriodStart == periodStart, ct);
+            if (already)
+                throw new ConflictException(
+                    $"Kỳ {periodStart:MM/yyyy} của hợp đồng này đã được ghi nhận rồi.");
+
+            var isCollection = contract.Direction == ContractDirection.LeaseOut;
+
+            var entry = new CashFlowEntry
+            {
+                UserId = _currentUser.UserId,
+                AssetId = contract.AssetId,
+                AssetUnitId = contract.AssetUnitId,
+                LeaseContractId = contract.Id,
+                Direction = isCollection ? CashFlowDirection.Income : CashFlowDirection.Expense,
+                Category = isCollection ? CashFlowCategory.RentIncome : CashFlowCategory.RentExpense,
+                Amount = request.Amount ?? contract.RentAmount,
+                OccurredAt = request.OccurredAt is null
+                    ? DateTime.UtcNow
+                    : DateTime.SpecifyKind(request.OccurredAt.Value, DateTimeKind.Utc),
+                PeriodStart = periodStart,
+                PeriodEnd = periodEnd,
+                Description = isCollection
+                    ? $"Thu tiền thuê kỳ {periodStart:MM/yyyy} — {contract.AssetName}"
+                    : $"Trả tiền thuê chủ nhà kỳ {periodStart:MM/yyyy} — {contract.AssetName}"
+            };
+
+            if (entry.Amount <= 0)
+                throw new ValidationFailedException("Số tiền phải lớn hơn 0.");
+
+            await _entries.AddAsync(entry, ct);
+
+            // Đẩy nhắc lịch sang kỳ kế tiếp. Nhắc lịch một lần (Cycle = None) thì tắt hẳn.
+            if (reminder.Cycle == RecurrenceCycle.None)
+                reminder.IsActive = false;
+            else
+                reminder.DueDate = periodEnd;
+
+            // Một SaveChanges: bút toán + trạng thái nhắc lịch trong cùng transaction —
+            // không thể xảy ra cảnh ghi tiền xong mà nhắc lịch vẫn đứng ở kỳ cũ.
+            await _uow.SaveChangesAsync(ct);
+
+            return new CashFlowDto(entry.Id, entry.AssetId, contract.AssetName, entry.AssetUnitId,
+                entry.LeaseContractId, entry.Direction, entry.Category, entry.Amount, entry.OccurredAt,
+                entry.PeriodStart, entry.PeriodEnd, entry.Description, null);
+        }
+
+        private static DateTime AdvanceByCycle(DateTime from, PaymentCycle cycle) => cycle switch
+        {
+            PaymentCycle.Monthly => from.AddMonths(1),
+            PaymentCycle.Quarterly => from.AddMonths(3),
+            PaymentCycle.SemiAnnually => from.AddMonths(6),
+            PaymentCycle.Annually => from.AddYears(1),
+            _ => from.AddMonths(1)
+        };
+
         private async Task<Reminder> GetOwnedAsync(Guid id, CancellationToken ct)
             => await _reminders.Query()
                    .FirstOrDefaultAsync(r => r.Id == id && r.UserId == _currentUser.UserId, ct)
@@ -121,18 +207,6 @@ namespace kgs_api.Services
     }
 
     
-
-    public sealed class LoggingNotificationSender : INotificationSender
-    {
-        private readonly ILogger<LoggingNotificationSender> _logger;
-        public LoggingNotificationSender(ILogger<LoggingNotificationSender> logger) => _logger = logger;
-
-        public Task SendAsync(string userId, string title, string body, CancellationToken ct = default)
-        {
-            _logger.LogInformation("[NOTIFY→{UserId}] {Title}: {Body}", userId, title, body);
-            return Task.CompletedTask;
-        }
-    }
 
     public sealed class ReminderProcessingJob
     {

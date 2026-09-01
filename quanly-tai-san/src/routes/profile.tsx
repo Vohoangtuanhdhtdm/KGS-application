@@ -10,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Hồ sơ cá nhân — Quản Lý Tài Sản" }] }),
@@ -185,7 +183,6 @@ function ProfilePage() {
         </CardContent>
       </Card>
 
-      <NotificationSection />
 
       <Card>
         <CardHeader>
@@ -206,47 +203,5 @@ function ProfilePage() {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function NotificationSection() {
-  const { isSupported, isSubscribed, permissionDenied, busy, subscribe, unsubscribe } =
-    usePushNotifications();
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Thông báo</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {!isSupported ? (
-          <p className="text-sm text-muted-foreground">
-            Trình duyệt của bạn không hỗ trợ thông báo đẩy.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">Nhận thông báo đẩy trên trình duyệt này</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Nhắc lịch đến hạn sẽ hiện thông báo kể cả khi tab đang đóng.
-                </p>
-              </div>
-              <Switch
-                checked={isSubscribed}
-                disabled={busy || (permissionDenied && !isSubscribed)}
-                onCheckedChange={(v) => (v ? subscribe() : unsubscribe())}
-              />
-            </div>
-            {permissionDenied && !isSubscribed && (
-              <p className="text-xs text-warning-foreground bg-warning/10 border border-warning/40 rounded-md px-3 py-2">
-                Bạn đã chặn thông báo cho trang này — vào cài đặt trình duyệt (biểu tượng ổ khoá
-                cạnh thanh địa chỉ) để bật lại quyền thông báo.
-              </p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }

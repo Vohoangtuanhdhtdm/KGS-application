@@ -104,16 +104,15 @@ namespace kgs_api.Services
     {
         private readonly IRepository<ContactParty> _contacts;
         private readonly IRepository<LeaseContract> _contracts;
-        private readonly IRepository<SaleListingBroker> _listingBrokers;
         private readonly IRepository<MaintenanceRecord> _maintenance;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
 
         public ContactPartyService(IRepository<ContactParty> contacts, IRepository<LeaseContract> leaseContracts,
-            IRepository<SaleListingBroker> listingBrokers, IRepository<MaintenanceRecord> maintenance,
+            IRepository<MaintenanceRecord> maintenance,
             IUnitOfWork uow, ICurrentUserService currentUser)
         {
-            _contacts = contacts; _contracts = leaseContracts; _listingBrokers = listingBrokers;
+            _contacts = contacts; _contracts = leaseContracts;
             _maintenance = maintenance; _uow = uow; _currentUser = currentUser;
         }
 
@@ -157,10 +156,9 @@ namespace kgs_api.Services
             // FK là Restrict — kiểm tra trước để trả lỗi nghiệp vụ rõ ràng thay vì lỗi DB
             var referenced =
                 await _contracts.Query().AnyAsync(c => c.CounterpartyId == contactId, ct)
-                || await _listingBrokers.Query().AnyAsync(b => b.BrokerId == contactId, ct)
                 || await _maintenance.Query().AnyAsync(m => m.VendorId == contactId, ct);
             if (referenced)
-                throw new ConflictException("Đối tác đang được tham chiếu bởi hợp đồng / rao bán / sửa chữa — không thể xoá.");
+                throw new ConflictException("Đối tác đang được tham chiếu bởi hợp đồng / sửa chữa — không thể xoá.");
 
             _contacts.Remove(contact);
             await _uow.SaveChangesAsync(ct);
@@ -413,97 +411,4 @@ namespace kgs_api.Services
         private static EquipmentDto ToDto(Equipment e)
             => new(e.Id, e.AssetUnitId, e.Name, e.Quantity, e.Condition, e.Source, e.Notes);
     }
-
-    public sealed class UsagePeriodService : IUsagePeriodService
-    {
-        private readonly IRepository<Asset> _assets;
-        private readonly IRepository<UsagePeriod> _periods;
-        private readonly IUnitOfWork _uow;
-        private readonly ICurrentUserService _currentUser;
-
-        public UsagePeriodService(IRepository<Asset> assets, IRepository<UsagePeriod> periods,
-            IUnitOfWork uow, ICurrentUserService currentUser)
-        {
-            _assets = assets; _periods = periods; _uow = uow; _currentUser = currentUser;
-        }
-
-        public async Task<UsagePeriodDto> CreateAsync(Guid assetId, UsagePeriodRequest request, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-            ValidateDates(request);
-
-            var period = new UsagePeriod
-            {
-                AssetId = assetId,
-                OccupantType = request.OccupantType,
-                OccupantName = request.OccupantName?.Trim(),
-                StartDate = Utc(request.StartDate),
-                EndDate = UtcNullable(request.EndDate),
-                Notes = request.Notes
-            };
-
-            await _periods.AddAsync(period, ct);
-            await _uow.SaveChangesAsync(ct);
-            return ToDto(period);
-        }
-
-        public async Task<UsagePeriodDto> UpdateAsync(Guid assetId, Guid periodId, UsagePeriodRequest request, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-            ValidateDates(request);
-            var period = await GetAsync(assetId, periodId, ct);
-
-            period.OccupantType = request.OccupantType;
-            period.OccupantName = request.OccupantName?.Trim();
-            period.StartDate = Utc(request.StartDate);
-            period.EndDate = UtcNullable(request.EndDate);
-            period.Notes = request.Notes;
-
-            await _uow.SaveChangesAsync(ct);
-            return ToDto(period);
-        }
-
-        public async Task DeleteAsync(Guid assetId, Guid periodId, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-            var period = await GetAsync(assetId, periodId, ct);
-
-            _periods.Remove(period);
-            await _uow.SaveChangesAsync(ct);
-        }
-
-        public async Task<IReadOnlyList<UsagePeriodDto>> GetByAssetAsync(Guid assetId, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-
-            return await _periods.Query().AsNoTracking()
-                .Where(p => p.AssetId == assetId)
-                .OrderByDescending(p => p.StartDate)
-                .Select(p => new UsagePeriodDto(p.Id, p.OccupantType, p.OccupantName, p.StartDate, p.EndDate, p.Notes))
-                .ToListAsync(ct);
-        }
-
-        private static void ValidateDates(UsagePeriodRequest request)
-        {
-            if (request.EndDate is not null && request.EndDate <= request.StartDate)
-                throw new ValidationFailedException("Ngày kết thúc phải sau ngày bắt đầu.");
-        }
-
-        private async Task EnsureOwnedAssetAsync(Guid assetId, CancellationToken ct)
-        {
-            var owns = await _assets.Query().AnyAsync(a => a.Id == assetId && a.UserId == _currentUser.UserId, ct);
-            if (!owns) throw new NotFoundException("Không tìm thấy tài sản.");
-        }
-
-        private async Task<UsagePeriod> GetAsync(Guid assetId, Guid periodId, CancellationToken ct)
-            => await _periods.Query().FirstOrDefaultAsync(p => p.Id == periodId && p.AssetId == assetId, ct)
-               ?? throw new NotFoundException("Không tìm thấy giai đoạn sử dụng.");
-
-        private static UsagePeriodDto ToDto(UsagePeriod p)
-            => new(p.Id, p.OccupantType, p.OccupantName, p.StartDate, p.EndDate, p.Notes);
-
-        private static DateTime Utc(DateTime d) => DateTime.SpecifyKind(d, DateTimeKind.Utc);
-        private static DateTime? UtcNullable(DateTime? d) => d is null ? null : Utc(d.Value);
-    }
-
 }
