@@ -63,8 +63,8 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
           ) : rows.length === 0 ? (
             <div className="py-14 text-center text-sm text-muted-foreground">
               <Megaphone className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
-              Bạn chưa đăng tin nào lên marketplace. Vào chi tiết một tài sản → tab Rao bán để đăng
-              tin công khai.
+              Bạn chưa đăng tin nào lên marketplace. Vào chi tiết một tài sản → tab Tin đăng để
+              đăng tin công khai.
             </div>
           ) : (
             <TooltipProvider>

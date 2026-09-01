@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { propertiesApi, formatListingPrice } from "@/lib/api/properties";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -12,7 +12,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, MapPin, Phone, Copy, ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Phone,
+  Copy,
+  ImageIcon,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Send,
+} from "lucide-react";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { inquiriesApi, savedListingsApi } from "@/lib/api/engagement";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/tin-dang/$slug")({
   head: () => ({ meta: [{ title: "Chi tiết tin đăng — Marketplace" }] }),
@@ -167,7 +183,9 @@ function PublicListingDetailPage() {
 
           {/* Card liên hệ — sticky bên phải desktop */}
           <div className="hidden lg:block sticky top-20">
-            <ContactCard ownerName={p.ownerName} ownerPhone={p.ownerPhone} onCopy={copyPhone} />
+            <ContactCard ownerName={p.ownerName} ownerPhone={p.ownerPhone} onCopy={copyPhone}>
+              <EngagementActions propertyId={Number(p.id)} slug={p.slug} />
+            </ContactCard>
           </div>
         </div>
       </div>
@@ -198,10 +216,12 @@ function ContactCard({
   ownerName,
   ownerPhone,
   onCopy,
+  children,
 }: {
   ownerName: string;
   ownerPhone: string;
   onCopy: () => void;
+  children?: React.ReactNode;
 }) {
   return (
     <Card>
@@ -220,8 +240,120 @@ function ContactCard({
           <Copy className="h-4 w-4 mr-2" />
           Sao chép số điện thoại
         </Button>
+        {children}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Hai hành động của phía CẦU: lưu tin để xem lại, và gửi yêu cầu xem nhà.
+ * Đây là chỗ marketplace nối vào nghiệp vụ — yêu cầu gửi từ đây sẽ xuất hiện trong
+ * hộp thư của chủ nhà, nơi họ chuyển thành đối tác rồi ký hợp đồng.
+ */
+function EngagementActions({ propertyId, slug }: { propertyId: number; slug: string }) {
+  const { isAuthenticated } = useAuth();
+  const qc = useQueryClient();
+  const [saved, setSaved] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [viewingAt, setViewingAt] = useState("");
+
+  const save = useMutation({
+    mutationFn: () => (saved ? savedListingsApi.unsave(propertyId) : savedListingsApi.save(propertyId)),
+    onSuccess: () => {
+      setSaved((v) => !v);
+      qc.invalidateQueries({ queryKey: ["saved-listings"] });
+      toast.success(saved ? "Đã bỏ lưu tin" : "Đã lưu tin");
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không lưu được tin")),
+  });
+
+  const ask = useMutation({
+    mutationFn: () =>
+      inquiriesApi.create(slug, {
+        message: message.trim() || null,
+        preferredViewingAt: viewingAt ? new Date(viewingAt).toISOString() : null,
+      }),
+    onSuccess: () => {
+      setAskOpen(false);
+      setMessage("");
+      setViewingAt("");
+      qc.invalidateQueries({ queryKey: ["inquiries", "sent"] });
+      toast.success("Đã gửi yêu cầu", {
+        description: "Chủ nhà sẽ thấy yêu cầu của bạn trong hộp thư.",
+      });
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không gửi được yêu cầu")),
+  });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="pt-1 text-center text-xs text-muted-foreground">
+        <Link to="/login" className="text-primary hover:underline">
+          Đăng nhập
+        </Link>{" "}
+        để lưu tin và gửi yêu cầu xem nhà.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <Button variant="outline" disabled={save.isPending} onClick={() => save.mutate()}>
+          <Heart className={`h-4 w-4 mr-1.5 ${saved ? "fill-current text-primary" : ""}`} />
+          {saved ? "Đã lưu" : "Lưu tin"}
+        </Button>
+        <Button variant="secondary" onClick={() => setAskOpen(true)}>
+          <Send className="h-4 w-4 mr-1.5" />
+          Xem nhà
+        </Button>
+      </div>
+
+      <Dialog open={askOpen} onOpenChange={setAskOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gửi yêu cầu xem nhà</DialogTitle>
+            <DialogDescription>
+              Chủ nhà nhận được yêu cầu kèm tên và số điện thoại trong hồ sơ của bạn.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="inquiry-message">Lời nhắn</Label>
+              <Textarea
+                id="inquiry-message"
+                rows={4}
+                placeholder="Ví dụ: Tôi muốn xem phòng vào cuối tuần, cho hỏi còn trống không ạ?"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                maxLength={1000}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inquiry-time">Thời gian muốn xem (không bắt buộc)</Label>
+              <Input
+                id="inquiry-time"
+                type="datetime-local"
+                value={viewingAt}
+                onChange={(e) => setViewingAt(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAskOpen(false)}>
+              Huỷ
+            </Button>
+            <Button disabled={ask.isPending} onClick={() => ask.mutate()}>
+              {ask.isPending ? "Đang gửi..." : "Gửi yêu cầu"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

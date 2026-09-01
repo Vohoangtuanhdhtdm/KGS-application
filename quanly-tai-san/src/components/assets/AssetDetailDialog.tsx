@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AssetMediaTab } from "@/components/media/AssetMediaTab";
 import { EquipmentTab } from "@/components/assets/EquipmentTab";
 import { MaintenanceTab } from "@/components/assets/MaintenanceTab";
+import { MarketplacePublishCard } from "@/components/assets/MarketplacePublishCard";
 import { AssetUnitsTab } from "@/components/units/AssetUnitsTab";
 import { AssetContractsTab } from "@/components/contracts/AssetContractsTab";
 import { AssetDocumentsTab } from "@/components/assets/AssetDocumentsTab";
@@ -147,6 +148,7 @@ export function AssetDetailDialog({ assetId, onClose }: AssetDetailDialogProps) 
                   <TabsTrigger value="media">Ảnh</TabsTrigger>
                   <TabsTrigger value="equipment">Thiết bị</TabsTrigger>
                   <TabsTrigger value="maintenance">Sửa chữa</TabsTrigger>
+                  <TabsTrigger value="listing">Tin đăng</TabsTrigger>
                   <TabsTrigger value="docs">Giấy tờ</TabsTrigger>
                 </TabsList>
 
@@ -182,6 +184,9 @@ export function AssetDetailDialog({ assetId, onClose }: AssetDetailDialogProps) 
                 </TabsContent>
                 <TabsContent value="maintenance" className="pt-3">
                   <MaintenanceTab assetId={assetId} />
+                </TabsContent>
+                <TabsContent value="listing" className="pt-3">
+                  <MarketplacePublishCard assetId={assetId} />
                 </TabsContent>
                 <TabsContent value="docs" className="pt-3">
                   <AssetDocumentsTab assetId={assetId} />

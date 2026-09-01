@@ -50,4 +50,24 @@ export const remindersApi = {
   update: (id: string, body: ReminderUpdateInput) =>
     api<ReminderDto>(`/reminders/${id}`, { method: "PUT", body }),
   remove: (id: string) => api<void>(`/reminders/${id}`, { method: "DELETE" }),
+
+  /** Xác nhận đã thu/đã trả tiền thuê — sinh bút toán và đẩy nhắc lịch sang kỳ sau. */
+  settle: (id: string, body: SettleReminderInput = {}) =>
+    api<SettledCashFlowDto>(`/reminders/${id}/settle`, { method: "POST", body }),
 };
+
+export interface SettleReminderInput {
+  amount?: number | null;
+  occurredAt?: string | null;
+}
+
+export interface SettledCashFlowDto {
+  id: string;
+  assetId: string;
+  assetName: string;
+  amount: number;
+  occurredAt: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  description: string | null;
+}

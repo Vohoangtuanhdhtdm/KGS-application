@@ -4,6 +4,8 @@ import { CashflowPage } from "@/routes/thu-chi.index";
 import { RemindersPage } from "@/routes/nhac-lich.index";
 import { ContactsPage } from "@/routes/doi-tac.index";
 import { MyListingsPage } from "@/routes/my-listings";
+import { InquiriesPage } from "@/routes/yeu-cau.index";
+import { SavedListingsPage } from "@/routes/da-luu.index";
 
 /**
  * Các tính năng phụ mở dạng sheet đè lên bản đồ.
@@ -29,6 +31,8 @@ export const SHEET_ROUTES: SheetRoute[] = [
     path: "/my-listings",
     Component: MyListingsPage,
   },
+  { key: "yeu-cau", title: "Yêu cầu xem nhà", path: "/yeu-cau", Component: InquiriesPage },
+  { key: "da-luu", title: "Tin đã lưu", path: "/da-luu", Component: SavedListingsPage },
 ];
 
 export const SHEET_KEYS = SHEET_ROUTES.map((r) => r.key);

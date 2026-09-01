@@ -34,6 +34,15 @@ export function formatDate(iso: string | Date | null | undefined): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
+export function formatDateTime(iso: string | Date | null | undefined): string {
+  if (!iso) return "—";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  if (isNaN(d.getTime())) return "—";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${formatDate(d)} ${hh}:${mi}`;
+}
+
 export function daysUntil(iso: string | Date): number {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   const diff = d.getTime() - Date.now();

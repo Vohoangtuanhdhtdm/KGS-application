@@ -6,7 +6,7 @@ import { remindersApi, type ReminderDto, type ReminderFilters } from "@/lib/api/
 import { assetsApi } from "@/lib/api/assets";
 import { toIsoUtc } from "@/lib/api/contracts";
 import { getErrorMessage } from "@/lib/api/errors";
-import { formatDate } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import {
   REMINDER_TYPE,
   REMINDER_TYPE_CLASS,
@@ -55,7 +55,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, Bell } from "lucide-react";
+import { Plus, Trash2, Bell, CircleCheck } from "lucide-react";
 
 export const Route = createFileRoute("/nhac-lich/")({
   head: () => ({ meta: [{ title: "Nhắc lịch — Quản Lý Tài Sản" }] }),
@@ -99,6 +99,21 @@ export function RemindersPage({ embedded = false }: { embedded?: boolean } = {})
       qc.invalidateQueries({ queryKey: ["reminders"] });
     },
     onError: (err) => toast.error(getErrorMessage(err, "Không cập nhật được nhắc lịch")),
+  });
+
+  // Một cú click biến nhắc lịch thành bút toán trong sổ cái và đẩy sang kỳ sau —
+  // thay cho việc mở màn hình Thu chi nhập tay mỗi tháng cho mỗi phòng.
+  const settle = useMutation({
+    mutationFn: (r: ReminderDto) => remindersApi.settle(r.id),
+    onSuccess: (entry) => {
+      qc.invalidateQueries({ queryKey: ["reminders"] });
+      qc.invalidateQueries({ queryKey: ["cashflows"] });
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      toast.success("Đã ghi vào sổ thu chi", {
+        description: `${formatCurrency(entry.amount)} — ${entry.description ?? entry.assetName}`,
+      });
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không ghi được bút toán")),
   });
 
   const del = useMutation({
@@ -203,9 +218,23 @@ export function RemindersPage({ embedded = false }: { embedded?: boolean } = {})
                       />
                     </TableCell>
                     <TableCell>
-                      <Button size="icon" variant="ghost" onClick={() => setDeleting(r)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Chỉ nhắc lịch thu/trả tiền thuê gắn hợp đồng mới ghi được bút toán */}
+                        {r.isActive && r.leaseContractId !== null && (r.type === 1 || r.type === 2) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={settle.isPending}
+                            onClick={() => settle.mutate(r)}
+                          >
+                            <CircleCheck className="h-4 w-4 mr-1.5" />
+                            {r.type === 1 ? "Đã thu" : "Đã trả"}
+                          </Button>
+                        )}
+                        <Button size="icon" variant="ghost" onClick={() => setDeleting(r)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
