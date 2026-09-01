@@ -10,7 +10,6 @@
 
         public enum AssetStatus { InUse = 1, RentedOut = 2, ForSale = 3, Vacant = 4, Sold = 5, LeaseEnded = 6 }
 
-        public enum OccupantType { Self = 1, Family = 2, Acquaintance = 3, Tenant = 4 } // đang sử dụng: bản thân/con cái/người quen
 
         public enum UnitStatus { Vacant = 1, Occupied = 2, UnderMaintenance = 3 }
 
@@ -79,7 +78,6 @@
 
         public enum ContactType { Tenant = 1, Landlord = 2, Broker = 3, Vendor = 4, Other = 99 }
 
-        public enum SaleListingStatus { Active = 1, Paused = 2, Sold = 3, Cancelled = 4 }
 
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)

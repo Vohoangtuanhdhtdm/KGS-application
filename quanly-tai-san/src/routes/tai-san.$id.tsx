@@ -39,15 +39,12 @@ import {
 import { AssetMediaTab } from "@/components/media/AssetMediaTab";
 import { EquipmentTab } from "@/components/assets/EquipmentTab";
 import { MaintenanceTab } from "@/components/assets/MaintenanceTab";
-import { UsagePeriodsTab } from "@/components/assets/UsagePeriodsTab";
-import { SaleListingTab } from "@/components/assets/SaleListingTab";
 import { AssetUnitsTab } from "@/components/units/AssetUnitsTab";
 import { AssetContractsTab } from "@/components/contracts/AssetContractsTab";
 import { AssetDocumentsTab } from "@/components/assets/AssetDocumentsTab";
 import { ClientMap } from "@/components/map/ClientMap";
 
 export const Route = createFileRoute("/tai-san/$id")({
-  // ?tab=sale để mở thẳng tab Rao bán (dùng bởi link "Xem chi tiết" ở trang /rao-ban)
   validateSearch: (s: Record<string, unknown>): { tab?: string } =>
     typeof s.tab === "string" ? { tab: s.tab } : {},
   head: () => ({ meta: [{ title: "Chi tiết tài sản — Quản Lý Tài Sản" }] }),
@@ -189,8 +186,6 @@ function AssetDetail() {
           <TabsTrigger value="media">Ảnh</TabsTrigger>
           <TabsTrigger value="equipment">Thiết bị</TabsTrigger>
           <TabsTrigger value="maintenance">Sửa chữa</TabsTrigger>
-          {a.ownershipType === 1 && <TabsTrigger value="usage">Lịch sử sử dụng</TabsTrigger>}
-          {a.ownershipType === 1 && <TabsTrigger value="sale">Rao bán</TabsTrigger>}
           <TabsTrigger value="docs">Giấy tờ</TabsTrigger>
         </TabsList>
 
@@ -225,21 +220,18 @@ function AssetDetail() {
               </CardContent>
             </Card>
           </div>
-          {/* Trạng thái liên kết tin đăng — chỉ đọc; thao tác nằm ở tab Rao bán */}
+          {/* Trạng thái liên kết tin đăng — chỉ đọc; quản lý tin nằm ở trang Tin đăng của tôi */}
           {a.linkedPropertyId !== null && (
             <div className="flex items-center gap-2 text-sm">
               <Link2 className="h-4 w-4 text-muted-foreground" />
               <span>Đã liên kết với tin đăng công khai</span>
-              {a.ownershipType === 1 && (
-                <button
-                  type="button"
-                  className="text-primary hover:underline inline-flex items-center gap-0.5"
-                  onClick={() => setTab("sale")}
-                >
-                  Xem chi tiết
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              )}
+              <Link
+                to="/my-listings"
+                className="text-primary hover:underline inline-flex items-center gap-0.5"
+              >
+                Quản lý tin đăng
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
           )}
           {a.location && (
@@ -284,16 +276,6 @@ function AssetDetail() {
         <TabsContent value="maintenance">
           <MaintenanceTab assetId={id} />
         </TabsContent>
-        {a.ownershipType === 1 && (
-          <TabsContent value="usage">
-            <UsagePeriodsTab assetId={id} />
-          </TabsContent>
-        )}
-        {a.ownershipType === 1 && (
-          <TabsContent value="sale">
-            <SaleListingTab assetId={id} />
-          </TabsContent>
-        )}
         <TabsContent value="docs">
           <AssetDocumentsTab assetId={id} />
         </TabsContent>

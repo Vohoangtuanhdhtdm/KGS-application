@@ -99,8 +99,6 @@ namespace kgs_api.Extensions
             services.AddScoped<IReminderService, ReminderService>();
             services.AddScoped<IEquipmentService, EquipmentService>();
             services.AddScoped<IMaintenanceService, MaintenanceService>();
-            services.AddScoped<IUsagePeriodService, UsagePeriodService>();
-            services.AddScoped<ISaleListingService, SaleListingService>();
             services.AddScoped<INotificationSender, EmailNotificationSender>();
             services.Configure<GoogleAuthSettings>(config.GetSection("GoogleAuth"));
 

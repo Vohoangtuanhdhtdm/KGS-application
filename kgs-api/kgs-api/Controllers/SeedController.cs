@@ -274,18 +274,8 @@ namespace kgs_api.Controllers
                 new AssetDocument { Asset = asset2, LeaseContract = contract2, Type = DocumentType.LeaseContract, Title = "HĐ thuê nguyên căn từ chủ nhà", File = new StoredFile { Url = "https://placeholder.example/hd-thue.pdf", PublicId = "seed/hd-thue", FileName = "hd-thue.pdf", ContentType = "application/pdf" }, IssueDate = now.AddMonths(-8), ExpiryDate = contract2.EndDate }
             }, ct);
 
-            // ---------- 10. LỊCH SỬ SỬ DỤNG + RAO BÁN NỘI BỘ ----------
-            await _db.UsagePeriods.AddRangeAsync(new[]
-            {
-                new UsagePeriod { Asset = asset1, OccupantType = OccupantType.Self, StartDate = now.AddYears(-5), EndDate = now.AddMonths(-11), Notes = "Gia đình ở trước khi cho thuê" },
-                new UsagePeriod { Asset = asset1, OccupantType = OccupantType.Tenant, OccupantName = "Nguyễn Văn An", StartDate = now.AddMonths(-11), EndDate = null }
-            }, ct);
-
-            var saleListing = new SaleListing { Asset = asset3, AskingPrice = 4_500_000_000m, Status = SaleListingStatus.Active, ListedAt = now.AddDays(-15), AgreementNotes = "Thương lượng, hỗ trợ sang tên." };
-            await _db.SaleListings.AddAsync(saleListing, ct);
-            await _db.SaleListingBrokers.AddAsync(new SaleListingBroker { SaleListing = saleListing, Broker = broker, SentAt = now.AddDays(-14), Notes = "Đã gửi thông tin, đang tìm khách." }, ct);
-
-            // Lưu khối trên trước, tách khỏi khối Property bên dưới cho rõ ràng.
+            // ---------- 10. LƯU KHỐI NGHIỆP VỤ ----------
+            // Tách khỏi khối Property bên dưới cho rõ ràng.
             await _db.SaveChangesAsync(ct);
 
             // ================================================================

@@ -16,7 +16,6 @@ export interface MoreItem {
 
 const BASE_ITEMS: MoreItem[] = [
   { label: "Sổ đối tác", icon: Users, sheetKey: "doi-tac", path: "/doi-tac" },
-  { label: "Rao bán", icon: Tag, sheetKey: "rao-ban", path: "/rao-ban" },
   { label: "Tin đăng của tôi", icon: Megaphone, sheetKey: "my-listings", path: "/my-listings" },
   { label: "Marketplace", icon: Globe, path: "/tin-dang", external: true },
 ];

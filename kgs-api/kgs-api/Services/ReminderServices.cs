@@ -122,18 +122,6 @@ namespace kgs_api.Services
 
     
 
-    public sealed class LoggingNotificationSender : INotificationSender
-    {
-        private readonly ILogger<LoggingNotificationSender> _logger;
-        public LoggingNotificationSender(ILogger<LoggingNotificationSender> logger) => _logger = logger;
-
-        public Task SendAsync(string userId, string title, string body, CancellationToken ct = default)
-        {
-            _logger.LogInformation("[NOTIFY→{UserId}] {Title}: {Body}", userId, title, body);
-            return Task.CompletedTask;
-        }
-    }
-
     public sealed class ReminderProcessingJob
     {
         private const int BatchSize = 200;

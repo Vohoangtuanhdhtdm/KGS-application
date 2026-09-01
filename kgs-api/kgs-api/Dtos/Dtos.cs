@@ -305,43 +305,4 @@ namespace kgs_api.Dtos
     public sealed record EquipmentDto(
         Guid Id, Guid? AssetUnitId, string Name, int Quantity,
         EquipmentCondition Condition, EquipmentSource Source, string? Notes);
-
-    // ============================================================
-    // D5. USAGE PERIOD
-    // ============================================================
-    public sealed record UsagePeriodRequest(
-        OccupantType OccupantType,
-        [MaxLength(255)] string? OccupantName,
-        DateTime StartDate,
-        DateTime? EndDate,
-        string? Notes);
-
-    public sealed record UsagePeriodDto(
-        Guid Id, OccupantType OccupantType, string? OccupantName,
-        DateTime StartDate, DateTime? EndDate, string? Notes);
-
-    // ============================================================
-    // D6. SALE LISTING
-    // ============================================================
-    public sealed record SaleListingCreateRequest(
-        [Range(0.01, (double)decimal.MaxValue)] decimal AskingPrice,
-        string? AgreementNotes);
-
-    public sealed record SaleListingUpdateRequest(
-        decimal AskingPrice, SaleListingStatus Status, string? AgreementNotes);
-
-    public sealed record SaleListingBrokerRequest([Required] Guid BrokerId, string? Notes);
-
-    public sealed record SaleListingDto(
-        Guid Id, Guid AssetId, decimal AskingPrice, SaleListingStatus Status,
-        DateTime ListedAt, string? AgreementNotes, IReadOnlyList<SaleListingBrokerDto> Brokers);
-
-    public sealed record MySaleListingDto(
-        Guid Id, Guid AssetId, string AssetName, string AssetCity, string AssetDistrict,
-        string? AssetThumbnailUrl,
-        decimal AskingPrice, SaleListingStatus Status, DateTime ListedAt, string? AgreementNotes,
-        IReadOnlyList<SaleListingBrokerDto> Brokers);
-
-    public sealed record SaleListingBrokerDto(Guid BrokerId, string BrokerName, string? Phone, DateTime SentAt, string? Notes);
-
 }

@@ -24,9 +24,6 @@ namespace kgs_api.Data
         public DbSet<MaintenanceRecord> MaintenanceRecords => Set<MaintenanceRecord>();
         public DbSet<CashFlowEntry> CashFlowEntries => Set<CashFlowEntry>();
         public DbSet<Reminder> Reminders => Set<Reminder>();
-        public DbSet<UsagePeriod> UsagePeriods => Set<UsagePeriod>();
-        public DbSet<SaleListing> SaleListings => Set<SaleListing>();
-        public DbSet<SaleListingBroker> SaleListingBrokers => Set<SaleListingBroker>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

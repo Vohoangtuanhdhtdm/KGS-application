@@ -49,7 +49,5 @@ namespace kgs_api.Domain.Entity
         public ICollection<Equipment> Equipments { get; set; } = new List<Equipment>();
         public ICollection<MaintenanceRecord> MaintenanceRecords { get; set; } = new List<MaintenanceRecord>();
         public ICollection<CashFlowEntry> CashFlows { get; set; } = new List<CashFlowEntry>();
-        public ICollection<UsagePeriod> UsagePeriods { get; set; } = new List<UsagePeriod>();
-        public SaleListing? SaleListing { get; set; }
     }
 }

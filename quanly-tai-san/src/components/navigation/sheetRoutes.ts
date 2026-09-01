@@ -3,7 +3,6 @@ import { ContractListPage } from "@/routes/hop-dong.index";
 import { CashflowPage } from "@/routes/thu-chi.index";
 import { RemindersPage } from "@/routes/nhac-lich.index";
 import { ContactsPage } from "@/routes/doi-tac.index";
-import { SalePage } from "@/routes/rao-ban.index";
 import { MyListingsPage } from "@/routes/my-listings";
 
 /**
@@ -24,7 +23,6 @@ export const SHEET_ROUTES: SheetRoute[] = [
   { key: "thu-chi", title: "Sổ thu chi", path: "/thu-chi", Component: CashflowPage },
   { key: "nhac-lich", title: "Nhắc lịch", path: "/nhac-lich", Component: RemindersPage },
   { key: "doi-tac", title: "Sổ đối tác", path: "/doi-tac", Component: ContactsPage },
-  { key: "rao-ban", title: "Rao bán", path: "/rao-ban", Component: SalePage },
   {
     key: "my-listings",
     title: "Tin đăng của tôi",
