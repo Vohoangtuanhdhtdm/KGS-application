@@ -16,7 +16,11 @@ namespace kgs_api.Migrations
                 name: "Amenities",
                 table: "Listings",
                 type: "text[]",
-                nullable: false);
+                nullable: false,
+                // Bat buoc co default: bang Listings luc nay DA CO du lieu chuyen sang tu
+                // Properties, nen ALTER TABLE ADD COLUMN NOT NULL khong co default se do
+                // voi loi "column contains null values".
+                defaultValueSql: "'{}'");
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "Terms_AvailableFrom",

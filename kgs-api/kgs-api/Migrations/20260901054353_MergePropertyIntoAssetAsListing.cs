@@ -11,78 +11,23 @@ namespace kgs_api.Migrations
     public partial class MergePropertyIntoAssetAsListing : Migration
     {
         /// <inheritdoc />
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Assets_Properties_LinkedPropertyId",
-                table: "Assets");
+            // Migration nay CHUYEN du lieu chu khong vut di. Ban sinh tu dong cua EF pha
+            // bang Properties truoc roi moi tao Listings, nen cac dong ListingInquiries va
+            // SavedListings dang co bi gan ListingId rong va vi pham khoa ngoai ngay khi FK
+            // duoc them vao. Thu tu dung la: dung bang moi -> chuyen du lieu -> go mo hinh cu.
 
-            migrationBuilder.DropForeignKey(
-                name: "FK_ListingInquiries_Properties_PropertyId",
-                table: "ListingInquiries");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_SavedListings_Properties_PropertyId",
-                table: "SavedListings");
-
-            migrationBuilder.DropTable(
-                name: "PropertyImages");
-
-            migrationBuilder.DropTable(
-                name: "Properties");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_SavedListings",
-                table: "SavedListings");
-
-            migrationBuilder.DropIndex(
-                name: "IX_SavedListings_PropertyId",
-                table: "SavedListings");
-
-            migrationBuilder.DropIndex(
-                name: "UX_ListingInquiries_OpenPerUser",
-                table: "ListingInquiries");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Assets_LinkedPropertyId",
-                table: "Assets");
-
-            migrationBuilder.DropColumn(
-                name: "PropertyId",
-                table: "SavedListings");
-
-            migrationBuilder.DropColumn(
-                name: "PropertyId",
-                table: "ListingInquiries");
-
-            migrationBuilder.DropColumn(
-                name: "LinkedPropertyId",
-                table: "Assets");
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "ListingId",
-                table: "SavedListings",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "ListingId",
-                table: "ListingInquiries",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+            // ============================================================
+            // GIAI DOAN 1 - Dung cau truc moi, chua dung gi toi bang cu
+            // ============================================================
 
             migrationBuilder.AddColumn<double>(
                 name: "Frontage",
                 table: "Assets",
                 type: "double precision",
                 nullable: true);
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_SavedListings",
-                table: "SavedListings",
-                columns: new[] { "UserId", "ListingId" });
 
             migrationBuilder.CreateTable(
                 name: "Listings",
@@ -151,6 +96,132 @@ namespace kgs_api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            // ============================================================
+            // GIAI DOAN 2 - Chuyen du lieu sang mo hinh moi
+            // ============================================================
+
+            migrationBuilder.Sql(@"
+-- Bang anh xa tam: moi Property co mot Asset tro ve se tro thanh mot Listing.
+-- Property mo coi (khong Asset nao lien ket) khong chuyen duoc vi Listing.AssetId la
+-- bat buoc - chung bien mat cung bang Properties o Giai doan 3.
+-- DISTINCT ON phong truong hop hiem hai Asset cung tro vao mot Property.
+CREATE TEMP TABLE _property_to_listing AS
+SELECT DISTINCT ON (p.""Id"")
+       p.""Id""  AS old_property_id,
+       a.""Id""  AS asset_id,
+       (md5(random()::text || clock_timestamp()::text))::uuid AS new_listing_id
+FROM ""Properties"" p
+JOIN ""Assets"" a ON a.""LinkedPropertyId"" = p.""Id""
+ORDER BY p.""Id"", a.""Id"";
+
+-- Tin dang. Cac cot mo ta vat ly KHONG chuyen sang: nay doc tu Asset.
+-- PropertyStatus va ListingStatus dung chung dai gia tri 1..4 nen copy thang.
+INSERT INTO ""Listings"" (
+    ""Id"", ""AssetId"", ""AssetUnitId"", ""Title"", ""Description"", ""Price"",
+    ""Type"", ""RentPaymentCycle"", ""Status"", ""Slug"", ""ViewCount"",
+    ""PublishedAt"", ""ModerationNote"", ""CreatedAt"", ""UpdatedAt"", ""CreatedBy"", ""UpdatedBy"")
+SELECT m.new_listing_id, m.asset_id, NULL,
+       p.""Title"", p.""Description"", p.""Price"",
+       p.""Type"", p.""RentPaymentCycle"", p.""Status"", p.""Slug"", p.""ViewCount"",
+       CASE WHEN p.""Status"" = 2 THEN p.""CreatedAt"" END,
+       NULL,
+       p.""CreatedAt"", NULL, p.""UserId"", NULL
+FROM _property_to_listing m
+JOIN ""Properties"" p ON p.""Id"" = m.old_property_id;
+
+-- Anh tin dang giu nguyen khoa chinh de moi tham chieu cu van khop.
+INSERT INTO ""ListingImages"" (
+    ""Id"", ""ListingId"", ""File_Url"", ""File_PublicId"", ""File_FileName"",
+    ""File_ContentType"", ""File_SizeBytes"", ""SortOrder"",
+    ""CreatedAt"", ""UpdatedAt"", ""CreatedBy"", ""UpdatedBy"")
+SELECT pi.""Id"", m.new_listing_id, pi.""File_Url"", pi.""File_PublicId"", pi.""File_FileName"",
+       pi.""File_ContentType"", pi.""File_SizeBytes"", pi.""SortOrder"",
+       pi.""CreatedAt"", pi.""UpdatedAt"", pi.""CreatedBy"", pi.""UpdatedBy""
+FROM ""PropertyImages"" pi
+JOIN _property_to_listing m ON m.old_property_id = pi.""PropertyId"";
+
+-- Mat tien la thuoc tinh vat ly nen chuyen ve Asset.
+UPDATE ""Assets"" a
+SET ""Frontage"" = p.""Frontage""
+FROM ""Properties"" p
+WHERE a.""LinkedPropertyId"" = p.""Id"" AND p.""Frontage"" IS NOT NULL AND p.""Frontage"" <> 0;
+
+-- Tro lai yeu cau xem nha va tin da luu. Them cot dang NULL truoc, anh xa, xoa nhung dong
+-- khong anh xa duoc (chung tro vao Property mo coi sap bi xoa), roi moi siet NOT NULL.
+ALTER TABLE ""ListingInquiries"" ADD COLUMN ""ListingId"" uuid NULL;
+UPDATE ""ListingInquiries"" i
+SET ""ListingId"" = m.new_listing_id
+FROM _property_to_listing m
+WHERE m.old_property_id = i.""PropertyId"";
+DELETE FROM ""ListingInquiries"" WHERE ""ListingId"" IS NULL;
+ALTER TABLE ""ListingInquiries"" ALTER COLUMN ""ListingId"" SET NOT NULL;
+
+ALTER TABLE ""SavedListings"" ADD COLUMN ""ListingId"" uuid NULL;
+UPDATE ""SavedListings"" s
+SET ""ListingId"" = m.new_listing_id
+FROM _property_to_listing m
+WHERE m.old_property_id = s.""PropertyId"";
+DELETE FROM ""SavedListings"" WHERE ""ListingId"" IS NULL;
+ALTER TABLE ""SavedListings"" ALTER COLUMN ""ListingId"" SET NOT NULL;
+
+DROP TABLE _property_to_listing;
+");
+
+            // ============================================================
+            // GIAI DOAN 3 - Go mo hinh cu, nay da khong con ai tham chieu
+            // ============================================================
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Assets_Properties_LinkedPropertyId",
+                table: "Assets");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_ListingInquiries_Properties_PropertyId",
+                table: "ListingInquiries");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_SavedListings_Properties_PropertyId",
+                table: "SavedListings");
+
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_SavedListings",
+                table: "SavedListings");
+
+            migrationBuilder.DropIndex(
+                name: "IX_SavedListings_PropertyId",
+                table: "SavedListings");
+
+            migrationBuilder.DropIndex(
+                name: "UX_ListingInquiries_OpenPerUser",
+                table: "ListingInquiries");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Assets_LinkedPropertyId",
+                table: "Assets");
+
+            migrationBuilder.DropColumn(
+                name: "PropertyId",
+                table: "SavedListings");
+
+            migrationBuilder.DropColumn(
+                name: "PropertyId",
+                table: "ListingInquiries");
+
+            migrationBuilder.DropColumn(
+                name: "LinkedPropertyId",
+                table: "Assets");
+
+            migrationBuilder.DropTable(
+                name: "PropertyImages");
+
+            migrationBuilder.DropTable(
+                name: "Properties");
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_SavedListings",
+                table: "SavedListings",
+                columns: new[] { "UserId", "ListingId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_SavedListings_ListingId",
