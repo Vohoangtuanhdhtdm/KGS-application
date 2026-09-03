@@ -75,6 +75,7 @@ namespace kgs_api.Extensions
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
             services.AddScoped<IListingService, ListingService>();
+            services.AddScoped<IListingRetrievalService, ListingRetrievalService>();
           
 
 

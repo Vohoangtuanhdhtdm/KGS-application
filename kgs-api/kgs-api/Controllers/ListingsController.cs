@@ -14,13 +14,29 @@ namespace kgs_api.Controllers
     public sealed class ListingsController : ControllerBase
     {
         private readonly IListingService _listings;
-        public ListingsController(IListingService listings) => _listings = listings;
+        private readonly IListingRetrievalService _retrieval;
+
+        public ListingsController(IListingService listings, IListingRetrievalService retrieval)
+        {
+            _listings = listings; _retrieval = retrieval;
+        }
 
         [HttpGet("search")]
         [AllowAnonymous]
         public async Task<ActionResult<PagedResult<PublicListingSummaryDto>>> Search(
             [FromQuery] PublicListingSearchQuery query, CancellationToken ct)
             => Ok(await _listings.SearchPublicAsync(query, ct));
+
+        /// <summary>Truy hồi có chọn nhánh. AI Agent gọi endpoint này ở Bước 2-3 sau khi
+        /// Claude đã tách câu hỏi tự nhiên thành điều kiện; bộ đánh giá gọi nó ba lần với
+        /// ba mode khác nhau trên cùng một truy vấn để dựng biểu đồ so sánh.</summary>
+        [HttpGet("retrieve")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IReadOnlyList<RetrievalHit>>> Retrieve(
+            [FromQuery] RetrievalQuery query,
+            [FromQuery] RetrievalMode mode = RetrievalMode.Hybrid,
+            CancellationToken ct = default)
+            => Ok(await _retrieval.SearchAsync(query, mode, ct));
 
         [HttpGet("{slug}")]
         [AllowAnonymous]
