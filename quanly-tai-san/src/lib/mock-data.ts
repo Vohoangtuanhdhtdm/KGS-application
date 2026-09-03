@@ -7,8 +7,6 @@ import type {
   Reminder,
   AssetDocument,
   AssetMedia,
-  Equipment,
-  MaintenanceRecord,
 } from "./types";
 
 const today = new Date();
@@ -579,72 +577,5 @@ export const seedMedia: AssetMedia[] = [
     url: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800",
     caption: "Ngoại thất",
     takenAt: iso(2024, 6, 20),
-  },
-];
-
-export const seedEquipment: Equipment[] = [
-  {
-    id: "e1",
-    assetId: "a1",
-    name: "Máy lạnh 1.5HP",
-    quantity: 4,
-    condition: "Tốt",
-    source: "Tự trang bị",
-  },
-  {
-    id: "e2",
-    assetId: "a1",
-    name: "Máy nước nóng",
-    quantity: 3,
-    condition: "Tốt",
-    source: "Tự trang bị",
-  },
-  {
-    id: "e3",
-    assetId: "a3",
-    name: "Giường ngủ",
-    quantity: 5,
-    condition: "Khá",
-    source: "Nhận từ chủ nhà",
-  },
-  {
-    id: "e4",
-    assetId: "a3",
-    name: "Tủ quần áo",
-    quantity: 5,
-    condition: "Cần sửa",
-    source: "Nhận từ chủ nhà",
-  },
-  { id: "e5", assetId: "a5", name: "Bếp từ", quantity: 1, condition: "Mới", source: "Tự trang bị" },
-];
-
-export const seedMaintenance: MaintenanceRecord[] = [
-  {
-    id: "m1",
-    assetId: "a1",
-    title: "Sơn lại mặt tiền",
-    startDate: iso(today.getFullYear(), Math.max(1, today.getMonth()), 10),
-    endDate: iso(today.getFullYear(), Math.max(1, today.getMonth()), 15),
-    cost: 8500000,
-    contractorId: "c11",
-    description: "Sơn 2 lớp, chống thấm tường ngoài",
-  },
-  {
-    id: "m2",
-    assetId: "a3",
-    title: "Sửa máy nước nóng phòng 202",
-    startDate: inDays(-3),
-    cost: 1200000,
-    contractorId: "c11",
-    description: "Thay bộ đun, đang chờ linh kiện",
-  },
-  {
-    id: "m3",
-    assetId: "a5",
-    title: "Bảo dưỡng vườn + hồ bơi",
-    startDate: iso(today.getFullYear(), Math.max(1, today.getMonth() - 1), 20),
-    endDate: iso(today.getFullYear(), Math.max(1, today.getMonth() - 1), 22),
-    cost: 4500000,
-    contractorId: "c10",
   },
 ];

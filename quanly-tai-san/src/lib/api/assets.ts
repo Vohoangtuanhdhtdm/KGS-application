@@ -4,8 +4,6 @@ import type {
   AssetStatusCode,
   AssetTypeCode,
   DocumentTypeCode,
-  EquipmentConditionCode,
-  EquipmentSourceCode,
   OwnershipTypeCode,
   UnitStatusCode,
 } from "@/constants/enums";
@@ -183,50 +181,6 @@ export interface AssetDocumentUploadInput {
 }
 
 // ---- Nhóm D: Vận hành ----
-export interface EquipmentDto {
-  id: string;
-  assetUnitId: string | null;
-  name: string;
-  quantity: number;
-  condition: EquipmentConditionCode;
-  source: EquipmentSourceCode;
-  notes: string | null;
-}
-
-export interface EquipmentInput {
-  assetUnitId?: string | null;
-  name: string;
-  quantity: number;
-  condition: EquipmentConditionCode;
-  source: EquipmentSourceCode;
-  notes?: string | null;
-}
-
-export interface MaintenanceDto {
-  id: string;
-  assetUnitId: string | null;
-  title: string;
-  description: string | null;
-  startDate: string;
-  completedDate: string | null;
-  cost: number | null;
-  vendorId: string | null;
-  vendorName: string | null;
-  notes: string | null;
-}
-
-export interface MaintenanceInput {
-  assetUnitId?: string | null;
-  title: string;
-  description?: string | null;
-  startDate: string;
-  completedDate?: string | null;
-  cost?: number | null;
-  vendorId?: string | null;
-  notes?: string | null;
-  recordAsExpense: boolean;
-}
-
 // ---- API functions ----
 export const assetsApi = {
   list: (f: AssetListFilters = {}) =>
@@ -297,25 +251,5 @@ export const assetsApi = {
     },
     remove: (assetId: string, documentId: string) =>
       api<void>(`/assets/${assetId}/documents/${documentId}`, { method: "DELETE" }),
-  },
-
-  equipment: {
-    list: (assetId: string) => api<EquipmentDto[]>(`/assets/${assetId}/equipment`),
-    create: (assetId: string, body: EquipmentInput) =>
-      api<EquipmentDto>(`/assets/${assetId}/equipment`, { method: "POST", body }),
-    update: (assetId: string, equipmentId: string, body: EquipmentInput) =>
-      api<EquipmentDto>(`/assets/${assetId}/equipment/${equipmentId}`, { method: "PUT", body }),
-    remove: (assetId: string, equipmentId: string) =>
-      api<void>(`/assets/${assetId}/equipment/${equipmentId}`, { method: "DELETE" }),
-  },
-
-  maintenance: {
-    list: (assetId: string) => api<MaintenanceDto[]>(`/assets/${assetId}/maintenance`),
-    create: (assetId: string, body: MaintenanceInput) =>
-      api<MaintenanceDto>(`/assets/${assetId}/maintenance`, { method: "POST", body }),
-    update: (assetId: string, recordId: string, body: MaintenanceInput) =>
-      api<MaintenanceDto>(`/assets/${assetId}/maintenance/${recordId}`, { method: "PUT", body }),
-    remove: (assetId: string, recordId: string) =>
-      api<void>(`/assets/${assetId}/maintenance/${recordId}`, { method: "DELETE" }),
   },
 };

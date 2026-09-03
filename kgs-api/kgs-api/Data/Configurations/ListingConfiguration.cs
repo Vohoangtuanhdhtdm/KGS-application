@@ -19,6 +19,15 @@ namespace kgs_api.Data.Configurations
             b.Property(l => l.Amenities).HasColumnType("text[]");
             b.HasIndex(l => l.Amenities).HasMethod("gin");
 
+            // Nhánh từ khoá của tìm kiếm lai. f_unaccent là hàm bọc IMMUTABLE quanh
+            // unaccent() — bản gốc không IMMUTABLE nên PostgreSQL từ chối dùng nó trong
+            // generated column. Hàm này được tạo ở migration cùng lượt.
+            b.Property(l => l.SearchVector)
+             .HasComputedColumnSql(
+                 @"to_tsvector('simple', f_unaccent(coalesce(""Title"", '') || ' ' || coalesce(""Description"", '')))",
+                 stored: true);
+            b.HasIndex(l => l.SearchVector).HasMethod("gin");
+
             b.HasOne(l => l.Asset).WithMany(a => a.Listings)
              .HasForeignKey(l => l.AssetId)
              .OnDelete(DeleteBehavior.Cascade);          // xoá tài sản → gỡ tin đăng của nó

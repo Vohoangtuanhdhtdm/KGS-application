@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -14,9 +15,11 @@ using kgs_api.Data;
 namespace kgs_api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260903033744_AddListingSearchVector")]
+    partial class AddListingSearchVector
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -760,6 +763,56 @@ namespace kgs_api.Migrations
                     b.ToTable("ContactParties");
                 });
 
+            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.Equipment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AssetUnitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Condition")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("AssetUnitId");
+
+                    b.ToTable("Equipments", (string)null);
+                });
+
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.LeaseContract", b =>
                 {
                     b.Property<Guid>("Id")
@@ -936,6 +989,64 @@ namespace kgs_api.Migrations
                     b.HasIndex("ToUserId", "CreatedAt");
 
                     b.ToTable("ListingInquiries", (string)null);
+                });
+
+            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.MaintenanceRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AssetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AssetUnitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("Cost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssetId");
+
+                    b.HasIndex("AssetUnitId");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("MaintenanceRecords", (string)null);
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.Reminder", b =>
@@ -1437,6 +1548,24 @@ namespace kgs_api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.Equipment", b =>
+                {
+                    b.HasOne("kgs_api.Domain.Entity.Asset", "Asset")
+                        .WithMany("Equipments")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("kgs_api.Domain.Entity.SubEntity.AssetUnit", "AssetUnit")
+                        .WithMany()
+                        .HasForeignKey("AssetUnitId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Asset");
+
+                    b.Navigation("AssetUnit");
+                });
+
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.LeaseContract", b =>
                 {
                     b.HasOne("kgs_api.Domain.Entity.Asset", "Asset")
@@ -1544,6 +1673,31 @@ namespace kgs_api.Migrations
                     b.Navigation("Listing");
                 });
 
+            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.MaintenanceRecord", b =>
+                {
+                    b.HasOne("kgs_api.Domain.Entity.Asset", "Asset")
+                        .WithMany("MaintenanceRecords")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("kgs_api.Domain.Entity.SubEntity.AssetUnit", "AssetUnit")
+                        .WithMany()
+                        .HasForeignKey("AssetUnitId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("kgs_api.Domain.Entity.SubEntity.ContactParty", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Asset");
+
+                    b.Navigation("AssetUnit");
+
+                    b.Navigation("Vendor");
+                });
+
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.Reminder", b =>
                 {
                     b.HasOne("kgs_api.Domain.Entity.Asset", "Asset")
@@ -1593,7 +1747,11 @@ namespace kgs_api.Migrations
 
                     b.Navigation("Documents");
 
+                    b.Navigation("Equipments");
+
                     b.Navigation("Listings");
+
+                    b.Navigation("MaintenanceRecords");
 
                     b.Navigation("Media");
 

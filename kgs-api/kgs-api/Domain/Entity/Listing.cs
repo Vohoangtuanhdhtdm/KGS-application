@@ -66,6 +66,15 @@ namespace kgs_api.Domain.Entity
         /// <summary>Tiện nghi, map sang text[] của PostgreSQL. Khoá lấy từ AmenityKeys.</summary>
         public List<string> Amenities { get; set; } = new();
 
+        /// <summary>Cột tsvector do PostgreSQL tự sinh từ Title + Description, đã bỏ dấu.
+        ///
+        /// Là NHÁNH TỪ KHOÁ của tìm kiếm lai. Sinh phía CSDL (generated column) thay vì
+        /// tính trong C#: không bao giờ lệch với nội dung, và không cần nhớ cập nhật khi
+        /// sửa tin. Bỏ dấu để người gõ "phong tro quan 7" vẫn ra kết quả.
+        ///
+        /// EF chỉ đọc, không bao giờ ghi cột này.</summary>
+        public NpgsqlTypes.NpgsqlTsVector? SearchVector { get; private set; }
+
         public ICollection<ListingImage> Images { get; set; } = new List<ListingImage>();
     }
 }

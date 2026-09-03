@@ -304,41 +304,6 @@ namespace kgs_api.Dtos
         RecurrenceCycle Cycle, int NotifyDaysBefore, bool IsActive, DateTime? LastNotifiedAt);
 
     // ============================================================
-    // D3. MAINTENANCE
-    // ============================================================
-    public sealed record MaintenanceRequest(
-        Guid? AssetUnitId,
-        [Required, MaxLength(255)] string Title,
-        string? Description,
-        DateTime StartDate,
-        DateTime? CompletedDate,
-        [Range(0, (double)decimal.MaxValue)] decimal? Cost,
-        Guid? VendorId,
-        string? Notes,
-        /// <summary>true → tự ghi một CashFlowEntry (MaintenanceCost) khi có Cost.</summary>
-        bool RecordAsExpense = true);
-
-    public sealed record MaintenanceDto(
-        Guid Id, Guid? AssetUnitId, string Title, string? Description,
-        DateTime StartDate, DateTime? CompletedDate, decimal? Cost,
-        Guid? VendorId, string? VendorName, string? Notes);
-
-    // ============================================================
-    // D4. EQUIPMENT
-    // ============================================================
-    public sealed record EquipmentRequest(
-        Guid? AssetUnitId,
-        [Required, MaxLength(255)] string Name,
-        [Range(1, int.MaxValue)] int Quantity,
-        EquipmentCondition Condition,
-        EquipmentSource Source,
-        string? Notes);
-
-    public sealed record EquipmentDto(
-        Guid Id, Guid? AssetUnitId, string Name, int Quantity,
-        EquipmentCondition Condition, EquipmentSource Source, string? Notes);
-
-    // ============================================================
     // E1. SAVED LISTING — tin đã lưu (phía người đi tìm thuê)
     // ============================================================
     public sealed record SavedListingDto(

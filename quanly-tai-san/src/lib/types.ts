@@ -154,22 +154,3 @@ export interface AssetMedia {
 
 export type EquipmentCondition = "Mới" | "Tốt" | "Khá" | "Cần sửa" | "Hỏng";
 export type EquipmentSource = "Của chủ nhà cung cấp" | "Nhận từ chủ nhà" | "Tự trang bị";
-export interface Equipment {
-  id: string;
-  assetId: string;
-  name: string;
-  quantity: number;
-  condition: EquipmentCondition;
-  source: EquipmentSource;
-}
-
-export interface MaintenanceRecord {
-  id: string;
-  assetId: string;
-  title: string;
-  description?: string;
-  startDate: string;
-  endDate?: string;
-  cost: number;
-  contractorId?: string;
-}

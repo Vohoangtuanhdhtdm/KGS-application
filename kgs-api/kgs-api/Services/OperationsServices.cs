@@ -104,16 +104,14 @@ namespace kgs_api.Services
     {
         private readonly IRepository<ContactParty> _contacts;
         private readonly IRepository<LeaseContract> _contracts;
-        private readonly IRepository<MaintenanceRecord> _maintenance;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
 
         public ContactPartyService(IRepository<ContactParty> contacts, IRepository<LeaseContract> leaseContracts,
-            IRepository<MaintenanceRecord> maintenance,
             IUnitOfWork uow, ICurrentUserService currentUser)
         {
             _contacts = contacts; _contracts = leaseContracts;
-            _maintenance = maintenance; _uow = uow; _currentUser = currentUser;
+            _uow = uow; _currentUser = currentUser;
         }
 
         public async Task<ContactPartyDto> CreateAsync(ContactPartyRequest request, CancellationToken ct = default)
@@ -155,10 +153,9 @@ namespace kgs_api.Services
 
             // FK là Restrict — kiểm tra trước để trả lỗi nghiệp vụ rõ ràng thay vì lỗi DB
             var referenced =
-                await _contracts.Query().AnyAsync(c => c.CounterpartyId == contactId, ct)
-                || await _maintenance.Query().AnyAsync(m => m.VendorId == contactId, ct);
+                await _contracts.Query().AnyAsync(c => c.CounterpartyId == contactId, ct);
             if (referenced)
-                throw new ConflictException("Đối tác đang được tham chiếu bởi hợp đồng / sửa chữa — không thể xoá.");
+                throw new ConflictException("Đối tác đang được tham chiếu bởi hợp đồng — không thể xoá.");
 
             _contacts.Remove(contact);
             await _uow.SaveChangesAsync(ct);
@@ -197,218 +194,5 @@ namespace kgs_api.Services
 
         private static ContactPartyDto ToDto(ContactParty c)
             => new(c.Id, c.Type, c.FullName, c.Phone, c.Email, c.IdNumber, c.Notes);
-    }
-
-    public sealed class MaintenanceService : IMaintenanceService
-    {
-        private readonly IRepository<Asset> _assets;
-        private readonly IRepository<MaintenanceRecord> _records;
-        private readonly IRepository<CashFlowEntry> _cashFlows;
-        private readonly IRepository<ContactParty> _contacts;
-        private readonly IUnitOfWork _uow;
-        private readonly ICurrentUserService _currentUser;
-
-        public MaintenanceService(IRepository<Asset> assets, IRepository<MaintenanceRecord> records,
-            IRepository<CashFlowEntry> cashFlows, IRepository<ContactParty> contacts,
-            IUnitOfWork uow, ICurrentUserService currentUser)
-        {
-            _assets = assets; _records = records; _cashFlows = cashFlows;
-            _contacts = contacts; _uow = uow; _currentUser = currentUser;
-        }
-
-        public async Task<MaintenanceDto> CreateAsync(Guid assetId, MaintenanceRequest request, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-            await ValidateVendorAsync(request.VendorId, ct);
-
-            var record = new MaintenanceRecord
-            {
-                AssetId = assetId,
-                AssetUnitId = request.AssetUnitId,
-                Title = request.Title.Trim(),
-                Description = request.Description,
-                StartDate = Utc(request.StartDate),
-                CompletedDate = UtcNullable(request.CompletedDate),
-                Cost = request.Cost,
-                VendorId = request.VendorId,
-                Notes = request.Notes
-            };
-            await _records.AddAsync(record, ct);
-
-            // Ghi chi phí vào sổ cái CÙNG transaction → báo cáo lợi nhuận tự chính xác
-            if (request.RecordAsExpense && request.Cost is > 0)
-            {
-                await _cashFlows.AddAsync(new CashFlowEntry
-                {
-                    UserId = _currentUser.UserId,
-                    AssetId = assetId,
-                    AssetUnitId = request.AssetUnitId,
-                    Direction = CashFlowDirection.Expense,
-                    Category = CashFlowCategory.MaintenanceCost,
-                    Amount = request.Cost.Value,
-                    OccurredAt = UtcNullable(request.CompletedDate) ?? Utc(request.StartDate),
-                    Description = $"Chi phí sửa chữa: {record.Title}"
-                }, ct);
-            }
-
-            await _uow.SaveChangesAsync(ct);
-            return await ProjectOneAsync(record.Id, ct);
-        }
-
-        public async Task<MaintenanceDto> UpdateAsync(Guid assetId, Guid recordId, MaintenanceRequest request, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-            await ValidateVendorAsync(request.VendorId, ct);
-
-            var record = await _records.Query()
-                .FirstOrDefaultAsync(r => r.Id == recordId && r.AssetId == assetId, ct)
-                ?? throw new NotFoundException("Không tìm thấy lịch sử sửa chữa.");
-
-            record.AssetUnitId = request.AssetUnitId;
-            record.Title = request.Title.Trim();
-            record.Description = request.Description;
-            record.StartDate = Utc(request.StartDate);
-            record.CompletedDate = UtcNullable(request.CompletedDate);
-            record.Cost = request.Cost;
-            record.VendorId = request.VendorId;
-            record.Notes = request.Notes;
-            // Lưu ý: update KHÔNG tự sửa bút toán đã ghi — sổ cái là append-only,
-            // người dùng điều chỉnh bằng bút toán mới (đúng nguyên tắc kế toán).
-
-            await _uow.SaveChangesAsync(ct);
-            return await ProjectOneAsync(recordId, ct);
-        }
-
-        public async Task DeleteAsync(Guid assetId, Guid recordId, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-
-            var record = await _records.Query()
-                .FirstOrDefaultAsync(r => r.Id == recordId && r.AssetId == assetId, ct)
-                ?? throw new NotFoundException("Không tìm thấy lịch sử sửa chữa.");
-
-            _records.Remove(record);
-            await _uow.SaveChangesAsync(ct);
-        }
-
-        public async Task<IReadOnlyList<MaintenanceDto>> GetByAssetAsync(Guid assetId, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-
-            return await Project(_records.Query().AsNoTracking()
-                    .Where(r => r.AssetId == assetId)
-                    .OrderByDescending(r => r.StartDate))
-                .ToListAsync(ct);
-        }
-
-        private async Task EnsureOwnedAssetAsync(Guid assetId, CancellationToken ct)
-        {
-            var owns = await _assets.Query().AnyAsync(a => a.Id == assetId && a.UserId == _currentUser.UserId, ct);
-            if (!owns) throw new NotFoundException("Không tìm thấy tài sản.");
-        }
-
-        private async Task ValidateVendorAsync(Guid? vendorId, CancellationToken ct)
-        {
-            if (vendorId is null) return;
-            var ok = await _contacts.Query()
-                .AnyAsync(c => c.Id == vendorId && c.UserId == _currentUser.UserId, ct);
-            if (!ok) throw new NotFoundException("Không tìm thấy nhà thầu trong sổ đối tác.");
-        }
-
-        private async Task<MaintenanceDto> ProjectOneAsync(Guid id, CancellationToken ct)
-            => await Project(_records.Query().AsNoTracking().Where(r => r.Id == id)).FirstAsync(ct);
-
-        private static IQueryable<MaintenanceDto> Project(IQueryable<MaintenanceRecord> q) =>
-            q.Select(r => new MaintenanceDto(
-                r.Id, r.AssetUnitId, r.Title, r.Description,
-                r.StartDate, r.CompletedDate, r.Cost,
-                r.VendorId, r.Vendor != null ? r.Vendor.FullName : null, r.Notes));
-
-        private static DateTime Utc(DateTime d) => DateTime.SpecifyKind(d, DateTimeKind.Utc);
-        private static DateTime? UtcNullable(DateTime? d) => d is null ? null : Utc(d.Value);
-    }
-
-    public sealed class EquipmentService : IEquipmentService
-    {
-        private readonly IRepository<Asset> _assets;
-        private readonly IRepository<Equipment> _equipments;
-        private readonly IUnitOfWork _uow;
-        private readonly ICurrentUserService _currentUser;
-
-        public EquipmentService(IRepository<Asset> assets, IRepository<Equipment> equipments,
-            IUnitOfWork uow, ICurrentUserService currentUser)
-        {
-            _assets = assets; _equipments = equipments; _uow = uow; _currentUser = currentUser;
-        }
-
-        public async Task<EquipmentDto> CreateAsync(Guid assetId, EquipmentRequest request, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-
-            var equipment = new Equipment
-            {
-                AssetId = assetId,
-                AssetUnitId = request.AssetUnitId,
-                Name = request.Name.Trim(),
-                Quantity = request.Quantity,
-                Condition = request.Condition,
-                Source = request.Source,
-                Notes = request.Notes
-            };
-
-            await _equipments.AddAsync(equipment, ct);
-            await _uow.SaveChangesAsync(ct);
-            return ToDto(equipment);
-        }
-
-        public async Task<EquipmentDto> UpdateAsync(Guid assetId, Guid equipmentId, EquipmentRequest request, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-            var equipment = await GetAsync(assetId, equipmentId, ct);
-
-            equipment.AssetUnitId = request.AssetUnitId;
-            equipment.Name = request.Name.Trim();
-            equipment.Quantity = request.Quantity;
-            equipment.Condition = request.Condition;
-            equipment.Source = request.Source;
-            equipment.Notes = request.Notes;
-
-            await _uow.SaveChangesAsync(ct);
-            return ToDto(equipment);
-        }
-
-        public async Task DeleteAsync(Guid assetId, Guid equipmentId, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-            var equipment = await GetAsync(assetId, equipmentId, ct);
-
-            _equipments.Remove(equipment);
-            await _uow.SaveChangesAsync(ct);
-        }
-
-        public async Task<IReadOnlyList<EquipmentDto>> GetByAssetAsync(Guid assetId, Guid? unitId, CancellationToken ct = default)
-        {
-            await EnsureOwnedAssetAsync(assetId, ct);
-
-            var q = _equipments.Query().AsNoTracking().Where(e => e.AssetId == assetId);
-            if (unitId is not null) q = q.Where(e => e.AssetUnitId == unitId);
-
-            return await q.OrderBy(e => e.Name)
-                .Select(e => new EquipmentDto(e.Id, e.AssetUnitId, e.Name, e.Quantity, e.Condition, e.Source, e.Notes))
-                .ToListAsync(ct);
-        }
-
-        private async Task EnsureOwnedAssetAsync(Guid assetId, CancellationToken ct)
-        {
-            var owns = await _assets.Query().AnyAsync(a => a.Id == assetId && a.UserId == _currentUser.UserId, ct);
-            if (!owns) throw new NotFoundException("Không tìm thấy tài sản.");
-        }
-
-        private async Task<Equipment> GetAsync(Guid assetId, Guid equipmentId, CancellationToken ct)
-            => await _equipments.Query().FirstOrDefaultAsync(e => e.Id == equipmentId && e.AssetId == assetId, ct)
-               ?? throw new NotFoundException("Không tìm thấy thiết bị.");
-
-        private static EquipmentDto ToDto(Equipment e)
-            => new(e.Id, e.AssetUnitId, e.Name, e.Quantity, e.Condition, e.Source, e.Notes);
     }
 }

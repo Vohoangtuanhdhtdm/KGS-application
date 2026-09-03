@@ -246,22 +246,6 @@ namespace kgs_api.Controllers
             };
             await _db.Reminders.AddRangeAsync(reminders, ct);
 
-            // ---------- 7. THIẾT BỊ ----------
-            await _db.Equipments.AddRangeAsync(new[]
-            {
-                new Equipment { Asset = asset1, Name = "Máy lạnh Daikin 1.5HP", Quantity = 3, Condition = EquipmentCondition.Good, Source = EquipmentSource.OwnerProvided },
-                new Equipment { Asset = asset1, Name = "Máy nước nóng Ariston", Quantity = 2, Condition = EquipmentCondition.Fair, Source = EquipmentSource.OwnerProvided },
-                new Equipment { Asset = asset2, AssetUnit = unit1, Name = "Giường + tủ quần áo", Quantity = 1, Condition = EquipmentCondition.Good, Source = EquipmentSource.SelfEquipped },
-                new Equipment { Asset = asset2, Name = "Máy giặt chung Electrolux", Quantity = 1, Condition = EquipmentCondition.NeedRepair, Source = EquipmentSource.FromLandlord }
-            }, ct);
-
-            // ---------- 8. SỬA CHỮA ----------
-            await _db.MaintenanceRecords.AddRangeAsync(new[]
-            {
-                new MaintenanceRecord { Asset = asset2, AssetUnit = unit4, Title = "Sửa thấm trần phòng 202", Description = "Chống thấm lại trần, sơn lại tường", StartDate = now.AddDays(-10), CompletedDate = null, Cost = 8_500_000m, Vendor = vendor },
-                new MaintenanceRecord { Asset = asset1, Title = "Thay bồn nước inox", StartDate = now.AddMonths(-3), CompletedDate = now.AddMonths(-3).AddDays(2), Cost = 12_000_000m, Vendor = vendor }
-            }, ct);
-
             // ---------- 9. GIẤY TỜ ----------
             await _db.AssetDocuments.AddRangeAsync(new[]
             {
@@ -413,8 +397,6 @@ namespace kgs_api.Controllers
                     leaseContracts = 3,
                     cashFlowEntries = cashFlows.Count,
                     reminders = reminders.Count,
-                    equipments = 4,
-                    maintenanceRecords = 2,
                     documents = 3,
                     listings = 4
                 },
