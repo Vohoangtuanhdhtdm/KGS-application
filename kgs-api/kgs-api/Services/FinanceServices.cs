@@ -145,6 +145,8 @@ namespace kgs_api.Services
     {
         private readonly IRepository<CashFlowEntry> _entries;
         private readonly IRepository<Asset> _assets;
+        private readonly IRepository<LeaseContract> _contracts;
+        private readonly IRepository<Listing> _listings;
         private readonly ICurrentUserService _currentUser;
 
         /// <summary>Các loại thuế gộp vào báo cáo thuế theo năm.</summary>
@@ -162,9 +164,15 @@ namespace kgs_api.Services
         private static bool IsDeposit(CashFlowCategory category)
             => category is CashFlowCategory.DepositReceived or CashFlowCategory.DepositPaid;
 
-        public ReportService(IRepository<CashFlowEntry> entries, IRepository<Asset> assets, ICurrentUserService currentUser)
+        public ReportService(
+            IRepository<CashFlowEntry> entries,
+            IRepository<Asset> assets,
+            IRepository<LeaseContract> contracts,
+            IRepository<Listing> listings,
+            ICurrentUserService currentUser)
         {
-            _entries = entries; _assets = assets; _currentUser = currentUser;
+            _entries = entries; _assets = assets; _contracts = contracts;
+            _listings = listings; _currentUser = currentUser;
         }
 
         public async Task<IncomeReportDto> GetIncomeReportAsync(IncomeReportQuery query, CancellationToken ct = default)
@@ -243,6 +251,119 @@ namespace kgs_api.Services
 
             return new ProfitReportDto(query.AssetId, assetName, from, to,
                 totalIncome, totalExpense, totalIncome - totalExpense, income, expense, depositHeld);
+        }
+
+        // ==================== C5. BÀN VẬN HÀNH ====================
+
+        public async Task<OperationsDashboardDto> GetOperationsDashboardAsync(
+            int year, int month, CancellationToken ct = default)
+        {
+            if (year < 2000 || year > DateTime.UtcNow.Year + 1 || month < 1 || month > 12)
+                throw new ValidationFailedException("Tháng hoặc năm không hợp lệ.");
+
+            var userId = _currentUser.UserId;
+            var from = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var to = from.AddMonths(1);
+
+            // ---- Dòng tiền trong kỳ ----
+            var grouped = await _entries.Query().AsNoTracking()
+                .Where(e => e.UserId == userId && e.OccurredAt >= from && e.OccurredAt < to)
+                .GroupBy(e => new { e.Direction, e.Category })
+                .Select(g => new { g.Key.Direction, g.Key.Category, Amount = g.Sum(x => x.Amount) })
+                .ToListAsync(ct);
+
+            decimal Sum(CashFlowCategory c) => grouped.Where(g => g.Category == c).Sum(g => g.Amount);
+
+            var rentIncome = Sum(CashFlowCategory.RentIncome);
+            var rentExpense = Sum(CashFlowCategory.RentExpense);
+
+            // Cọc không phải doanh thu/chi phí — loại khỏi P&L, báo riêng.
+            var income = grouped.Where(g => g.Direction == CashFlowDirection.Income && !IsDeposit(g.Category))
+                                .Sum(g => g.Amount);
+            var expense = grouped.Where(g => g.Direction == CashFlowDirection.Expense && !IsDeposit(g.Category))
+                                 .Sum(g => g.Amount);
+
+            var depositHeld = Sum(CashFlowCategory.DepositReceived) - Sum(CashFlowCategory.DepositPaid);
+
+            // ---- Tình trạng lấp đầy ----
+            // Đếm theo PHÒNG. Tài sản không chia phòng được tính như một "phòng" duy nhất,
+            // nếu không thì nhà phố cho thuê nguyên căn sẽ biến mất khỏi tỉ lệ lấp đầy.
+            var unitRows = await _assets.Query().AsNoTracking()
+                .Where(a => a.UserId == userId && a.Status != AssetStatus.Sold)
+                .SelectMany(a => a.Units.Select(u => new
+                {
+                    a.Id,
+                    AssetName = a.Name,
+                    UnitId = (Guid?)u.Id,
+                    UnitName = u.Name,
+                    u.Area,
+                    u.Status
+                }))
+                .ToListAsync(ct);
+
+            var wholeAssetRows = await _assets.Query().AsNoTracking()
+                .Where(a => a.UserId == userId && a.Status != AssetStatus.Sold && !a.Units.Any())
+                .Select(a => new
+                {
+                    a.Id,
+                    AssetName = a.Name,
+                    UnitId = (Guid?)null,
+                    UnitName = "Nguyên căn",
+                    a.Area,
+                    Status = a.Status == AssetStatus.RentedOut ? UnitStatus.Occupied : UnitStatus.Vacant
+                })
+                .ToListAsync(ct);
+
+            var allSlots = unitRows.Concat(wholeAssetRows).ToList();
+
+            var occupied = allSlots.Count(x => x.Status == UnitStatus.Occupied);
+            var maintenance = allSlots.Count(x => x.Status == UnitStatus.UnderMaintenance);
+            var vacantSlots = allSlots.Where(x => x.Status == UnitStatus.Vacant).ToList();
+
+            // ---- Phòng trống từ bao giờ, và đã có tin đăng chưa ----
+            // "Trống bao lâu" = hết hợp đồng cho thuê gần nhất. Đây là số ngày doanh thu
+            // đang chảy mất, nên hiện ra mới thúc được người dùng hành động.
+            var vacantUnitIds = vacantSlots.Where(x => x.UnitId != null).Select(x => x.UnitId!.Value).ToList();
+            var vacantAssetIds = vacantSlots.Select(x => x.Id).Distinct().ToList();
+
+            var contractEnds = await _contracts.Query().AsNoTracking()
+                .Where(c => c.Direction == ContractDirection.LeaseOut
+                         && c.Asset.UserId == userId
+                         && (c.Status == ContractStatus.Expired || c.Status == ContractStatus.Terminated)
+                         && (c.AssetUnitId == null
+                             ? vacantAssetIds.Contains(c.AssetId)
+                             : vacantUnitIds.Contains(c.AssetUnitId.Value)))
+                .Select(c => new { c.AssetId, c.AssetUnitId, c.EndDate })
+                .ToListAsync(ct);
+
+            var liveListingSlots = await _listings.Query().AsNoTracking()
+                .Where(l => l.Asset.UserId == userId
+                         && (l.Status == ListingStatus.Pending || l.Status == ListingStatus.Approved))
+                .Select(l => new { l.AssetId, l.AssetUnitId })
+                .ToListAsync(ct);
+
+            var vacantUnits = vacantSlots
+                .Select(x =>
+                {
+                    var since = contractEnds
+                        .Where(c => c.AssetUnitId == x.UnitId && c.AssetId == x.Id)
+                        .Select(c => (DateTime?)c.EndDate)
+                        .DefaultIfEmpty(null)
+                        .Max();
+
+                    var hasListing = liveListingSlots
+                        .Any(l => l.AssetId == x.Id && l.AssetUnitId == x.UnitId);
+
+                    return new VacantUnitDto(x.Id, x.AssetName, x.UnitId, x.UnitName, x.Area, since, hasListing);
+                })
+                .OrderBy(v => v.VacantSince ?? DateTime.MaxValue)   // trống lâu nhất lên đầu
+                .ToList();
+
+            return new OperationsDashboardDto(
+                from, to,
+                rentIncome, rentExpense, expense - rentExpense, income - expense, depositHeld,
+                allSlots.Count, occupied, vacantSlots.Count, maintenance,
+                vacantUnits);
         }
 
         public async Task<TaxReportDto> GetTaxReportAsync(int year, CancellationToken ct = default)

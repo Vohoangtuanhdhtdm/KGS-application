@@ -247,6 +247,35 @@ namespace kgs_api.Dtos
         // Profit và báo riêng. Tham số mới BẮT BUỘC đặt ở CUỐI record positional.
         decimal DepositHeld);
 
+    // ============================================================
+    // C5. BÀN VẬN HÀNH — số liệu một màn hình
+    // ============================================================
+
+    /// <summary>Phòng đang trống, kèm mốc bắt đầu trống để tính số ngày mất doanh thu.</summary>
+    public sealed record VacantUnitDto(
+        Guid AssetId, string AssetName, Guid? UnitId, string UnitName,
+        double? Area, DateTime? VacantSince, bool HasLiveListing);
+
+    /// <summary>Toàn bộ số liệu của Bàn vận hành trong MỘT lượt gọi.
+    ///
+    /// Gộp lại có chủ đích: đây là một màn hình, và tách thành năm endpoint sẽ tạo ra năm
+    /// vòng round-trip cho thứ người dùng nhìn thấy trong một cái liếc.</summary>
+    public sealed record OperationsDashboardDto(
+        DateTime PeriodFrom, DateTime PeriodTo,
+
+        /// <summary>Tiền thuê đã THU trong kỳ (chiều cho thuê).</summary>
+        decimal RentIncome,
+        /// <summary>Tiền thuê đã TRẢ CHỦ NHÀ trong kỳ. Tách riêng vì đây chính là khoản
+        /// mà Excel không tự trừ, và là lý do tồn tại của sản phẩm.</summary>
+        decimal RentExpense,
+        decimal OtherExpense,
+        decimal Profit,
+        /// <summary>Cọc đang giữ — phải trả lại, KHÔNG nằm trong Profit.</summary>
+        decimal DepositHeld,
+
+        int UnitsTotal, int UnitsOccupied, int UnitsVacant, int UnitsMaintenance,
+        IReadOnlyList<VacantUnitDto> VacantUnits);
+
     public sealed record TaxReportDto(
         int Year, decimal TotalTax, IReadOnlyList<CategoryAmountDto> ByTaxType);
 
