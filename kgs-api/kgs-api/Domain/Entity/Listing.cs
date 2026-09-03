@@ -1,5 +1,6 @@
 using kgs_api.Common;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Domain.ValueObjects;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using static kgs_api.Domain.Enums;
@@ -57,6 +58,13 @@ namespace kgs_api.Domain.Entity
         /// <summary>Lý do từ chối / ghi chú của admin. Trước đây lý do từ chối chỉ được
         /// echo lại trong response rồi vứt đi, chủ tin không bao giờ biết vì sao bị loại.</summary>
         [MaxLength(500)] public string? ModerationNote { get; set; }
+
+        /// <summary>Điều kiện thuê thật: cọc, điện nước, phí, nội quy. Xem ListingTerms
+        /// để biết vì sao đây là điều kiện tiên quyết của AI Agent tìm kiếm.</summary>
+        public ListingTerms Terms { get; set; } = new();
+
+        /// <summary>Tiện nghi, map sang text[] của PostgreSQL. Khoá lấy từ AmenityKeys.</summary>
+        public List<string> Amenities { get; set; } = new();
 
         public ICollection<ListingImage> Images { get; set; } = new List<ListingImage>();
     }

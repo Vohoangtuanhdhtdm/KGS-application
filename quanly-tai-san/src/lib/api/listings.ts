@@ -1,6 +1,11 @@
 import { api, toQuery } from "./http";
 import type { PagedResult } from "./assets";
-import type { ListingTypeCode, PaymentCycleCode, ListingStatusCode } from "@/constants/enums";
+import type {
+  ListingTypeCode,
+  PaymentCycleCode,
+  ListingStatusCode,
+  WaterPricingCode,
+} from "@/constants/enums";
 import { PAYMENT_CYCLE } from "@/constants/enums";
 import { formatCurrency } from "@/lib/format";
 
@@ -9,6 +14,45 @@ import { formatCurrency } from "@/lib/format";
 // Sau khi gộp Property vào Asset, tin đăng không còn giữ bản sao địa chỉ/diện tích/toạ độ.
 // Backend đọc xuyên qua Listing.Asset rồi trả về trong DTO, nên hình dạng phía client gần
 // như không đổi — điều đổi là chúng luôn khớp với tài sản thay vì đóng băng lúc đăng tin.
+
+/**
+ * Điều kiện thuê. Mọi trường nullable: null = chủ tin CHƯA KHAI, khác hẳn false (đã khai
+ * là không). Bộ lọc chỉ khớp khi khai tường minh — và đây cũng chính là các trường mà
+ * AI Agent tìm kiếm sẽ chuyển câu hỏi tự nhiên thành điều kiện lọc cứng.
+ */
+export interface ListingTermsDto {
+  depositMonths: number | null;
+  electricityPrice: number | null;
+  waterPrice: number | null;
+  waterPricing: WaterPricingCode | null;
+  serviceFee: number | null;
+  parkingFee: number | null;
+  internetFee: number | null;
+  minLeaseMonths: number | null;
+  availableFrom: string | null;
+  maxOccupants: number | null;
+  petsAllowed: boolean | null;
+  curfewFree: boolean | null;
+  sharedWithOwner: boolean | null;
+  cookingAllowed: boolean | null;
+}
+
+export const EMPTY_TERMS: ListingTermsDto = {
+  depositMonths: null,
+  electricityPrice: null,
+  waterPrice: null,
+  waterPricing: null,
+  serviceFee: null,
+  parkingFee: null,
+  internetFee: null,
+  minLeaseMonths: null,
+  availableFrom: null,
+  maxOccupants: null,
+  petsAllowed: null,
+  curfewFree: null,
+  sharedWithOwner: null,
+  cookingAllowed: null,
+};
 
 export interface PublicListingSummaryDto {
   id: string;
@@ -29,6 +73,11 @@ export interface PublicListingSummaryDto {
   /** Tên phòng khi tin đăng cho một phòng cụ thể, null khi đăng nguyên căn. */
   unitName: string | null;
   publishedAt: string | null;
+  /** Tổng chi phí cố định hàng tháng — số người thuê thực sự so sánh. */
+  totalMonthlyCost: number;
+  depositMonths: number | null;
+  petsAllowed: boolean | null;
+  amenities: string[];
 }
 
 export interface PublicListingDetailDto {
@@ -59,6 +108,9 @@ export interface PublicListingDetailDto {
   imageUrls: string[];
   viewCount: number;
   publishedAt: string | null;
+  terms: ListingTermsDto;
+  amenities: string[];
+  totalMonthlyCost: number;
   ownerName: string;
   ownerPhone: string;
 }
@@ -79,6 +131,8 @@ export interface OwnerListingDto {
   unitName: string | null;
   /** Lý do admin từ chối, hoặc ghi chú khi tin bị đưa về chờ duyệt lại. */
   moderationNote: string | null;
+  /** 0–100. Tin càng đầy đủ dữ kiện càng được bộ lọc và AI Agent tìm thấy. */
+  completenessPercent: number;
 }
 
 export interface PublicListingFilters {
@@ -92,6 +146,13 @@ export interface PublicListingFilters {
   latitude?: number | "";
   longitude?: number | "";
   radiusMeters?: number | "";
+  // Bộ lọc điều kiện thuê — cũng là các hard filter AI Agent sẽ sinh ra
+  totalCostMax?: number | "";
+  petsAllowed?: boolean | "";
+  curfewFree?: boolean | "";
+  sharedWithOwner?: boolean | "";
+  availableBy?: string;
+  amenities?: string[];
   page?: number;
   pageSize?: number;
 }
@@ -105,6 +166,8 @@ export interface CreateListingInput {
   price: number;
   rentPaymentCycle?: PaymentCycleCode | null;
   selectedAssetMediaIds: string[];
+  terms?: ListingTermsDto | null;
+  amenities?: string[];
 }
 
 export interface UpdateListingInput {
@@ -112,6 +175,8 @@ export interface UpdateListingInput {
   description: string;
   price: number;
   rentPaymentCycle?: PaymentCycleCode | null;
+  terms?: ListingTermsDto | null;
+  amenities?: string[];
 }
 
 // ---- Helper hiển thị giá theo loại tin ----

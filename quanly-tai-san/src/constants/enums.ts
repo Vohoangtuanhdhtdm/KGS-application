@@ -241,3 +241,35 @@ export function enumOptions<T extends Record<number, string>>(
 ): { value: number; label: string }[] {
   return Object.entries(e).map(([k, v]) => ({ value: Number(k), label: v }));
 }
+
+// ---- Điều kiện thuê & tiện nghi (tin đăng) ----
+
+export const WATER_PRICING = {
+  1: "Theo khối (m³)",
+  2: "Theo đầu người",
+} as const;
+export type WaterPricingCode = keyof typeof WATER_PRICING;
+
+/**
+ * Danh mục tiện nghi. Khoá phải trùng KHÍT với AmenityKeys phía backend — backend loại
+ * im lặng mọi khoá lạ, nên gõ sai ở đây sẽ khiến tiện nghi biến mất mà không báo lỗi.
+ */
+export const AMENITIES = {
+  air_conditioner: "Máy lạnh",
+  water_heater: "Nóng lạnh",
+  private_bathroom: "WC riêng",
+  private_kitchen: "Bếp riêng",
+  loft: "Gác lửng",
+  balcony: "Ban công",
+  window: "Cửa sổ thoáng",
+  wifi: "Wifi",
+  parking: "Chỗ để xe",
+  elevator: "Thang máy",
+  security: "Bảo vệ / camera",
+  furnished: "Nội thất đầy đủ",
+  washing_machine: "Máy giặt",
+  fridge: "Tủ lạnh",
+} as const;
+export type AmenityKey = keyof typeof AMENITIES;
+
+export const AMENITY_LIST = Object.entries(AMENITIES) as [AmenityKey, string][];

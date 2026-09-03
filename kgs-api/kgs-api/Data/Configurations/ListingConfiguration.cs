@@ -11,6 +11,14 @@ namespace kgs_api.Data.Configurations
             b.ToTable("Listings", t =>
                 t.HasCheckConstraint("CK_Listing_Price", "\"Price\" >= 0"));
 
+            b.OwnsOne(l => l.Terms);
+            b.Navigation(l => l.Terms).IsRequired();
+
+            // text[] + GIN: truy vấn "có máy lạnh VÀ WC riêng" chạy thẳng trên index thay vì
+            // quét bảng. Đây là cột mà AI Agent sẽ lọc cứng nhiều nhất.
+            b.Property(l => l.Amenities).HasColumnType("text[]");
+            b.HasIndex(l => l.Amenities).HasMethod("gin");
+
             b.HasOne(l => l.Asset).WithMany(a => a.Listings)
              .HasForeignKey(l => l.AssetId)
              .OnDelete(DeleteBehavior.Cascade);          // xoá tài sản → gỡ tin đăng của nó

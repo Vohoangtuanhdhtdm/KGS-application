@@ -90,5 +90,9 @@
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)
         public enum ListingType { Sale = 1, Rent = 2 }
+
+        // Hai cách tính tiền nước phổ biến ở nhà trọ Việt Nam. Người thuê so sánh rất khác
+        // nhau giữa hai cách nên không gộp thành một con số được.
+        public enum WaterPricingMode { PerCubicMeter = 1, PerPerson = 2 }
     }
 }

@@ -94,6 +94,8 @@ namespace kgs_api.Services
                 Status = ListingStatus.Pending,
                 Slug = await GenerateUniqueSlugAsync(request.Title, ct),
                 ViewCount = 0,
+                Terms = MapTerms(request.Terms),
+                Amenities = NormalizeAmenities(request.Amenities),
                 Images = selectedMedia.Select((m, i) => new ListingImage
                 {
                     File = new StoredFile
@@ -132,6 +134,8 @@ namespace kgs_api.Services
             listing.Description = request.Description;
             listing.Price = request.Price;
             listing.RentPaymentCycle = listing.Type == ListingType.Rent ? request.RentPaymentCycle : null;
+            listing.Terms = MapTerms(request.Terms);
+            listing.Amenities = NormalizeAmenities(request.Amenities);
 
             // Sửa nội dung thì phải duyệt lại — nếu không, người đăng có thể được duyệt một
             // nội dung sạch rồi thay bằng nội dung khác.
@@ -184,6 +188,32 @@ namespace kgs_api.Services
             if (query.PriceMax is not null) q = q.Where(l => l.Price <= query.PriceMax);
             if (query.BedroomsMin is not null) q = q.Where(l => l.Asset.Bedrooms >= query.BedroomsMin);
 
+            // ---- Bộ lọc điều kiện thuê (cũng là hard filter của AI Agent) ----
+            // So sánh trên TỔNG chi phí cố định chứ không phải giá thuê trần trụi: một phòng
+            // 7 triệu kèm 500k phí dịch vụ đắt hơn phòng 7,2 triệu đã bao trọn gói.
+            if (query.TotalCostMax is not null)
+                q = q.Where(l => l.Price
+                               + (l.Terms.ServiceFee ?? 0)
+                               + (l.Terms.ParkingFee ?? 0)
+                               + (l.Terms.InternetFee ?? 0) <= query.TotalCostMax);
+
+            // Chỉ khớp khi chủ tin đã KHAI tường minh — tin bỏ trống không được coi là "có".
+            if (query.PetsAllowed is not null) q = q.Where(l => l.Terms.PetsAllowed == query.PetsAllowed);
+            if (query.CurfewFree is not null) q = q.Where(l => l.Terms.CurfewFree == query.CurfewFree);
+            if (query.SharedWithOwner is not null) q = q.Where(l => l.Terms.SharedWithOwner == query.SharedWithOwner);
+
+            if (query.AvailableBy is not null)
+            {
+                var by = DateTime.SpecifyKind(query.AvailableBy.Value, DateTimeKind.Utc);
+                q = q.Where(l => l.Terms.AvailableFrom == null || l.Terms.AvailableFrom <= by);
+            }
+
+            // Phải có ĐỦ mọi tiện nghi yêu cầu. Npgsql dịch sang toán tử @> của PostgreSQL,
+            // chạy trên GIN index thay vì quét bảng.
+            var wantedAmenities = NormalizeAmenities(query.Amenities);
+            if (wantedAmenities.Count > 0)
+                q = q.Where(l => wantedAmenities.All(a => l.Amenities.Contains(a)));
+
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
                 var kw = $"%{query.Keyword.Trim()}%";
@@ -231,14 +261,22 @@ namespace kgs_api.Services
                     ThumbnailUrl = l.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).FirstOrDefault(),
                     l.Asset.Location,
                     DistanceMeters = hasGeoSearch ? (double?)l.Asset.Location!.Distance(origin!) : null,
-                    l.PublishedAt
+                    l.PublishedAt,
+                    TotalMonthlyCost = l.Price
+                        + (l.Terms.ServiceFee ?? 0)
+                        + (l.Terms.ParkingFee ?? 0)
+                        + (l.Terms.InternetFee ?? 0),
+                    l.Terms.DepositMonths,
+                    l.Terms.PetsAllowed,
+                    l.Amenities
                 })
                 .ToListAsync(ct);
 
             var items = rows.Select(r => new PublicListingSummaryDto(
                 r.Id, r.Slug!, r.Title, r.Type, r.Price, r.RentPaymentCycle,
                 r.City, r.District, r.Bedrooms, r.Bathrooms, r.Area, r.ThumbnailUrl,
-                r.Location?.Y, r.Location?.X, r.DistanceMeters, r.UnitName, r.PublishedAt)).ToList();
+                r.Location?.Y, r.Location?.X, r.DistanceMeters, r.UnitName, r.PublishedAt,
+                r.TotalMonthlyCost, r.DepositMonths, r.PetsAllowed, r.Amenities)).ToList();
 
             return new PagedResult<PublicListingSummaryDto>(items, page, pageSize, total);
         }
@@ -277,6 +315,7 @@ namespace kgs_api.Services
                 asset.Location?.Y, asset.Location?.X,   // Y=lat, X=lng — dễ đảo nhầm
                 listing.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).ToList(),
                 listing.ViewCount + 1, listing.PublishedAt,
+                ToTermsDto(listing.Terms), listing.Amenities, TotalMonthlyCost(listing),
                 owner.Name, owner.PhoneNumber ?? "Chưa cập nhật số điện thoại");
         }
 
@@ -295,7 +334,75 @@ namespace kgs_api.Services
             q.Select(l => new OwnerListingDto(
                 l.Id, l.Slug, l.Title, l.Type, l.Status, l.Price, l.RentPaymentCycle, l.ViewCount,
                 l.CreatedAt, l.PublishedAt, l.AssetId, l.Asset.Name,
-                l.AssetUnit != null ? l.AssetUnit.Name : null, l.ModerationNote));
+                l.AssetUnit != null ? l.AssetUnit.Name : null, l.ModerationNote,
+                Completeness(l)));
+
+        // ==================== Điều kiện thuê ====================
+
+        private static ListingTerms MapTerms(ListingTermsDto? dto)
+        {
+            if (dto is null) return new ListingTerms();
+
+            return new ListingTerms
+            {
+                DepositMonths = dto.DepositMonths,
+                ElectricityPrice = dto.ElectricityPrice,
+                WaterPrice = dto.WaterPrice,
+                WaterPricing = dto.WaterPricing,
+                ServiceFee = dto.ServiceFee,
+                ParkingFee = dto.ParkingFee,
+                InternetFee = dto.InternetFee,
+                MinLeaseMonths = dto.MinLeaseMonths,
+                AvailableFrom = dto.AvailableFrom is null
+                    ? null
+                    : DateTime.SpecifyKind(dto.AvailableFrom.Value, DateTimeKind.Utc),
+                MaxOccupants = dto.MaxOccupants,
+                PetsAllowed = dto.PetsAllowed,
+                CurfewFree = dto.CurfewFree,
+                SharedWithOwner = dto.SharedWithOwner,
+                CookingAllowed = dto.CookingAllowed
+            };
+        }
+
+        private static ListingTermsDto ToTermsDto(ListingTerms t) => new(
+            t.DepositMonths, t.ElectricityPrice, t.WaterPrice, t.WaterPricing,
+            t.ServiceFee, t.ParkingFee, t.InternetFee,
+            t.MinLeaseMonths, t.AvailableFrom, t.MaxOccupants,
+            t.PetsAllowed, t.CurfewFree, t.SharedWithOwner, t.CookingAllowed);
+
+        /// <summary>Bỏ khoá lạ, khử trùng lặp, giữ thứ tự ổn định. Khoá không nằm trong
+        /// AmenityKeys.All bị loại im lặng thay vì ném lỗi — client cũ gửi khoá lạ thì tin
+        /// vẫn đăng được, chỉ là tiện nghi đó không được ghi nhận.</summary>
+        private static List<string> NormalizeAmenities(IEnumerable<string>? input)
+            => input is null
+                ? new List<string>()
+                : input.Where(a => AmenityKeys.All.Contains(a)).Distinct().Order().ToList();
+
+        /// <summary>Tổng chi phí cố định hàng tháng. Điện và nước tính theo mức dùng nên
+        /// KHÔNG cộng vào đây — cộng vào sẽ tạo ra một con số trông chính xác mà sai.</summary>
+        private static decimal TotalMonthlyCost(Listing l)
+            => l.Price + (l.Terms.ServiceFee ?? 0) + (l.Terms.ParkingFee ?? 0) + (l.Terms.InternetFee ?? 0);
+
+        /// <summary>Độ đầy đủ dữ kiện của tin, 0–100.
+        ///
+        /// Cố tình chấm theo thứ NGƯỜI THUÊ hỏi trước khi đi xem — cọc, điện, nước, ngày trống,
+        /// nội quy — chứ không theo thứ dễ điền. Hiển thị con số này cho chủ tin là cách tạo
+        /// động lực thật (tin đầy đủ được tìm thấy nhiều hơn), thay vì bắt buộc nhập hết.
+        ///
+        /// Viết dưới dạng biểu thức để EF dịch thẳng sang SQL trong projection, không phải
+        /// nạp cả entity về rồi tính.</summary>
+        private static int Completeness(Listing l)
+            => (l.Terms.DepositMonths != null ? 15 : 0)
+             + (l.Terms.ElectricityPrice != null ? 15 : 0)
+             + (l.Terms.WaterPrice != null ? 15 : 0)
+             + (l.Terms.AvailableFrom != null ? 10 : 0)
+             + (l.Terms.MinLeaseMonths != null ? 5 : 0)
+             + (l.Terms.MaxOccupants != null ? 5 : 0)
+             + (l.Terms.PetsAllowed != null ? 10 : 0)
+             + (l.Terms.CurfewFree != null ? 5 : 0)
+             + (l.Terms.SharedWithOwner != null ? 5 : 0)
+             + (l.Amenities.Count >= 3 ? 10 : 0)
+             + (l.Description.Length >= 120 ? 5 : 0);
 
         internal static string AssetTypeLabel(AssetDomainType type) => type switch
         {

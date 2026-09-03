@@ -319,6 +319,8 @@ namespace kgs_api.Controllers
                 Slug = $"ban-nha-pho-quan-7-demo-{Guid.NewGuid().ToString("N")[..6]}",
                 ViewCount = 12,
                 PublishedAt = now.AddDays(-6),
+                Terms = new ListingTerms { DepositMonths = 1, AvailableFrom = now },
+                Amenities = new List<string> { AmenityKeys.Parking, AmenityKeys.Security },
                 Images = new List<ListingImage> { new() { File = SeedImage(img1, "nha-q7"), SortOrder = 0 } }
             };
 
@@ -338,6 +340,31 @@ namespace kgs_api.Controllers
                 Slug = $"cho-thue-phong-102-binh-thanh-demo-{Guid.NewGuid().ToString("N")[..6]}",
                 ViewCount = 34,
                 PublishedAt = now.AddDays(-3),
+                // Tin đăng theo phòng khai đủ điều kiện thuê — dùng để demo bộ lọc
+                // "dưới 8 triệu tổng chi phí, cho nuôi thú cưng, giờ giấc tự do".
+                Terms = new ListingTerms
+                {
+                    DepositMonths = 1,
+                    ElectricityPrice = 3_800m,
+                    WaterPrice = 100_000m,
+                    WaterPricing = WaterPricingMode.PerPerson,
+                    ServiceFee = 150_000m,
+                    ParkingFee = 100_000m,
+                    InternetFee = 100_000m,
+                    MinLeaseMonths = 6,
+                    AvailableFrom = now.AddDays(7),
+                    MaxOccupants = 2,
+                    PetsAllowed = true,
+                    CurfewFree = true,
+                    SharedWithOwner = false,
+                    CookingAllowed = true
+                },
+                Amenities = new List<string>
+                {
+                    AmenityKeys.AirConditioner, AmenityKeys.WaterHeater,
+                    AmenityKeys.PrivateBathroom, AmenityKeys.Window,
+                    AmenityKeys.Wifi, AmenityKeys.Parking
+                },
                 Images = new List<ListingImage> { new() { File = SeedImage(img2, "phong-102"), SortOrder = 0 } }
             };
 

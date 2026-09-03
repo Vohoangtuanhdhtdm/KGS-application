@@ -24,6 +24,29 @@ export const Route = createFileRoute("/my-listings")({
 });
 
 /** `embedded` = đang render bên trong FeatureSheet: bỏ padding/tiêu đề trùng lặp. */
+/**
+ * Thanh độ đầy đủ dữ kiện.
+ *
+ * Đây là động lực thay cho việc bắt buộc nhập: tin khai đủ cọc, điện nước, nội quy thì lọt
+ * được vào các bộ lọc mà người thuê dùng — và sắp tới là vào cả điều kiện tìm kiếm của
+ * AI Agent. Tin bỏ trống sẽ bị loại khỏi mọi truy vấn có ràng buộc, dù thực tế có phù hợp.
+ */
+function Completeness({ percent }: { percent: number }) {
+  const tone =
+    percent >= 80 ? "bg-success" : percent >= 50 ? "bg-warning" : "bg-destructive";
+
+  return (
+    <div className="flex items-center gap-2 min-w-[112px]">
+      <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+        <div className={`h-full ${tone}`} style={{ width: `${percent}%` }} />
+      </div>
+      <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
+        {percent}%
+      </span>
+    </div>
+  );
+}
+
 export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const query = useQuery({
@@ -76,6 +99,7 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                     <TableHead>Trạng thái</TableHead>
                     <TableHead className="text-right">Giá</TableHead>
                     <TableHead className="text-center">Lượt xem</TableHead>
+                    <TableHead>Độ đầy đủ</TableHead>
                     <TableHead>Ngày đăng</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -103,6 +127,9 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                             <Eye className="h-3.5 w-3.5" />
                             {l.viewCount}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          <Completeness percent={l.completenessPercent} />
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDate(l.createdAt)}

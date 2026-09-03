@@ -6,9 +6,12 @@ import { assetsApi } from "@/lib/api/assets";
 import {
   listingsApi,
   formatListingPrice,
+  EMPTY_TERMS,
   type CreateListingInput,
+  type ListingTermsDto,
   type OwnerListingDto,
 } from "@/lib/api/listings";
+import { ListingTermsFields } from "@/components/listings/ListingTermsFields";
 import { getErrorMessage } from "@/lib/api/errors";
 import { ApiError } from "@/lib/auth/types";
 import {
@@ -128,7 +131,7 @@ function LiveListings({ listings }: { listings: OwnerListingDto[] }) {
   );
 }
 
-const STEP_LABELS = ["Loại tin", "Nội dung", "Thông số", "Chọn ảnh", "Xác nhận"];
+const STEP_LABELS = ["Loại tin", "Nội dung", "Điều kiện thuê", "Chọn ảnh", "Xác nhận"];
 
 function PublishDialog({
   assetId,
@@ -155,6 +158,8 @@ function PublishDialog({
   // chỉ có một nguồn duy nhất là tài sản. Ô "chỉnh sửa thông số riêng cho tin đăng" cũ
   // chính là chỗ sinh ra dữ liệu lệch giữa hai bảng.
   const [assetUnitId, setAssetUnitId] = useState<string>("");
+  const [terms, setTerms] = useState<ListingTermsDto>(EMPTY_TERMS);
+  const [amenities, setAmenities] = useState<string[]>([]);
   // Bước 4
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [conflict, setConflict] = useState<string | null>(null);
@@ -203,6 +208,8 @@ function PublishDialog({
         price: price ?? 0,
         rentPaymentCycle: type === 2 ? rentPaymentCycle : null,
         selectedAssetMediaIds: selectedIds,
+        terms,
+        amenities,
       };
       return listingsApi.create(assetId, body);
     },
@@ -356,6 +363,14 @@ function PublishDialog({
                   Chọn một phòng để đăng riêng phòng đó. Mỗi phòng có thể có tin đăng riêng.
                 </p>
               </div>
+
+              <ListingTermsFields
+                value={terms}
+                onChange={setTerms}
+                amenities={amenities}
+                onAmenitiesChange={setAmenities}
+                isRent={type === 2}
+              />
 
               <SpecsPreview asset={asset} />
 
