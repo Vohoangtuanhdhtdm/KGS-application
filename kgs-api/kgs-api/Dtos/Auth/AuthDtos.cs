@@ -105,20 +105,21 @@ namespace kgs_api.Dtos.Auth
 
     // ==================== ADMIN — DUYỆT TIN ĐĂNG ====================
 
-    public sealed record ApprovePropertyRequest(
+    public sealed record ApproveListingRequest(
         [MaxLength(500)] string? Note);
 
-    public sealed record RejectPropertyRequest(
+    public sealed record RejectListingRequest(
         [Required(ErrorMessage = "Phải nêu lý do từ chối")]
         [MaxLength(500)]
         string Reason);
 
-    public sealed record PendingPropertyDto(
-        int Id,
+    public sealed record PendingListingDto(
+        Guid Id,
         string Title,
         decimal Price,
         string City,
         string District,
+        string? UnitName,
         string OwnerName,
         string OwnerEmail,
         DateTime CreatedAt,

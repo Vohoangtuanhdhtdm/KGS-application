@@ -2,9 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { propertiesApi, formatListingPrice } from "@/lib/api/properties";
+import {
+  listingsApi,
+  formatListingPrice,
+  type PublicListingDetailDto,
+} from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
-import { formatDate } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { AMENITIES, WATER_PRICING, type AmenityKey } from "@/constants/enums";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { ClientMap } from "@/components/map/ClientMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +44,7 @@ function PublicListingDetailPage() {
   const { slug } = Route.useParams();
   const query = useQuery({
     queryKey: ["public-listing", slug],
-    queryFn: () => propertiesApi.detail(slug),
+    queryFn: () => listingsApi.detail(slug),
     retry: 1,
   });
 
@@ -99,7 +104,7 @@ function PublicListingDetailPage() {
     ["Hướng nhà", p.houseDirection],
     ["Pháp lý", p.legalStatus],
     ["Nội thất", p.furnitureState],
-    ["Loại BĐS", p.propertyType],
+    ["Loại BĐS", p.assetTypeLabel],
   ];
 
   return (
@@ -121,18 +126,43 @@ function PublicListingDetailPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge>{p.type === 1 ? "Bán" : "Cho thuê"}</Badge>
                 <span className="text-xs text-muted-foreground">
-                  Đăng ngày {formatDate(p.createdAt)}
+                  Đăng ngày {formatDate(p.publishedAt)}
                 </span>
               </div>
               <h1 className="text-2xl font-semibold">{p.title}</h1>
               <div className="text-2xl font-semibold text-primary">
                 {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
               </div>
+              {p.type === 2 && p.totalMonthlyCost > p.price && (
+                <p className="text-sm text-muted-foreground">
+                  Tổng cố định {formatCurrency(p.totalMonthlyCost)}/tháng (đã gồm phí dịch vụ,
+                  gửi xe, internet) — chưa tính điện nước
+                </p>
+              )}
               <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 shrink-0" />
                 {address || "—"}
               </p>
             </div>
+
+            {p.type === 2 && <TermsCard listing={p} />}
+
+            {p.amenities.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Tiện nghi</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {p.amenities.map((a) => (
+                      <Badge key={a} variant="secondary" className="font-normal">
+                        {AMENITIES[a as AmenityKey] ?? a}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
@@ -184,7 +214,7 @@ function PublicListingDetailPage() {
           {/* Card liên hệ — sticky bên phải desktop */}
           <div className="hidden lg:block sticky top-20">
             <ContactCard ownerName={p.ownerName} ownerPhone={p.ownerPhone} onCopy={copyPhone}>
-              <EngagementActions propertyId={Number(p.id)} slug={p.slug} />
+              <EngagementActions listingId={p.id} slug={p.slug} />
             </ContactCard>
           </div>
         </div>
@@ -251,7 +281,7 @@ function ContactCard({
  * Đây là chỗ marketplace nối vào nghiệp vụ — yêu cầu gửi từ đây sẽ xuất hiện trong
  * hộp thư của chủ nhà, nơi họ chuyển thành đối tác rồi ký hợp đồng.
  */
-function EngagementActions({ propertyId, slug }: { propertyId: number; slug: string }) {
+function EngagementActions({ listingId, slug }: { listingId: string; slug: string }) {
   const { isAuthenticated } = useAuth();
   const qc = useQueryClient();
   const [saved, setSaved] = useState(false);
@@ -260,7 +290,7 @@ function EngagementActions({ propertyId, slug }: { propertyId: number; slug: str
   const [viewingAt, setViewingAt] = useState("");
 
   const save = useMutation({
-    mutationFn: () => (saved ? savedListingsApi.unsave(propertyId) : savedListingsApi.save(propertyId)),
+    mutationFn: () => (saved ? savedListingsApi.unsave(listingId) : savedListingsApi.save(listingId)),
     onSuccess: () => {
       setSaved((v) => !v);
       qc.invalidateQueries({ queryKey: ["saved-listings"] });
@@ -354,6 +384,90 @@ function EngagementActions({ propertyId, slug }: { propertyId: number; slug: str
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/**
+ * Chi phí và điều kiện thuê — theo nghiên cứu, đây là thứ người thuê hỏi TRƯỚC khi
+ * quyết định đi xem, và là thứ phần lớn tin đăng trên thị trường không nói ra.
+ * Đặt ngay dưới giá, trên cả phần thông số kỹ thuật.
+ */
+function TermsCard({ listing: p }: { listing: PublicListingDetailDto }) {
+  const t = p.terms;
+  const money = (v: number | null) => (v == null ? null : formatCurrency(v));
+
+  const rows: [string, string | null][] = [
+    ["Tiền cọc", t.depositMonths != null ? `${t.depositMonths} tháng` : null],
+    ["Tiền điện", t.electricityPrice != null ? `${money(t.electricityPrice)}/kWh` : null],
+    [
+      "Tiền nước",
+      t.waterPrice != null
+        ? `${money(t.waterPrice)}${t.waterPricing === 1 ? "/m³" : "/người/tháng"}`
+        : null,
+    ],
+    ["Phí dịch vụ", t.serviceFee != null ? `${money(t.serviceFee)}/tháng` : null],
+    ["Gửi xe", t.parkingFee != null ? `${money(t.parkingFee)}/tháng` : null],
+    ["Internet", t.internetFee != null ? `${money(t.internetFee)}/tháng` : null],
+    ["Dọn vào từ", t.availableFrom ? formatDate(t.availableFrom) : null],
+    ["Thuê tối thiểu", t.minLeaseMonths != null ? `${t.minLeaseMonths} tháng` : null],
+    ["Ở tối đa", t.maxOccupants != null ? `${t.maxOccupants} người` : null],
+  ];
+
+  const rules: [string, boolean | null][] = [
+    ["Nuôi thú cưng", t.petsAllowed],
+    ["Giờ giấc tự do", t.curfewFree],
+    ["Ở chung chủ", t.sharedWithOwner],
+    ["Được nấu ăn", t.cookingAllowed],
+  ];
+
+  const shown = rows.filter(([, v]) => v);
+  const shownRules = rules.filter(([, v]) => v !== null);
+
+  if (shown.length === 0 && shownRules.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-5 text-sm text-muted-foreground">
+          Chủ tin chưa khai chi phí và điều kiện thuê. Hãy hỏi trực tiếp trước khi đi xem.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Chi phí &amp; điều kiện</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {shown.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
+            {shown.map(([label, v]) => (
+              <div key={label}>
+                <div className="text-xs text-muted-foreground">{label}</div>
+                <div className="font-medium mt-0.5">{v}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {shownRules.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {shownRules.map(([label, v]) => (
+              <Badge
+                key={label}
+                variant="outline"
+                className={
+                  v
+                    ? "bg-success/10 text-success border-success/30 font-normal"
+                    : "bg-muted text-muted-foreground font-normal"
+                }
+              >
+                {v ? "✓" : "✕"} {label}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

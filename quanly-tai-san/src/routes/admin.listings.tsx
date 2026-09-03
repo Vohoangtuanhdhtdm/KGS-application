@@ -3,11 +3,11 @@ import { useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, XCircle, Image as ImageIcon } from "lucide-react";
-import { adminApi, type AdminPendingProperty } from "@/lib/api/admin";
+import { adminApi, type AdminPendingListing } from "@/lib/api/admin";
 import { getErrorMessage } from "@/lib/api/errors";
 import { ApiError } from "@/lib/auth/types";
 import { formatDate, formatCurrency } from "@/lib/format";
-import { LISTING_TYPE, PROPERTY_STATUS, type PropertyStatusCode } from "@/constants/enums";
+import { LISTING_TYPE, LISTING_STATUS, type ListingStatusCode } from "@/constants/enums";
 import { AdminRoute } from "@/components/auth/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-export const Route = createFileRoute("/admin/properties")({
+export const Route = createFileRoute("/admin/listings")({
   head: () => ({ meta: [{ title: "Duyệt tin đăng — Quản trị" }] }),
   component: () => (
     <AdminRoute>
@@ -32,8 +32,8 @@ export const Route = createFileRoute("/admin/properties")({
   ),
 });
 
-const STAT_ORDER: PropertyStatusCode[] = [1, 2, 3, 4];
-const STAT_TONE: Record<PropertyStatusCode, string> = {
+const STAT_ORDER: ListingStatusCode[] = [1, 2, 3, 4];
+const STAT_TONE: Record<ListingStatusCode, string> = {
   1: "text-muted-foreground",
   2: "text-success",
   3: "text-destructive",
@@ -43,9 +43,9 @@ const STAT_TONE: Record<PropertyStatusCode, string> = {
 function AdminPropertiesPage() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
-  const [approveItem, setApproveItem] = useState<AdminPendingProperty | null>(null);
+  const [approveItem, setApproveItem] = useState<AdminPendingListing | null>(null);
   const [approveNote, setApproveNote] = useState("");
-  const [rejectItem, setRejectItem] = useState<AdminPendingProperty | null>(null);
+  const [rejectItem, setRejectItem] = useState<AdminPendingListing | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
   const pendingQ = useQuery({
@@ -111,7 +111,7 @@ function AdminPropertiesPage() {
   });
 
   const stats = statsQ.data;
-  const countByStatus = (s: PropertyStatusCode) =>
+  const countByStatus = (s: ListingStatusCode) =>
     stats?.byStatus.find((x) => x.status === s)?.count ?? 0;
 
   const data = pendingQ.data;
@@ -133,7 +133,7 @@ function AdminPropertiesPage() {
           <Card key={s}>
             <CardContent className="p-4">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                {PROPERTY_STATUS[s]}
+                {LISTING_STATUS[s]}
               </div>
               <div className={`mt-1 text-3xl font-semibold ${STAT_TONE[s]}`}>
                 {statsQ.isLoading ? "—" : countByStatus(s)}

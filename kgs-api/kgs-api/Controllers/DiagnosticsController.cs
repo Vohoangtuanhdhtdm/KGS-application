@@ -163,8 +163,8 @@ namespace kgs_api.Controllers
                     ["Equipments"] = await _db.Equipments.CountAsync(ct),
                     ["MaintenanceRecords"] = await _db.MaintenanceRecords.CountAsync(ct),
                     ["FileDeletionQueueItems"] = await _db.FileDeletionQueueItems.CountAsync(ct),
-                    ["Properties"] = await _db.Properties.CountAsync(ct),
-                    ["PropertyImages"] = await _db.PropertyImages.CountAsync(ct),
+                    ["Listings"] = await _db.Listings.CountAsync(ct),
+                    ["ListingImages"] = await _db.ListingImages.CountAsync(ct),
                     ["Users"] = await _db.Users.CountAsync(ct)
                 };
             }

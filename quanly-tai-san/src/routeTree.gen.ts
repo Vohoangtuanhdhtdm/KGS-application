@@ -18,7 +18,7 @@ import { Route as MyListingsRouteImport } from './routes/my-listings'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as AdminPropertiesRouteImport } from './routes/admin.properties'
+import { Route as AdminListingsRouteImport } from './routes/admin.listings'
 import { Route as BanDoIndexRouteImport } from './routes/ban-do.index'
 import { Route as DaLuuIndexRouteImport } from './routes/da-luu.index'
 import { Route as DoiTacIndexRouteImport } from './routes/doi-tac.index'
@@ -80,9 +80,9 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPropertiesRoute = AdminPropertiesRouteImport.update({
-  id: '/admin/properties',
-  path: '/admin/properties',
+const AdminListingsRoute = AdminListingsRouteImport.update({
+  id: '/admin/listings',
+  path: '/admin/listings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BanDoIndexRoute = BanDoIndexRouteImport.update({
@@ -171,7 +171,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/listings': typeof AdminListingsRoute
   '/hop-dong/$id': typeof HopDongIdRoute
   '/hop-dong/moi': typeof HopDongMoiRoute
   '/tai-san/$id': typeof TaiSanIdRoute
@@ -198,7 +198,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/listings': typeof AdminListingsRoute
   '/hop-dong/$id': typeof HopDongIdRoute
   '/hop-dong/moi': typeof HopDongMoiRoute
   '/tai-san/$id': typeof TaiSanIdRoute
@@ -226,7 +226,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin/properties': typeof AdminPropertiesRoute
+  '/admin/listings': typeof AdminListingsRoute
   '/hop-dong/$id': typeof HopDongIdRoute
   '/hop-dong/moi': typeof HopDongMoiRoute
   '/tai-san/$id': typeof TaiSanIdRoute
@@ -255,7 +255,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/reset-password'
-    | '/admin/properties'
+    | '/admin/listings'
     | '/hop-dong/$id'
     | '/hop-dong/moi'
     | '/tai-san/$id'
@@ -282,7 +282,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/reset-password'
-    | '/admin/properties'
+    | '/admin/listings'
     | '/hop-dong/$id'
     | '/hop-dong/moi'
     | '/tai-san/$id'
@@ -309,7 +309,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/reset-password'
-    | '/admin/properties'
+    | '/admin/listings'
     | '/hop-dong/$id'
     | '/hop-dong/moi'
     | '/tai-san/$id'
@@ -337,7 +337,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  AdminPropertiesRoute: typeof AdminPropertiesRoute
+  AdminListingsRoute: typeof AdminListingsRoute
   HopDongIdRoute: typeof HopDongIdRoute
   HopDongMoiRoute: typeof HopDongMoiRoute
   TaiSanIdRoute: typeof TaiSanIdRoute
@@ -420,11 +420,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/properties': {
-      id: '/admin/properties'
-      path: '/admin/properties'
-      fullPath: '/admin/properties'
-      preLoaderRoute: typeof AdminPropertiesRouteImport
+    '/admin/listings': {
+      id: '/admin/listings'
+      path: '/admin/listings'
+      fullPath: '/admin/listings'
+      preLoaderRoute: typeof AdminListingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ban-do/': {
@@ -545,7 +545,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  AdminPropertiesRoute: AdminPropertiesRoute,
+  AdminListingsRoute: AdminListingsRoute,
   HopDongIdRoute: HopDongIdRoute,
   HopDongMoiRoute: HopDongMoiRoute,
   TaiSanIdRoute: TaiSanIdRoute,

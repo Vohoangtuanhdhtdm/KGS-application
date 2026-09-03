@@ -23,7 +23,8 @@ namespace kgs_api.Dtos
         string District,
         decimal? CurrentValue,
         string? ThumbnailUrl,
-        int? LinkedPropertyId,
+        /// <summary>Số tin đăng đang chờ duyệt hoặc đang hiển thị của tài sản này.</summary>
+        int ListingCount,
         double? Latitude,    // null nếu tài sản chưa gắn vị trí — KHÔNG loại tài sản này khỏi kết quả
         double? Longitude);  // null nếu tài sản chưa gắn vị trí
 
@@ -53,7 +54,8 @@ namespace kgs_api.Dtos
         [Range(0, 100)] int? Bathrooms,
         [MaxLength(50)] string? HouseDirection,
         [MaxLength(100)] string? LegalStatus,
-        [MaxLength(100)] string? FurnitureState);
+        [MaxLength(100)] string? FurnitureState,
+        [Range(0, 1000)] double? Frontage);
 
     public sealed record AssetUpdateRequest(
         [Required, MaxLength(255)] string Name,
@@ -70,7 +72,8 @@ namespace kgs_api.Dtos
         [Range(0, 100)] int? Bathrooms,
         [MaxLength(50)] string? HouseDirection,
         [MaxLength(100)] string? LegalStatus,
-        [MaxLength(100)] string? FurnitureState
+        [MaxLength(100)] string? FurnitureState,
+        [Range(0, 1000)] double? Frontage
         );
 
     public sealed record AssetSearchQuery(
@@ -90,7 +93,7 @@ namespace kgs_api.Dtos
 
     public sealed record AssetSummaryDto(
         Guid Id, string Name, AssetDomainType TypeProperty, AssetOwnershipType OwnershipType, AssetStatus Status,
-        string City, string District, decimal? CurrentValue, string? ThumbnailUrl, int? LinkedPropertyId);
+        string City, string District, decimal? CurrentValue, string? ThumbnailUrl, int ListingCount);
 
     public sealed record AssetNearbyDto(
         Guid Id, string Name, AssetDomainType TypeProperty, AssetStatus Status,
@@ -100,9 +103,9 @@ namespace kgs_api.Dtos
         Guid Id, string Name, AssetDomainType TypeProperty, AssetOwnershipType OwnershipType, AssetStatus Status,
         AddressDto Address, GeoPointDto? Location, double? Area,
         decimal? CurrentValue, DateTime? AcquisitionDate, string? Notes,
-        StoredFileDto? Thumbnail, int? LinkedPropertyId,
+        StoredFileDto? Thumbnail, int ListingCount,
         int UnitCount, int ActiveContractCount, DateTime CreatedAt, DateTime? UpdatedAt, int? Floors, int? Bedrooms, int? Bathrooms,
-        string? HouseDirection, string? LegalStatus, string? FurnitureState);
+        string? HouseDirection, string? LegalStatus, string? FurnitureState, double? Frontage);
 
     // ============================================================
     // A4–A5. MEDIA & DOCUMENTS
@@ -244,6 +247,35 @@ namespace kgs_api.Dtos
         // Profit và báo riêng. Tham số mới BẮT BUỘC đặt ở CUỐI record positional.
         decimal DepositHeld);
 
+    // ============================================================
+    // C5. BÀN VẬN HÀNH — số liệu một màn hình
+    // ============================================================
+
+    /// <summary>Phòng đang trống, kèm mốc bắt đầu trống để tính số ngày mất doanh thu.</summary>
+    public sealed record VacantUnitDto(
+        Guid AssetId, string AssetName, Guid? UnitId, string UnitName,
+        double? Area, DateTime? VacantSince, bool HasLiveListing);
+
+    /// <summary>Toàn bộ số liệu của Bàn vận hành trong MỘT lượt gọi.
+    ///
+    /// Gộp lại có chủ đích: đây là một màn hình, và tách thành năm endpoint sẽ tạo ra năm
+    /// vòng round-trip cho thứ người dùng nhìn thấy trong một cái liếc.</summary>
+    public sealed record OperationsDashboardDto(
+        DateTime PeriodFrom, DateTime PeriodTo,
+
+        /// <summary>Tiền thuê đã THU trong kỳ (chiều cho thuê).</summary>
+        decimal RentIncome,
+        /// <summary>Tiền thuê đã TRẢ CHỦ NHÀ trong kỳ. Tách riêng vì đây chính là khoản
+        /// mà Excel không tự trừ, và là lý do tồn tại của sản phẩm.</summary>
+        decimal RentExpense,
+        decimal OtherExpense,
+        decimal Profit,
+        /// <summary>Cọc đang giữ — phải trả lại, KHÔNG nằm trong Profit.</summary>
+        decimal DepositHeld,
+
+        int UnitsTotal, int UnitsOccupied, int UnitsVacant, int UnitsMaintenance,
+        IReadOnlyList<VacantUnitDto> VacantUnits);
+
     public sealed record TaxReportDto(
         int Year, decimal TotalTax, IReadOnlyList<CategoryAmountDto> ByTaxType);
 
@@ -310,9 +342,9 @@ namespace kgs_api.Dtos
     // E1. SAVED LISTING — tin đã lưu (phía người đi tìm thuê)
     // ============================================================
     public sealed record SavedListingDto(
-        int PropertyId, string Slug, string Title, ListingType Type,
+        Guid ListingId, string Slug, string Title, ListingType Type,
         decimal Price, PaymentCycle? RentPaymentCycle,
-        string City, string District, int Bedrooms, double Area,
+        string City, string District, int? Bedrooms, double? Area,
         string? ThumbnailUrl, DateTime SavedAt);
 
     // ============================================================
@@ -327,7 +359,7 @@ namespace kgs_api.Dtos
     /// <summary>Yêu cầu chủ nhà NHẬN được. Có thông tin liên hệ của người gửi vì
     /// họ đã chủ động gửi yêu cầu — khác với tin đăng công khai.</summary>
     public sealed record ReceivedInquiryDto(
-        Guid Id, int PropertyId, string PropertySlug, string PropertyTitle,
+        Guid Id, Guid ListingId, string ListingSlug, string ListingTitle,
         string FromUserName, string? FromUserPhone, string? FromUserEmail,
         string? Message, DateTime? PreferredViewingAt,
         InquiryStatus Status, Guid? ConvertedContactPartyId, DateTime CreatedAt);
@@ -335,7 +367,7 @@ namespace kgs_api.Dtos
     /// <summary>Yêu cầu người tìm thuê ĐÃ GỬI. Không kèm liên hệ của chủ nhà —
     /// thông tin đó đã có sẵn trên trang chi tiết tin đăng.</summary>
     public sealed record SentInquiryDto(
-        Guid Id, int PropertyId, string PropertySlug, string PropertyTitle,
+        Guid Id, Guid ListingId, string ListingSlug, string ListingTitle,
         string? ThumbnailUrl, string? Message, DateTime? PreferredViewingAt,
         InquiryStatus Status, DateTime CreatedAt);
 

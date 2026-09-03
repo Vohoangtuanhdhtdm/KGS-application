@@ -1,6 +1,6 @@
 import { forwardRef, memo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { formatListingPrice, type PublicPropertySummaryDto } from "@/lib/api/properties";
+import { formatListingPrice, type PublicListingSummaryDto } from "@/lib/api/listings";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +17,7 @@ function postedAgoLabel(iso: string): string {
 }
 
 interface PropertyListCardProps {
-  property: PublicPropertySummaryDto;
+  property: PublicListingSummaryDto;
   hovered: boolean;
   highlighted: boolean;
   // Nhận id làm tham số thay vì đóng gói closure — để cha truyền được callback ỔN ĐỊNH
@@ -124,9 +124,9 @@ export const PropertyListCard = memo(
                   </span>
                 )}
               </div>
-              {p.createdAt && (
+              {p.publishedAt && (
                 <div className="text-xs text-muted-foreground/80 pt-0.5">
-                  {postedAgoLabel(p.createdAt)}
+                  {postedAgoLabel(p.publishedAt)}
                 </div>
               )}
             </div>

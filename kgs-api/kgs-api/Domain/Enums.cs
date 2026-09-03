@@ -2,7 +2,10 @@
 {
     public class Enums
     {
-        public enum PropertyStatus { Pending = 1, Approved = 2, Rejected = 3, Sold = 4 }
+        // Vòng đời kiểm duyệt của một tin đăng công khai.
+        // Closed thay cho Sold cũ (giữ nguyên giá trị 4): tin cho thuê thì "đã có khách",
+        // tin bán thì "đã bán" — cùng một trạng thái kết thúc.
+        public enum ListingStatus { Pending = 1, Approved = 2, Rejected = 3, Closed = 4 }
 
         public enum AssetDomainType { PrivateHouse = 1, Apartment = 2, Land = 3, Villa = 4, Shophouse = 5, Office = 6, Other = 99 }
 
@@ -87,5 +90,9 @@
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)
         public enum ListingType { Sale = 1, Rent = 2 }
+
+        // Hai cách tính tiền nước phổ biến ở nhà trọ Việt Nam. Người thuê so sánh rất khác
+        // nhau giữa hai cách nên không gộp thành một con số được.
+        public enum WaterPricingMode { PerCubicMeter = 1, PerPerson = 2 }
     }
 }

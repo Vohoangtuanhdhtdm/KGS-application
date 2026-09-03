@@ -16,7 +16,6 @@ namespace kgs_api.Services
     public sealed class AssetService : IAssetService
     {
         private readonly IRepository<Asset> _assets;
-        private readonly IRepository<Property> _properties;
         private readonly IUnitOfWork _uow;
         private readonly IFileStorageService _files;
         private readonly ICurrentUserService _currentUser;
@@ -24,14 +23,12 @@ namespace kgs_api.Services
 
         public AssetService(
             IRepository<Asset> assets,
-            IRepository<Property> properties,
             IUnitOfWork uow,
             IFileStorageService files,
             ICurrentUserService currentUser,
             GeometryFactory geometryFactory)
         {
             _assets = assets;
-            _properties = properties;
             _uow = uow;
             _files = files;
             _currentUser = currentUser;
@@ -60,7 +57,8 @@ namespace kgs_api.Services
                 Bathrooms = request.Bathrooms,
                 HouseDirection = request.HouseDirection?.Trim(),
                 LegalStatus = request.LegalStatus?.Trim(),
-                FurnitureState = request.FurnitureState?.Trim()
+                FurnitureState = request.FurnitureState?.Trim(),
+                Frontage = request.Frontage
             };
 
             await _assets.AddAsync(asset, ct);
@@ -88,6 +86,7 @@ namespace kgs_api.Services
             asset.HouseDirection = request.HouseDirection?.Trim();
             asset.LegalStatus = request.LegalStatus?.Trim();
             asset.FurnitureState = request.FurnitureState?.Trim();
+            asset.Frontage = request.Frontage;
 
             await _uow.SaveChangesAsync(ct);
             return await GetByIdAsync(assetId, ct);
@@ -138,7 +137,7 @@ namespace kgs_api.Services
                     a.AcquisitionDate,
                     a.Notes,
                     a.Thumbnail,
-                    a.LinkedPropertyId,
+                    ListingCount = a.Listings.Count(l => l.Status == ListingStatus.Pending || l.Status == ListingStatus.Approved),
                     UnitCount = a.Units.Count,
                     ActiveContractCount = a.Contracts.Count(c => c.Status == ContractStatus.Active),
                     a.CreatedAt,
@@ -148,7 +147,8 @@ namespace kgs_api.Services
                     a.Bathrooms,
                     a.HouseDirection,
                     a.LegalStatus,
-                    a.FurnitureState
+                    a.FurnitureState,
+                    a.Frontage
                 })
                 .FirstOrDefaultAsync(ct);
 
@@ -162,8 +162,8 @@ namespace kgs_api.Services
                 raw.Area, raw.CurrentValue, raw.AcquisitionDate, raw.Notes,
                 raw.Thumbnail is null ? null
                     : new StoredFileDto(raw.Thumbnail.Url, raw.Thumbnail.FileName, raw.Thumbnail.ContentType, raw.Thumbnail.SizeBytes),
-                raw.LinkedPropertyId, raw.UnitCount, raw.ActiveContractCount, raw.CreatedAt, raw.UpdatedAt, raw.Floors, raw.Bedrooms, raw.Bathrooms,
-                raw.HouseDirection, raw.LegalStatus, raw.FurnitureState);
+                raw.ListingCount, raw.UnitCount, raw.ActiveContractCount, raw.CreatedAt, raw.UpdatedAt, raw.Floors, raw.Bedrooms, raw.Bathrooms,
+                raw.HouseDirection, raw.LegalStatus, raw.FurnitureState, raw.Frontage);
         }
 
         public async Task<PagedResult<AssetSummaryDto>> SearchAsync(AssetSearchQuery query, CancellationToken ct = default)
@@ -194,7 +194,7 @@ namespace kgs_api.Services
                     a.Id, a.Name, a.TypeProperty, a.OwnershipType, a.Status,
                     a.Address.City, a.Address.District, a.CurrentValue,
                     a.Thumbnail == null ? null : a.Thumbnail.Url,
-                    a.LinkedPropertyId))
+                    a.Listings.Count(l => l.Status == ListingStatus.Pending || l.Status == ListingStatus.Approved)))
                 .ToListAsync(ct);
 
             return new PagedResult<AssetSummaryDto>(items, page, pageSize, total);
@@ -254,44 +254,17 @@ namespace kgs_api.Services
                     a.Address.District,
                     a.CurrentValue,
                     ThumbnailUrl = a.Thumbnail == null ? null : a.Thumbnail.Url,
-                    a.LinkedPropertyId,
+                    ListingCount = a.Listings.Count(l => l.Status == ListingStatus.Pending || l.Status == ListingStatus.Approved),
                     a.Location   // giữ nguyên object Point?, tách Y/X sau khi đã materialize
                 })
                 .ToListAsync(ct);
 
             return raw.Select(r => new AssetMapPinDto(
                 r.Id, r.Name, r.TypeProperty, r.OwnershipType, r.Status,
-                r.City, r.District, r.CurrentValue, r.ThumbnailUrl, r.LinkedPropertyId,
+                r.City, r.District, r.CurrentValue, r.ThumbnailUrl, r.ListingCount,
                 r.Location?.Y,   // null nếu r.Location null — đúng ý đồ, KHÔNG throw, KHÔNG loại bỏ dòng
                 r.Location?.X))
                 .ToList();
-        }
-
-        // -------------------- A3. LINK PROPERTY --------------------
-
-        public async Task LinkPropertyAsync(Guid assetId, int propertyId, CancellationToken ct = default)
-        {
-            var asset = await GetOwnedAssetAsync(assetId, ct);
-
-            var ownsProperty = await _properties.Query()
-                .AnyAsync(p => p.Id == propertyId && p.UserId == _currentUser.UserId, ct);
-            if (!ownsProperty)
-                throw new NotFoundException("Không tìm thấy tin đăng hoặc tin đăng không thuộc về bạn.");
-
-            var alreadyLinked = await _assets.Query()
-                .AnyAsync(a => a.LinkedPropertyId == propertyId && a.Id != assetId, ct);
-            if (alreadyLinked)
-                throw new ConflictException("Tin đăng này đã được liên kết với một tài sản khác.");
-
-            asset.LinkedPropertyId = propertyId;
-            await _uow.SaveChangesAsync(ct);
-        }
-
-        public async Task UnlinkPropertyAsync(Guid assetId, CancellationToken ct = default)
-        {
-            var asset = await GetOwnedAssetAsync(assetId, ct);
-            asset.LinkedPropertyId = null;
-            await _uow.SaveChangesAsync(ct);
         }
 
         // -------------------- Helpers --------------------

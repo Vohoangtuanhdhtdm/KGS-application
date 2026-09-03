@@ -18,7 +18,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "@/lib/format";
-import { formatListingPrice } from "@/lib/api/properties";
+import { formatListingPrice } from "@/lib/api/listings";
 import type { ListingTypeCode } from "@/constants/enums";
 import type { LatLng } from "@/hooks/useGeolocationOnDemand";
 import type { PaymentCycleCode } from "@/constants/enums";

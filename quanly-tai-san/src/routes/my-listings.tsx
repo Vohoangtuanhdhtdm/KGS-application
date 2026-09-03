@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { propertiesApi, formatListingPrice, type OwnerListingDto } from "@/lib/api/properties";
+import { listingsApi, formatListingPrice, type OwnerListingDto } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatDate } from "@/lib/format";
-import { LISTING_TYPE, PROPERTY_STATUS, PROPERTY_STATUS_CLASS } from "@/constants/enums";
+import { LISTING_TYPE, LISTING_STATUS, LISTING_STATUS_CLASS } from "@/constants/enums";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,11 +24,34 @@ export const Route = createFileRoute("/my-listings")({
 });
 
 /** `embedded` = đang render bên trong FeatureSheet: bỏ padding/tiêu đề trùng lặp. */
+/**
+ * Thanh độ đầy đủ dữ kiện.
+ *
+ * Đây là động lực thay cho việc bắt buộc nhập: tin khai đủ cọc, điện nước, nội quy thì lọt
+ * được vào các bộ lọc mà người thuê dùng — và sắp tới là vào cả điều kiện tìm kiếm của
+ * AI Agent. Tin bỏ trống sẽ bị loại khỏi mọi truy vấn có ràng buộc, dù thực tế có phù hợp.
+ */
+function Completeness({ percent }: { percent: number }) {
+  const tone =
+    percent >= 80 ? "bg-success" : percent >= 50 ? "bg-warning" : "bg-destructive";
+
+  return (
+    <div className="flex items-center gap-2 min-w-[112px]">
+      <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+        <div className={`h-full ${tone}`} style={{ width: `${percent}%` }} />
+      </div>
+      <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
+        {percent}%
+      </span>
+    </div>
+  );
+}
+
 export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const query = useQuery({
     queryKey: ["my-listings"],
-    queryFn: () => propertiesApi.myListings(),
+    queryFn: () => listingsApi.mine(),
     retry: 1,
   });
 
@@ -36,7 +59,7 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
 
   const openListing = (l: OwnerListingDto) => {
     // Chỉ tin đã duyệt mới có trang công khai; tin khác không điều hướng
-    if (l.status === 2) navigate({ to: "/tin-dang/$slug", params: { slug: l.slug } });
+    if (l.status === 2 && l.slug) navigate({ to: "/tin-dang/$slug", params: { slug: l.slug } });
   };
 
   return (
@@ -76,6 +99,7 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                     <TableHead>Trạng thái</TableHead>
                     <TableHead className="text-right">Giá</TableHead>
                     <TableHead className="text-center">Lượt xem</TableHead>
+                    <TableHead>Độ đầy đủ</TableHead>
                     <TableHead>Ngày đăng</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -91,8 +115,8 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                         <TableCell className="font-medium">{l.title}</TableCell>
                         <TableCell className="text-sm">{LISTING_TYPE[l.type]}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={PROPERTY_STATUS_CLASS[l.status]}>
-                            {PROPERTY_STATUS[l.status]}
+                          <Badge variant="outline" className={LISTING_STATUS_CLASS[l.status]}>
+                            {LISTING_STATUS[l.status]}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
@@ -103,6 +127,9 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                             <Eye className="h-3.5 w-3.5" />
                             {l.viewCount}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          <Completeness percent={l.completenessPercent} />
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDate(l.createdAt)}

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Users, Megaphone, Globe, X, ShieldCheck, Inbox, Heart } from "lucide-react";
+import { Users, Megaphone, Globe, X, ShieldCheck, Inbox, Heart, Map as MapIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useSwipeToClose } from "@/hooks/useSwipeToClose";
@@ -15,6 +15,7 @@ export interface MoreItem {
 }
 
 const BASE_ITEMS: MoreItem[] = [
+  { label: "Bản đồ tài sản", icon: MapIcon, path: "/ban-do" },
   { label: "Sổ đối tác", icon: Users, sheetKey: "doi-tac", path: "/doi-tac" },
   { label: "Tin đăng của tôi", icon: Megaphone, sheetKey: "my-listings", path: "/my-listings" },
   { label: "Yêu cầu xem nhà", icon: Inbox, sheetKey: "yeu-cau", path: "/yeu-cau" },
@@ -35,7 +36,7 @@ export function MoreSheet({ onClose, onPick }: MoreSheetProps) {
   const items = isAdmin
     ? [
         ...BASE_ITEMS,
-        { label: "Duyệt tin đăng", icon: ShieldCheck, path: "/admin/properties" } as MoreItem,
+        { label: "Duyệt tin đăng", icon: ShieldCheck, path: "/admin/listings" } as MoreItem,
       ]
     : BASE_ITEMS;
 

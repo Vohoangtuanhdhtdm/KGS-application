@@ -4,18 +4,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { assetsApi } from "@/lib/api/assets";
 import {
-  propertiesApi,
+  listingsApi,
   formatListingPrice,
-  type CreatePropertyListingInput,
-} from "@/lib/api/properties";
+  EMPTY_TERMS,
+  type CreateListingInput,
+  type ListingTermsDto,
+  type OwnerListingDto,
+} from "@/lib/api/listings";
+import { ListingTermsFields } from "@/components/listings/ListingTermsFields";
 import { getErrorMessage } from "@/lib/api/errors";
 import { ApiError } from "@/lib/auth/types";
 import {
   LISTING_TYPE,
   ASSET_TYPE,
   PAYMENT_CYCLE,
-  PROPERTY_STATUS,
-  PROPERTY_STATUS_CLASS,
+  LISTING_STATUS,
+  LISTING_STATUS_CLASS,
   enumOptions,
   type ListingTypeCode,
   type PaymentCycleCode,
@@ -54,7 +58,7 @@ import { Globe, Check, Loader2, ImageIcon, ExternalLink, Eye } from "lucide-reac
 
 /**
  * Card "Đăng tin công khai lên Marketplace" trong tab Rao bán.
- * Ẩn nút nếu tài sản đã có tin liên kết (linkedPropertyId != null).
+ * Liệt kê các tin đang sống của tài sản (nguyên căn và/hoặc từng phòng) kèm nút đăng tin mới.
  */
 export function MarketplacePublishCard({ assetId }: { assetId: string }) {
   const [open, setOpen] = useState(false);
@@ -65,7 +69,13 @@ export function MarketplacePublishCard({ assetId }: { assetId: string }) {
     retry: 1,
   });
 
-  const linked = assetQ.data?.linkedPropertyId != null;
+  const listingsQ = useQuery({
+    queryKey: ["asset-listings", assetId],
+    queryFn: () => listingsApi.byAsset(assetId),
+    retry: 1,
+  });
+  const listings = listingsQ.data ?? [];
+  const liveListings = listings.filter((l) => l.status === 1 || l.status === 2);
 
   return (
     <Card>
@@ -76,20 +86,17 @@ export function MarketplacePublishCard({ assetId }: { assetId: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {linked ? (
-          <LinkedListingStatus assetId={assetId} />
-        ) : (
-          <>
-            <p className="text-sm text-muted-foreground">
-              Tạo tin rao công khai để khách chưa đăng nhập cũng xem được. Tin sẽ chờ quản trị viên
-              duyệt trước khi hiển thị.
-            </p>
-            <Button onClick={() => setOpen(true)} disabled={assetQ.isLoading}>
-              <Globe className="h-4 w-4 mr-1.5" />
-              Đăng tin công khai
-            </Button>
-          </>
-        )}
+        <p className="text-sm text-muted-foreground">
+          Đăng tin cho nguyên căn, hoặc cho từng phòng riêng. Tin chờ quản trị viên duyệt trước
+          khi hiển thị công khai.
+        </p>
+
+        {liveListings.length > 0 && <LiveListings listings={liveListings} />}
+
+        <Button onClick={() => setOpen(true)} disabled={assetQ.isLoading || listingsQ.isLoading}>
+          <Globe className="h-4 w-4 mr-1.5" />
+          Đăng tin mới
+        </Button>
       </CardContent>
 
       <PublishDialog key={String(open)} assetId={assetId} open={open} onOpenChange={setOpen} />
@@ -97,46 +104,34 @@ export function MarketplacePublishCard({ assetId }: { assetId: string }) {
   );
 }
 
-/** Trạng thái tin đăng công khai hiện tại của tài sản (khi đã liên kết). */
-function LinkedListingStatus({ assetId }: { assetId: string }) {
-  const query = useQuery({
-    queryKey: ["my-listings"],
-    queryFn: () => propertiesApi.myListings(),
-    retry: 1,
-  });
-
-  const listing = (query.data ?? []).find((l) => l.linkedAssetId === assetId);
-
+/** Các tin đang chờ duyệt hoặc đang hiển thị của tài sản này. Một tài sản nay có thể
+ *  có nhiều tin: một tin cho nguyên căn, hoặc mỗi phòng một tin. */
+function LiveListings({ listings }: { listings: OwnerListingDto[] }) {
   return (
-    <div className="space-y-3">
-      {query.isLoading ? (
-        <p className="text-sm text-muted-foreground">Đang tải trạng thái tin đăng...</p>
-      ) : listing ? (
-        <div className="flex items-center gap-3 flex-wrap">
-          <Badge variant="outline" className={PROPERTY_STATUS_CLASS[listing.status]}>
-            {PROPERTY_STATUS[listing.status]}
+    <div className="space-y-2">
+      {listings.map((l) => (
+        <div key={l.id} className="flex items-center gap-3 flex-wrap rounded-md border px-3 py-2">
+          <span className="text-sm font-medium">{l.unitName ?? "Nguyên căn"}</span>
+          <Badge variant="outline" className={LISTING_STATUS_CLASS[l.status]}>
+            {LISTING_STATUS[l.status]}
           </Badge>
           <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
             <Eye className="h-3.5 w-3.5" />
-            {listing.viewCount} lượt xem
+            {l.viewCount}
           </span>
+          {l.moderationNote && (
+            <span className="text-xs text-warning-foreground">{l.moderationNote}</span>
+          )}
+          <Link to="/my-listings" className="text-sm text-primary hover:underline ml-auto">
+            Quản lý
+          </Link>
         </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Tài sản này đã có tin đăng trên marketplace.
-        </p>
-      )}
-      <Button variant="outline" asChild>
-        <Link to="/my-listings">
-          Xem trong Tin đăng của tôi
-          <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-        </Link>
-      </Button>
+      ))}
     </div>
   );
 }
 
-const STEP_LABELS = ["Loại tin", "Nội dung", "Thông số", "Chọn ảnh", "Xác nhận"];
+const STEP_LABELS = ["Loại tin", "Nội dung", "Điều kiện thuê", "Chọn ảnh", "Xác nhận"];
 
 function PublishDialog({
   assetId,
@@ -158,10 +153,13 @@ function PublishDialog({
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<number | null>(null);
   const [prefilled, setPrefilled] = useState(false);
-  // Bước 3 — thông số: mặc định lấy từ Asset; chỉ gửi override khi user chỉnh
-  const [specs, setSpecs] = useState<SpecsState | null>(null);
-  const [specsOverride, setSpecsOverride] = useState(false); // user đã bấm "Chỉnh sửa cho tin đăng này"
-  const [frontage, setFrontage] = useState(""); // Asset không lưu mặt tiền → luôn hỏi riêng
+  // Bước 3 — phạm vi đăng: nguyên căn hay một phòng cụ thể.
+  // KHÔNG còn ô nhập thông số ở đây: sau khi gộp Property vào Asset, mọi thông số vật lý
+  // chỉ có một nguồn duy nhất là tài sản. Ô "chỉnh sửa thông số riêng cho tin đăng" cũ
+  // chính là chỗ sinh ra dữ liệu lệch giữa hai bảng.
+  const [assetUnitId, setAssetUnitId] = useState<string>("");
+  const [terms, setTerms] = useState<ListingTermsDto>(EMPTY_TERMS);
+  const [amenities, setAmenities] = useState<string[]>([]);
   // Bước 4
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [conflict, setConflict] = useState<string | null>(null);
@@ -175,20 +173,19 @@ function PublishDialog({
   });
   const asset = assetQ.data;
 
-  // Khởi tạo specs state từ asset một lần khi có data
-  if (open && asset && specs === null) {
-    const initial = specsFromApi(asset);
-    setSpecs(initial);
-    // Nếu thiếu bất kỳ trường nào → mở form nhập luôn
-    if (!hasAllSpecs(asset)) setSpecsOverride(true);
-  }
-
   // Prefill giá từ giá trị hiện tại của tài sản. Trước đây lấy từ module rao bán
   // nội bộ — module đó đã được gỡ vì nằm ngoài trục nghiệp vụ cho thuê.
   if (open && !prefilled && asset?.currentValue && price === null) {
     setPrice(asset.currentValue);
     setPrefilled(true);
   }
+
+  const unitsQ = useQuery({
+    queryKey: ["asset-units", assetId],
+    queryFn: () => assetsApi.units.list(assetId),
+    enabled: open,
+    retry: 1,
+  });
 
   const mediaQ = useQuery({
     queryKey: ["asset-media", assetId],
@@ -202,38 +199,24 @@ function PublishDialog({
 
   const create = useMutation({
     mutationFn: () => {
-      // Chỉ gửi 6 trường mô tả khi user thật sự chỉnh sửa (progressive disclosure).
-      // Nếu không chỉnh, gửi null → backend tự lấy từ Asset.
-      const specsPayload =
-        specsOverride && specs
-          ? specsToApi(specs)
-          : {
-              floors: null,
-              bedrooms: null,
-              bathrooms: null,
-              houseDirection: null,
-              legalStatus: null,
-              furnitureState: null,
-            };
-      const body: CreatePropertyListingInput = {
+      // Payload nay chi con thong tin cua TIN DANG. Moi thuoc tinh vat ly doc tu Asset.
+      const body: CreateListingInput = {
         type,
+        assetUnitId: assetUnitId || null,
         title: title.trim(),
         description: description.trim(),
         price: price ?? 0,
         rentPaymentCycle: type === 2 ? rentPaymentCycle : null,
-        ...specsPayload,
-        frontage: num(frontage),
-        // Loại hình BĐS luôn lấy từ Asset (không hỏi user nữa)
-        propertyType: null,
         selectedAssetMediaIds: selectedIds,
+        terms,
+        amenities,
       };
-      return propertiesApi.createFromAsset(assetId, body);
+      return listingsApi.create(assetId, body);
     },
     onSuccess: () => {
-      // linkedPropertyId đổi → ẩn nút đăng tin; my-listings có tin mới
       qc.invalidateQueries({ queryKey: ["asset", assetId] });
+      qc.invalidateQueries({ queryKey: ["asset-listings", assetId] });
       qc.invalidateQueries({ queryKey: ["my-listings"] });
-      // TODO: khi backend có GET /property-listings/preview/{id} thì thêm link xem trước bản nháp
       toast.success("Đã gửi tin đăng, đang chờ duyệt.");
       onOpenChange(false);
     },
@@ -357,54 +340,51 @@ function PublishDialog({
             </div>
           )}
 
-          {/* Bước 3 — thông số: preview từ Asset + mặt tiền + progressive disclosure */}
+          {/* Bước 3 — phạm vi đăng + thông số CHỈ ĐỌC lấy từ tài sản */}
           {step === 2 && asset && (
             <div className="space-y-4">
-              <SpecsPreview asset={asset} />
-              <div className="space-y-2 max-w-xs">
-                <Label>Mặt tiền (m)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={frontage}
-                  onChange={(e) => setFrontage(e.target.value)}
-                  placeholder="Tài sản chưa lưu — nhập cho tin đăng"
-                />
+              <div className="space-y-2">
+                <Label>Đăng tin cho</Label>
+                <Select value={assetUnitId || "whole"} onValueChange={(v) => setAssetUnitId(v === "whole" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="whole">Nguyên căn</SelectItem>
+                    {(unitsQ.data ?? []).map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
+                        {u.area ? ` — ${u.area} m²` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Chọn một phòng để đăng riêng phòng đó. Mỗi phòng có thể có tin đăng riêng.
+                </p>
               </div>
-              {!hasAllSpecs(asset) && !specsOverride && (
-                <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
-                  Một số thông tin chưa có — vui lòng bổ sung để tin đăng đầy đủ hơn.
-                </div>
-              )}
-              {!specsOverride ? (
-                <Button variant="outline" size="sm" onClick={() => setSpecsOverride(true)}>
-                  Chỉnh sửa cho tin đăng này →
-                </Button>
-              ) : (
-                <div className="rounded-lg border p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium">Chỉnh sửa thông số cho tin đăng này</div>
-                    {hasAllSpecs(asset) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSpecsOverride(false);
-                          setSpecs(specsFromApi(asset));
-                        }}
-                      >
-                        Dùng lại từ tài sản
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Chỉ áp dụng cho tin này, không sửa dữ liệu tài sản.
-                  </p>
-                  {specs && (
-                    <AssetSpecsFields value={specs} onChange={setSpecs} collapsible={false} />
-                  )}
-                </div>
-              )}
+
+              <ListingTermsFields
+                value={terms}
+                onChange={setTerms}
+                amenities={amenities}
+                onAmenitiesChange={setAmenities}
+                isRent={type === 2}
+              />
+
+              <SpecsPreview asset={asset} />
+
+              <p className="text-xs text-muted-foreground">
+                Thông số lấy trực tiếp từ tài sản, không nhập lại ở đây — sửa một lần ở trang
+                tài sản là mọi tin đăng cập nhật theo.{" "}
+                <Link
+                  to="/tai-san/$id/sua"
+                  params={{ id: assetId }}
+                  className="text-primary hover:underline"
+                >
+                  Sửa thông tin tài sản
+                </Link>
+              </p>
             </div>
           )}
 

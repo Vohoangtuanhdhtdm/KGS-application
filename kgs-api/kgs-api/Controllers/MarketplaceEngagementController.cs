@@ -22,17 +22,17 @@ namespace kgs_api.Controllers
             => Ok(await _engagement.GetSavedAsync(ct));
 
         /// <summary>Idempotent — lưu lại tin đã lưu trả 204 chứ không báo lỗi.</summary>
-        [HttpPost("{propertyId:int}")]
-        public async Task<IActionResult> Save(int propertyId, CancellationToken ct)
+        [HttpPost("{listingId:guid}")]
+        public async Task<IActionResult> Save(Guid listingId, CancellationToken ct)
         {
-            await _engagement.SaveAsync(propertyId, ct);
+            await _engagement.SaveAsync(listingId, ct);
             return NoContent();
         }
 
-        [HttpDelete("{propertyId:int}")]
-        public async Task<IActionResult> Unsave(int propertyId, CancellationToken ct)
+        [HttpDelete("{listingId:guid}")]
+        public async Task<IActionResult> Unsave(Guid listingId, CancellationToken ct)
         {
-            await _engagement.UnsaveAsync(propertyId, ct);
+            await _engagement.UnsaveAsync(listingId, ct);
             return NoContent();
         }
     }
@@ -76,7 +76,7 @@ namespace kgs_api.Controllers
     // ============================================================
     [ApiController]
     [Authorize]
-    [Route("api/property-listings/{slug}/inquiries")]
+    [Route("api/listings/{slug}/inquiries")]
     public sealed class PropertyInquiryController : ControllerBase
     {
         private readonly IMarketplaceEngagementService _engagement;

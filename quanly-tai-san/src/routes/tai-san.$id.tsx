@@ -223,10 +223,12 @@ function AssetDetail() {
             </Card>
           </div>
           {/* Trạng thái liên kết tin đăng — chỉ đọc; quản lý tin nằm ở trang Tin đăng của tôi */}
-          {a.linkedPropertyId !== null && (
+          {a.listingCount > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <Link2 className="h-4 w-4 text-muted-foreground" />
-              <span>Đã liên kết với tin đăng công khai</span>
+              <span>
+                {a.listingCount} tin đăng công khai
+              </span>
               <Link
                 to="/my-listings"
                 className="text-primary hover:underline inline-flex items-center gap-0.5"

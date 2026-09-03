@@ -114,7 +114,7 @@ export interface AssetSummaryDto {
   district: string;
   currentValue: number | null;
   thumbnailUrl: string | null;
-  linkedPropertyId: number | null;
+  listingCount: number;
 }
 
 export interface AssetNearbyDto {
@@ -140,7 +140,7 @@ export interface AssetDetailDto {
   acquisitionDate: string | null;
   notes: string | null;
   thumbnail: StoredFileDto | null;
-  linkedPropertyId: number | null;
+  listingCount: number;
   unitCount: number;
   activeContractCount: number;
   createdAt: string;

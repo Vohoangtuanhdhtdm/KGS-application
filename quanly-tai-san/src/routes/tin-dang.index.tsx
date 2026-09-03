@@ -11,10 +11,10 @@ import type L from "leaflet";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  propertiesApi,
+  listingsApi,
   type PublicListingFilters,
-  type PublicPropertySummaryDto,
-} from "@/lib/api/properties";
+  type PublicListingSummaryDto,
+} from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { type ListingTypeCode } from "@/constants/enums";
 import { PublicHeader } from "@/components/public/PublicHeader";
@@ -239,7 +239,7 @@ function PublicListingsPage() {
 
   const query = useQuery({
     queryKey: ["public-listings", filters],
-    queryFn: () => propertiesApi.search(filters),
+    queryFn: () => listingsApi.search(filters),
     placeholderData: keepPreviousData,
     retry: 1,
   });
@@ -251,7 +251,7 @@ function PublicListingsPage() {
     () =>
       items
         .filter(
-          (p): p is PublicPropertySummaryDto & { latitude: number; longitude: number } =>
+          (p): p is PublicListingSummaryDto & { latitude: number; longitude: number } =>
             p.latitude != null && p.longitude != null,
         )
         .map((p) => ({

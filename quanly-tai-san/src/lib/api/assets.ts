@@ -33,7 +33,8 @@ export interface AssetListItem {
   district: string;
   currentValue: number | null;
   thumbnailUrl: string | null;
-  linkedPropertyId?: string | null;
+  /** Số tin đăng đang chờ duyệt hoặc đang hiển thị của tài sản. */
+  listingCount?: number;
 }
 
 export interface AssetMediaFile {
@@ -56,7 +57,7 @@ export interface AssetDetail {
   acquisitionDate: string | null;
   notes: string | null;
   thumbnail: AssetMediaFile | null;
-  linkedPropertyId: string | null;
+  listingCount: number;
   unitCount: number;
   activeContractCount: number;
   createdAt: string;

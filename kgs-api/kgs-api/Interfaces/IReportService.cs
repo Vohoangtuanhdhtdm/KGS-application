@@ -15,5 +15,9 @@ namespace kgs_api.Interfaces
 
         /// <summary>C4 — Tổng thuế phải nộp theo năm, chia theo từng loại thuế.</summary>
         Task<TaxReportDto> GetTaxReportAsync(int year, CancellationToken ct = default);
+
+        /// <summary>Số liệu Bàn vận hành cho một tháng: dòng tiền hai chiều, cọc đang giữ,
+        /// và tình trạng lấp đầy kèm danh sách phòng trống.</summary>
+        Task<OperationsDashboardDto> GetOperationsDashboardAsync(int year, int month, CancellationToken ct = default);
     }
 }
