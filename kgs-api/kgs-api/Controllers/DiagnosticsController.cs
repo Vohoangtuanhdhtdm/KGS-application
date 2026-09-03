@@ -160,8 +160,6 @@ namespace kgs_api.Controllers
                     ["ContactParties"] = await _db.ContactParties.CountAsync(ct),
                     ["CashFlowEntries"] = await _db.CashFlowEntries.CountAsync(ct),
                     ["Reminders"] = await _db.Reminders.CountAsync(ct),
-                    ["Equipments"] = await _db.Equipments.CountAsync(ct),
-                    ["MaintenanceRecords"] = await _db.MaintenanceRecords.CountAsync(ct),
                     ["FileDeletionQueueItems"] = await _db.FileDeletionQueueItems.CountAsync(ct),
                     ["Listings"] = await _db.Listings.CountAsync(ct),
                     ["ListingImages"] = await _db.ListingImages.CountAsync(ct),

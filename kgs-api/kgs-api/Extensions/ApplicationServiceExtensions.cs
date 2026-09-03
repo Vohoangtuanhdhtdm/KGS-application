@@ -98,8 +98,6 @@ namespace kgs_api.Extensions
             services.AddScoped<ICashFlowService, CashFlowService>();
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<IReminderService, ReminderService>();
-            services.AddScoped<IEquipmentService, EquipmentService>();
-            services.AddScoped<IMaintenanceService, MaintenanceService>();
             services.AddScoped<IMarketplaceEngagementService, MarketplaceEngagementService>();
             services.AddScoped<INotificationSender, EmailNotificationSender>();
             services.Configure<GoogleAuthSettings>(config.GetSection("GoogleAuth"));

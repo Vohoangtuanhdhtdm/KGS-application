@@ -38,8 +38,6 @@
             Other = 99
         }
 
-        public enum EquipmentCondition { New = 1, Good = 2, Fair = 3, NeedRepair = 4, Broken = 5 }
-        public enum EquipmentSource { OwnerProvided = 1, FromLandlord = 2, SelfEquipped = 3 } // của chủ / nhận từ chủ nhà / trang bị thêm
 
         public enum CashFlowDirection { Income = 1, Expense = 2 }
 

@@ -20,8 +20,6 @@ namespace kgs_api.Data
         public DbSet<AssetDocument> AssetDocuments => Set<AssetDocument>();
         public DbSet<LeaseContract> LeaseContracts => Set<LeaseContract>();
         public DbSet<ContactParty> ContactParties => Set<ContactParty>();
-        public DbSet<Equipment> Equipments => Set<Equipment>();
-        public DbSet<MaintenanceRecord> MaintenanceRecords => Set<MaintenanceRecord>();
         public DbSet<CashFlowEntry> CashFlowEntries => Set<CashFlowEntry>();
         public DbSet<Reminder> Reminders => Set<Reminder>();
         public DbSet<SavedListing> SavedListings => Set<SavedListing>();

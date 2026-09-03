@@ -151,30 +151,6 @@ export const RECURRENCE_CYCLE = {
 } as const;
 export type RecurrenceCycleCode = keyof typeof RECURRENCE_CYCLE;
 
-export const EQUIPMENT_CONDITION = {
-  1: "Mới",
-  2: "Tốt",
-  3: "Khá",
-  4: "Cần sửa",
-  5: "Hỏng",
-} as const;
-export type EquipmentConditionCode = keyof typeof EQUIPMENT_CONDITION;
-
-export const EQUIPMENT_CONDITION_CLASS: Record<EquipmentConditionCode, string> = {
-  1: "bg-success/15 text-success border-success/30",
-  2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning-foreground border-warning/40",
-  4: "bg-warning/20 text-warning-foreground border-warning/40",
-  5: "bg-destructive/15 text-destructive border-destructive/30",
-};
-
-export const EQUIPMENT_SOURCE = {
-  1: "Chủ nhà cung cấp",
-  2: "Nhận từ chủ nhà",
-  3: "Tự trang bị",
-} as const;
-export type EquipmentSourceCode = keyof typeof EQUIPMENT_SOURCE;
-
 export const DOCUMENT_TYPE = {
   1: "Sổ đỏ/sổ hồng",
   2: "HĐ mua bán",

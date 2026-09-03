@@ -37,8 +37,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { AssetMediaTab } from "@/components/media/AssetMediaTab";
-import { EquipmentTab } from "@/components/assets/EquipmentTab";
-import { MaintenanceTab } from "@/components/assets/MaintenanceTab";
 import { MarketplacePublishCard } from "@/components/assets/MarketplacePublishCard";
 import { AssetUnitsTab } from "@/components/units/AssetUnitsTab";
 import { AssetContractsTab } from "@/components/contracts/AssetContractsTab";
@@ -185,8 +183,6 @@ function AssetDetail() {
           <TabsTrigger value="units">Tầng/Phòng ({a.unitCount})</TabsTrigger>
           <TabsTrigger value="contracts">Hợp đồng ({a.activeContractCount})</TabsTrigger>
           <TabsTrigger value="media">Ảnh</TabsTrigger>
-          <TabsTrigger value="equipment">Thiết bị</TabsTrigger>
-          <TabsTrigger value="maintenance">Sửa chữa</TabsTrigger>
           <TabsTrigger value="listing">Tin đăng</TabsTrigger>
           <TabsTrigger value="docs">Giấy tờ</TabsTrigger>
         </TabsList>
@@ -273,12 +269,6 @@ function AssetDetail() {
         </TabsContent>
         <TabsContent value="media">
           <AssetMediaTab assetId={id} />
-        </TabsContent>
-        <TabsContent value="equipment">
-          <EquipmentTab assetId={id} />
-        </TabsContent>
-        <TabsContent value="maintenance">
-          <MaintenanceTab assetId={id} />
         </TabsContent>
         <TabsContent value="listing">
           <MarketplacePublishCard assetId={id} />

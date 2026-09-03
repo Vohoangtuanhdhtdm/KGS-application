@@ -8,8 +8,6 @@ import {
   seedReminders,
   seedDocuments,
   seedMedia,
-  seedEquipment,
-  seedMaintenance,
 } from "./mock-data";
 import type {
   Asset,
@@ -20,8 +18,6 @@ import type {
   Reminder,
   AssetDocument,
   AssetMedia,
-  Equipment,
-  MaintenanceRecord,
 } from "./types";
 
 interface Store {
@@ -33,8 +29,6 @@ interface Store {
   reminders: Reminder[];
   documents: AssetDocument[];
   media: AssetMedia[];
-  equipment: Equipment[];
-  maintenance: MaintenanceRecord[];
 
   addAsset: (a: Asset) => void;
   updateAsset: (id: string, patch: Partial<Asset>) => void;
@@ -56,8 +50,6 @@ interface Store {
   updateReminder: (id: string, patch: Partial<Reminder>) => void;
   deleteReminder: (id: string) => void;
 
-  addMaintenance: (m: MaintenanceRecord) => void;
-  addEquipment: (e: Equipment) => void;
   addDocument: (d: AssetDocument) => void;
 }
 
@@ -72,8 +64,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [reminders, setReminders] = useState<Reminder[]>(seedReminders);
   const [documents, setDocuments] = useState<AssetDocument[]>(seedDocuments);
   const [media] = useState<AssetMedia[]>(seedMedia);
-  const [equipment, setEquipment] = useState<Equipment[]>(seedEquipment);
-  const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>(seedMaintenance);
 
   const value: Store = {
     assets,
@@ -84,8 +74,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     reminders,
     documents,
     media,
-    equipment,
-    maintenance,
 
     addAsset: (a) => setAssets((prev) => [a, ...prev]),
     updateAsset: (id, patch) =>
@@ -177,25 +165,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setReminders((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r))),
     deleteReminder: (id) => setReminders((prev) => prev.filter((r) => r.id !== id)),
 
-    addMaintenance: (m) => {
-      setMaintenance((prev) => [m, ...prev]);
-      if (m.cost > 0) {
-        setCashflow((prev) => [
-          {
-            id: `cf-${m.id}`,
-            assetId: m.assetId,
-            direction: "Chi",
-            category: "Chi phí sửa chữa",
-            amount: m.cost,
-            occurredAt: m.startDate,
-            description: `Sửa chữa: ${m.title}`,
-            linkedMaintenanceId: m.id,
-          },
-          ...prev,
-        ]);
-      }
-    },
-    addEquipment: (e) => setEquipment((prev) => [e, ...prev]),
     addDocument: (d) => setDocuments((prev) => [d, ...prev]),
   };
   void setUnits;
