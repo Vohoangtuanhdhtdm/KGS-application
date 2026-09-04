@@ -43,7 +43,7 @@ import { AssetContractsTab } from "@/components/contracts/AssetContractsTab";
 import { AssetDocumentsTab } from "@/components/assets/AssetDocumentsTab";
 import { ClientMap } from "@/components/map/ClientMap";
 
-export const Route = createFileRoute("/tai-san/$id")({
+export const Route = createFileRoute("/quan-ly/tai-san/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } =>
     typeof s.tab === "string" ? { tab: s.tab } : {},
   head: () => ({ meta: [{ title: "Chi tiết tài sản — Quản Lý Tài Sản" }] }),
@@ -70,7 +70,7 @@ function AssetDetail() {
     onSuccess: () => {
       toast.success("Đã xoá tài sản");
       qc.invalidateQueries({ queryKey: ["assets"] });
-      navigate({ to: "/tai-san" });
+      navigate({ to: "/quan-ly/tai-san" });
     },
     onError: (err) => {
       if (err instanceof ApiError && err.status === 409) setDelError(getErrorMessage(err));
@@ -94,7 +94,7 @@ function AssetDetail() {
     return (
       <div className="p-6 max-w-[600px]">
         <Button variant="ghost" size="sm" asChild className="mb-4">
-          <Link to="/tai-san">
+          <Link to="/quan-ly/tai-san">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Về danh sách
           </Link>
@@ -120,14 +120,14 @@ function AssetDetail() {
     <div className="p-6 space-y-5 max-w-[1200px]">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/tai-san">
+          <Link to="/quan-ly/tai-san">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Về danh sách
           </Link>
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
-            <Link to="/tai-san/$id/sua" params={{ id }}>
+            <Link to="/quan-ly/tai-san/$id/sua" params={{ id }}>
               <Pencil className="h-4 w-4 mr-1.5" />
               Sửa
             </Link>
@@ -226,7 +226,7 @@ function AssetDetail() {
                 {a.listingCount} tin đăng công khai
               </span>
               <Link
-                to="/my-listings"
+                to="/tin-cua-toi"
                 className="text-primary hover:underline inline-flex items-center gap-0.5"
               >
                 Quản lý tin đăng

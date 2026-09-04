@@ -10,6 +10,23 @@ namespace kgs_api.Interfaces
         Task<OwnerListingDto> CreateAsync(Guid assetId, CreateListingRequest request, CancellationToken ct = default);
         Task<OwnerListingDto> UpdateAsync(Guid listingId, UpdateListingRequest request, CancellationToken ct = default);
 
+        // ==================== Luồng đăng tin trực tiếp (Giai đoạn 1) ====================
+
+        /// <summary>Tạo tin ở trạng thái Draft, đồng thời tạo Asset ngầm từ dữ liệu địa chỉ.
+        /// Người đăng không cần biết tới khái niệm tài sản.</summary>
+        Task<OwnerListingDto> CreateDirectAsync(CreateListingDirectRequest request, CancellationToken ct = default);
+
+        /// <summary>Thêm ảnh vào tin. Tách khỏi bước tạo để form hiển thị được tiến trình
+        /// tải từng ảnh, và để bản nháp không bị chặn bởi một lần upload nặng.</summary>
+        Task<IReadOnlyList<ListingImageDto>> AddImagesAsync(Guid listingId, IFormFileCollection files, CancellationToken ct = default);
+
+        Task<IReadOnlyList<ListingImageDto>> GetImagesAsync(Guid listingId, CancellationToken ct = default);
+        Task RemoveImageAsync(Guid listingId, Guid imageId, CancellationToken ct = default);
+
+        /// <summary>Gửi bản nháp đi duyệt. Đây là nơi kiểm tra các điều kiện tối thiểu —
+        /// bản nháp cố tình cho phép thiếu, chỉ khi gửi mới bắt buộc đủ.</summary>
+        Task<OwnerListingDto> SubmitAsync(Guid listingId, CancellationToken ct = default);
+
         /// <summary>Đóng tin (đã có khách / đã bán). Không xoá — giữ lịch sử và lượt xem.</summary>
         Task CloseAsync(Guid listingId, CancellationToken ct = default);
 

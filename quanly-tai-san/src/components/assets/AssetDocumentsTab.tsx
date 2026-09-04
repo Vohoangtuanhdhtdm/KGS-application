@@ -116,7 +116,7 @@ export function AssetDocumentsTab({ assetId }: { assetId: string }) {
                     </div>
                     {d.leaseContractId && (
                       <Link
-                        to="/hop-dong/$id"
+                        to="/quan-ly/hop-dong/$id"
                         params={{ id: d.leaseContractId }}
                         className="inline-block mt-1"
                       >

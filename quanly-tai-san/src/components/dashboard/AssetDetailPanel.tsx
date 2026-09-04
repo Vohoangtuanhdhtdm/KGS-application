@@ -161,7 +161,7 @@ export function AssetDetailPanel({ assetId, onClose, onOpenDetail }: AssetDetail
                   {activeContracts.map((c) => (
                     <li key={c.id}>
                       <Link
-                        to="/hop-dong/$id"
+                        to="/quan-ly/hop-dong/$id"
                         params={{ id: c.id }}
                         className="block rounded-md border p-2.5 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
@@ -224,7 +224,7 @@ export function AssetDetailPanel({ assetId, onClose, onOpenDetail }: AssetDetail
           </Button>
         ) : (
           <Button size="sm" className="w-full" asChild>
-            <Link to="/tai-san/$id" params={{ id: assetId }}>
+            <Link to="/quan-ly/tai-san/$id" params={{ id: assetId }}>
               Xem chi tiết đầy đủ
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Link>
@@ -232,13 +232,13 @@ export function AssetDetailPanel({ assetId, onClose, onOpenDetail }: AssetDetail
         )}
         <div className="grid grid-cols-2 gap-1.5">
           <Button size="sm" variant="outline" asChild>
-            <Link to="/tai-san/$id" params={{ id: assetId }} search={{ tab: "sale" }}>
+            <Link to="/quan-ly/tai-san/$id" params={{ id: assetId }} search={{ tab: "sale" }}>
               <Megaphone className="mr-1.5 h-3.5 w-3.5" />
               Đăng tin
             </Link>
           </Button>
           <Button size="sm" variant="outline" asChild>
-            <Link to="/thu-chi">
+            <Link to="/quan-ly/thu-chi">
               <Wallet className="mr-1.5 h-3.5 w-3.5" />
               Thu chi
             </Link>

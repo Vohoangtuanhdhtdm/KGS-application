@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowLeft, RefreshCw, XCircle, AlertTriangle } from "lucide-react";
 
-export const Route = createFileRoute("/hop-dong/$id")({
+export const Route = createFileRoute("/quan-ly/hop-dong/$id")({
   head: () => ({ meta: [{ title: "Chi tiết hợp đồng — Quản Lý Tài Sản" }] }),
   component: ContractDetailPage,
 });
@@ -70,7 +70,7 @@ function ContractDetailPage() {
   return (
     <div className="p-6 space-y-5 max-w-4xl">
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/hop-dong">
+        <Link to="/quan-ly/hop-dong">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Về danh sách
         </Link>
@@ -87,7 +87,7 @@ function ContractDetailPage() {
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             <Link
-              to="/tai-san/$id"
+              to="/quan-ly/tai-san/$id"
               params={{ id: c.assetId }}
               className="hover:underline text-primary"
             >
@@ -119,7 +119,7 @@ function ContractDetailPage() {
           <CardContent className="p-3 text-sm flex items-center gap-2">
             <span className="text-muted-foreground">Được gia hạn từ hợp đồng trước</span>
             <Link
-              to="/hop-dong/$id"
+              to="/quan-ly/hop-dong/$id"
               params={{ id: c.parentContractId }}
               className="text-primary hover:underline"
             >
@@ -227,7 +227,7 @@ function RenewDialog({
       qc.invalidateQueries({ queryKey: ["contract", id] });
       qc.invalidateQueries({ queryKey: ["reminders"] });
       onOpenChange(false);
-      navigate({ to: "/hop-dong/$id", params: { id: newContract.id } });
+      navigate({ to: "/quan-ly/hop-dong/$id", params: { id: newContract.id } });
     },
     onError: (err) => toast.error(getErrorMessage(err, "Không gia hạn được")),
   });

@@ -34,7 +34,7 @@ import {
   type SpecsState,
 } from "@/components/assets/AssetSpecsFields";
 
-export const Route = createFileRoute("/tai-san/moi")({
+export const Route = createFileRoute("/quan-ly/tai-san/moi")({
   head: () => ({ meta: [{ title: "Tạo tài sản mới — Quản Lý Tài Sản" }] }),
   component: NewAsset,
 });
@@ -81,7 +81,7 @@ function NewAsset() {
         description: "Mẹo: thêm ảnh đại diện để tài sản dễ nhận diện hơn.",
       });
       qc.invalidateQueries({ queryKey: ["assets"] });
-      navigate({ to: "/tai-san/$id", params: { id: created.id } });
+      navigate({ to: "/quan-ly/tai-san/$id", params: { id: created.id } });
     },
     onError: (err) => toast.error(getErrorMessage(err, "Không tạo được tài sản")),
   });
@@ -109,7 +109,7 @@ function NewAsset() {
   return (
     <div className="p-6 max-w-3xl space-y-5">
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/tai-san">
+        <Link to="/quan-ly/tai-san">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Quay lại
         </Link>
@@ -301,7 +301,7 @@ function NewAsset() {
       <div className="flex justify-between">
         <Button
           variant="outline"
-          onClick={() => (step === 0 ? navigate({ to: "/tai-san" }) : setStep(step - 1))}
+          onClick={() => (step === 0 ? navigate({ to: "/quan-ly/tai-san" }) : setStep(step - 1))}
           disabled={mutation.isPending}
         >
           <ArrowLeft className="h-4 w-4 mr-1.5" />

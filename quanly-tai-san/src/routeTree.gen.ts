@@ -12,28 +12,30 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as R403RouteImport } from './routes/403'
 import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
+import { Route as DangTinRouteImport } from './routes/dang-tin'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as MyListingsRouteImport } from './routes/my-listings'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TinCuaToiRouteImport } from './routes/tin-cua-toi'
 import { Route as AdminListingsRouteImport } from './routes/admin.listings'
-import { Route as BanDoIndexRouteImport } from './routes/ban-do.index'
 import { Route as DaLuuIndexRouteImport } from './routes/da-luu.index'
-import { Route as DoiTacIndexRouteImport } from './routes/doi-tac.index'
-import { Route as HopDongIndexRouteImport } from './routes/hop-dong.index'
-import { Route as HopDongIdRouteImport } from './routes/hop-dong.$id'
-import { Route as HopDongMoiRouteImport } from './routes/hop-dong.moi'
-import { Route as NhacLichIndexRouteImport } from './routes/nhac-lich.index'
-import { Route as TaiSanIndexRouteImport } from './routes/tai-san.index'
-import { Route as TaiSanIdRouteImport } from './routes/tai-san.$id'
-import { Route as TaiSanMoiRouteImport } from './routes/tai-san.moi'
-import { Route as ThuChiIndexRouteImport } from './routes/thu-chi.index'
+import { Route as QuanLyIndexRouteImport } from './routes/quan-ly.index'
 import { Route as TinDangIndexRouteImport } from './routes/tin-dang.index'
 import { Route as TinDangSlugRouteImport } from './routes/tin-dang.$slug'
 import { Route as YeuCauIndexRouteImport } from './routes/yeu-cau.index'
-import { Route as TaiSanIdSuaRouteImport } from './routes/tai-san.$id_.sua'
+import { Route as QuanLyBanDoIndexRouteImport } from './routes/quan-ly.ban-do.index'
+import { Route as QuanLyDoiTacIndexRouteImport } from './routes/quan-ly.doi-tac.index'
+import { Route as QuanLyHopDongIndexRouteImport } from './routes/quan-ly.hop-dong.index'
+import { Route as QuanLyHopDongIdRouteImport } from './routes/quan-ly.hop-dong.$id'
+import { Route as QuanLyHopDongMoiRouteImport } from './routes/quan-ly.hop-dong.moi'
+import { Route as QuanLyNhacLichIndexRouteImport } from './routes/quan-ly.nhac-lich.index'
+import { Route as QuanLyTaiSanIndexRouteImport } from './routes/quan-ly.tai-san.index'
+import { Route as QuanLyTaiSanIdRouteImport } from './routes/quan-ly.tai-san.$id'
+import { Route as QuanLyTaiSanMoiRouteImport } from './routes/quan-ly.tai-san.moi'
+import { Route as QuanLyThuChiIndexRouteImport } from './routes/quan-ly.thu-chi.index'
+import { Route as QuanLyTaiSanIdSuaRouteImport } from './routes/quan-ly.tai-san.$id_.sua'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -50,6 +52,11 @@ const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
   path: '/confirm-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DangTinRoute = DangTinRouteImport.update({
+  id: '/dang-tin',
+  path: '/dang-tin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
@@ -58,11 +65,6 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MyListingsRoute = MyListingsRouteImport.update({
-  id: '/my-listings',
-  path: '/my-listings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -80,14 +82,14 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TinCuaToiRoute = TinCuaToiRouteImport.update({
+  id: '/tin-cua-toi',
+  path: '/tin-cua-toi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminListingsRoute = AdminListingsRouteImport.update({
   id: '/admin/listings',
   path: '/admin/listings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BanDoIndexRoute = BanDoIndexRouteImport.update({
-  id: '/ban-do/',
-  path: '/ban-do/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DaLuuIndexRoute = DaLuuIndexRouteImport.update({
@@ -95,49 +97,9 @@ const DaLuuIndexRoute = DaLuuIndexRouteImport.update({
   path: '/da-luu/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DoiTacIndexRoute = DoiTacIndexRouteImport.update({
-  id: '/doi-tac/',
-  path: '/doi-tac/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HopDongIndexRoute = HopDongIndexRouteImport.update({
-  id: '/hop-dong/',
-  path: '/hop-dong/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HopDongIdRoute = HopDongIdRouteImport.update({
-  id: '/hop-dong/$id',
-  path: '/hop-dong/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HopDongMoiRoute = HopDongMoiRouteImport.update({
-  id: '/hop-dong/moi',
-  path: '/hop-dong/moi',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NhacLichIndexRoute = NhacLichIndexRouteImport.update({
-  id: '/nhac-lich/',
-  path: '/nhac-lich/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TaiSanIndexRoute = TaiSanIndexRouteImport.update({
-  id: '/tai-san/',
-  path: '/tai-san/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TaiSanIdRoute = TaiSanIdRouteImport.update({
-  id: '/tai-san/$id',
-  path: '/tai-san/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TaiSanMoiRoute = TaiSanMoiRouteImport.update({
-  id: '/tai-san/moi',
-  path: '/tai-san/moi',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ThuChiIndexRoute = ThuChiIndexRouteImport.update({
-  id: '/thu-chi/',
-  path: '/thu-chi/',
+const QuanLyIndexRoute = QuanLyIndexRouteImport.update({
+  id: '/quan-ly/',
+  path: '/quan-ly/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TinDangIndexRoute = TinDangIndexRouteImport.update({
@@ -155,9 +117,59 @@ const YeuCauIndexRoute = YeuCauIndexRouteImport.update({
   path: '/yeu-cau/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TaiSanIdSuaRoute = TaiSanIdSuaRouteImport.update({
-  id: '/tai-san/$id_/sua',
-  path: '/tai-san/$id/sua',
+const QuanLyBanDoIndexRoute = QuanLyBanDoIndexRouteImport.update({
+  id: '/quan-ly/ban-do/',
+  path: '/quan-ly/ban-do/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyDoiTacIndexRoute = QuanLyDoiTacIndexRouteImport.update({
+  id: '/quan-ly/doi-tac/',
+  path: '/quan-ly/doi-tac/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyHopDongIndexRoute = QuanLyHopDongIndexRouteImport.update({
+  id: '/quan-ly/hop-dong/',
+  path: '/quan-ly/hop-dong/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyHopDongIdRoute = QuanLyHopDongIdRouteImport.update({
+  id: '/quan-ly/hop-dong/$id',
+  path: '/quan-ly/hop-dong/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyHopDongMoiRoute = QuanLyHopDongMoiRouteImport.update({
+  id: '/quan-ly/hop-dong/moi',
+  path: '/quan-ly/hop-dong/moi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyNhacLichIndexRoute = QuanLyNhacLichIndexRouteImport.update({
+  id: '/quan-ly/nhac-lich/',
+  path: '/quan-ly/nhac-lich/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyTaiSanIndexRoute = QuanLyTaiSanIndexRouteImport.update({
+  id: '/quan-ly/tai-san/',
+  path: '/quan-ly/tai-san/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyTaiSanIdRoute = QuanLyTaiSanIdRouteImport.update({
+  id: '/quan-ly/tai-san/$id',
+  path: '/quan-ly/tai-san/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyTaiSanMoiRoute = QuanLyTaiSanMoiRouteImport.update({
+  id: '/quan-ly/tai-san/moi',
+  path: '/quan-ly/tai-san/moi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyThuChiIndexRoute = QuanLyThuChiIndexRouteImport.update({
+  id: '/quan-ly/thu-chi/',
+  path: '/quan-ly/thu-chi/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuanLyTaiSanIdSuaRoute = QuanLyTaiSanIdSuaRouteImport.update({
+  id: '/quan-ly/tai-san/$id_/sua',
+  path: '/quan-ly/tai-san/$id/sua',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -165,83 +177,89 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/403': typeof R403Route
   '/confirm-email': typeof ConfirmEmailRoute
+  '/dang-tin': typeof DangTinRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/my-listings': typeof MyListingsRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
-  '/hop-dong/$id': typeof HopDongIdRoute
-  '/hop-dong/moi': typeof HopDongMoiRoute
-  '/tai-san/$id': typeof TaiSanIdRoute
-  '/tai-san/moi': typeof TaiSanMoiRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
-  '/ban-do/': typeof BanDoIndexRoute
   '/da-luu/': typeof DaLuuIndexRoute
-  '/doi-tac/': typeof DoiTacIndexRoute
-  '/hop-dong/': typeof HopDongIndexRoute
-  '/nhac-lich/': typeof NhacLichIndexRoute
-  '/tai-san/': typeof TaiSanIndexRoute
-  '/thu-chi/': typeof ThuChiIndexRoute
+  '/quan-ly/': typeof QuanLyIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
   '/yeu-cau/': typeof YeuCauIndexRoute
-  '/tai-san/$id/sua': typeof TaiSanIdSuaRoute
+  '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
+  '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
+  '/quan-ly/tai-san/$id': typeof QuanLyTaiSanIdRoute
+  '/quan-ly/tai-san/moi': typeof QuanLyTaiSanMoiRoute
+  '/quan-ly/ban-do/': typeof QuanLyBanDoIndexRoute
+  '/quan-ly/doi-tac/': typeof QuanLyDoiTacIndexRoute
+  '/quan-ly/hop-dong/': typeof QuanLyHopDongIndexRoute
+  '/quan-ly/nhac-lich/': typeof QuanLyNhacLichIndexRoute
+  '/quan-ly/tai-san/': typeof QuanLyTaiSanIndexRoute
+  '/quan-ly/thu-chi/': typeof QuanLyThuChiIndexRoute
+  '/quan-ly/tai-san/$id/sua': typeof QuanLyTaiSanIdSuaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/403': typeof R403Route
   '/confirm-email': typeof ConfirmEmailRoute
+  '/dang-tin': typeof DangTinRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/my-listings': typeof MyListingsRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
-  '/hop-dong/$id': typeof HopDongIdRoute
-  '/hop-dong/moi': typeof HopDongMoiRoute
-  '/tai-san/$id': typeof TaiSanIdRoute
-  '/tai-san/moi': typeof TaiSanMoiRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
-  '/ban-do': typeof BanDoIndexRoute
   '/da-luu': typeof DaLuuIndexRoute
-  '/doi-tac': typeof DoiTacIndexRoute
-  '/hop-dong': typeof HopDongIndexRoute
-  '/nhac-lich': typeof NhacLichIndexRoute
-  '/tai-san': typeof TaiSanIndexRoute
-  '/thu-chi': typeof ThuChiIndexRoute
+  '/quan-ly': typeof QuanLyIndexRoute
   '/tin-dang': typeof TinDangIndexRoute
   '/yeu-cau': typeof YeuCauIndexRoute
-  '/tai-san/$id/sua': typeof TaiSanIdSuaRoute
+  '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
+  '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
+  '/quan-ly/tai-san/$id': typeof QuanLyTaiSanIdRoute
+  '/quan-ly/tai-san/moi': typeof QuanLyTaiSanMoiRoute
+  '/quan-ly/ban-do': typeof QuanLyBanDoIndexRoute
+  '/quan-ly/doi-tac': typeof QuanLyDoiTacIndexRoute
+  '/quan-ly/hop-dong': typeof QuanLyHopDongIndexRoute
+  '/quan-ly/nhac-lich': typeof QuanLyNhacLichIndexRoute
+  '/quan-ly/tai-san': typeof QuanLyTaiSanIndexRoute
+  '/quan-ly/thu-chi': typeof QuanLyThuChiIndexRoute
+  '/quan-ly/tai-san/$id/sua': typeof QuanLyTaiSanIdSuaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/403': typeof R403Route
   '/confirm-email': typeof ConfirmEmailRoute
+  '/dang-tin': typeof DangTinRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/my-listings': typeof MyListingsRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
-  '/hop-dong/$id': typeof HopDongIdRoute
-  '/hop-dong/moi': typeof HopDongMoiRoute
-  '/tai-san/$id': typeof TaiSanIdRoute
-  '/tai-san/moi': typeof TaiSanMoiRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
-  '/ban-do/': typeof BanDoIndexRoute
   '/da-luu/': typeof DaLuuIndexRoute
-  '/doi-tac/': typeof DoiTacIndexRoute
-  '/hop-dong/': typeof HopDongIndexRoute
-  '/nhac-lich/': typeof NhacLichIndexRoute
-  '/tai-san/': typeof TaiSanIndexRoute
-  '/thu-chi/': typeof ThuChiIndexRoute
+  '/quan-ly/': typeof QuanLyIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
   '/yeu-cau/': typeof YeuCauIndexRoute
-  '/tai-san/$id_/sua': typeof TaiSanIdSuaRoute
+  '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
+  '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
+  '/quan-ly/tai-san/$id': typeof QuanLyTaiSanIdRoute
+  '/quan-ly/tai-san/moi': typeof QuanLyTaiSanMoiRoute
+  '/quan-ly/ban-do/': typeof QuanLyBanDoIndexRoute
+  '/quan-ly/doi-tac/': typeof QuanLyDoiTacIndexRoute
+  '/quan-ly/hop-dong/': typeof QuanLyHopDongIndexRoute
+  '/quan-ly/nhac-lich/': typeof QuanLyNhacLichIndexRoute
+  '/quan-ly/tai-san/': typeof QuanLyTaiSanIndexRoute
+  '/quan-ly/thu-chi/': typeof QuanLyThuChiIndexRoute
+  '/quan-ly/tai-san/$id_/sua': typeof QuanLyTaiSanIdSuaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -249,110 +267,118 @@ export interface FileRouteTypes {
     | '/'
     | '/403'
     | '/confirm-email'
+    | '/dang-tin'
     | '/forgot-password'
     | '/login'
-    | '/my-listings'
     | '/profile'
     | '/register'
     | '/reset-password'
+    | '/tin-cua-toi'
     | '/admin/listings'
-    | '/hop-dong/$id'
-    | '/hop-dong/moi'
-    | '/tai-san/$id'
-    | '/tai-san/moi'
     | '/tin-dang/$slug'
-    | '/ban-do/'
     | '/da-luu/'
-    | '/doi-tac/'
-    | '/hop-dong/'
-    | '/nhac-lich/'
-    | '/tai-san/'
-    | '/thu-chi/'
+    | '/quan-ly/'
     | '/tin-dang/'
     | '/yeu-cau/'
-    | '/tai-san/$id/sua'
+    | '/quan-ly/hop-dong/$id'
+    | '/quan-ly/hop-dong/moi'
+    | '/quan-ly/tai-san/$id'
+    | '/quan-ly/tai-san/moi'
+    | '/quan-ly/ban-do/'
+    | '/quan-ly/doi-tac/'
+    | '/quan-ly/hop-dong/'
+    | '/quan-ly/nhac-lich/'
+    | '/quan-ly/tai-san/'
+    | '/quan-ly/thu-chi/'
+    | '/quan-ly/tai-san/$id/sua'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/403'
     | '/confirm-email'
+    | '/dang-tin'
     | '/forgot-password'
     | '/login'
-    | '/my-listings'
     | '/profile'
     | '/register'
     | '/reset-password'
+    | '/tin-cua-toi'
     | '/admin/listings'
-    | '/hop-dong/$id'
-    | '/hop-dong/moi'
-    | '/tai-san/$id'
-    | '/tai-san/moi'
     | '/tin-dang/$slug'
-    | '/ban-do'
     | '/da-luu'
-    | '/doi-tac'
-    | '/hop-dong'
-    | '/nhac-lich'
-    | '/tai-san'
-    | '/thu-chi'
+    | '/quan-ly'
     | '/tin-dang'
     | '/yeu-cau'
-    | '/tai-san/$id/sua'
+    | '/quan-ly/hop-dong/$id'
+    | '/quan-ly/hop-dong/moi'
+    | '/quan-ly/tai-san/$id'
+    | '/quan-ly/tai-san/moi'
+    | '/quan-ly/ban-do'
+    | '/quan-ly/doi-tac'
+    | '/quan-ly/hop-dong'
+    | '/quan-ly/nhac-lich'
+    | '/quan-ly/tai-san'
+    | '/quan-ly/thu-chi'
+    | '/quan-ly/tai-san/$id/sua'
   id:
     | '__root__'
     | '/'
     | '/403'
     | '/confirm-email'
+    | '/dang-tin'
     | '/forgot-password'
     | '/login'
-    | '/my-listings'
     | '/profile'
     | '/register'
     | '/reset-password'
+    | '/tin-cua-toi'
     | '/admin/listings'
-    | '/hop-dong/$id'
-    | '/hop-dong/moi'
-    | '/tai-san/$id'
-    | '/tai-san/moi'
     | '/tin-dang/$slug'
-    | '/ban-do/'
     | '/da-luu/'
-    | '/doi-tac/'
-    | '/hop-dong/'
-    | '/nhac-lich/'
-    | '/tai-san/'
-    | '/thu-chi/'
+    | '/quan-ly/'
     | '/tin-dang/'
     | '/yeu-cau/'
-    | '/tai-san/$id_/sua'
+    | '/quan-ly/hop-dong/$id'
+    | '/quan-ly/hop-dong/moi'
+    | '/quan-ly/tai-san/$id'
+    | '/quan-ly/tai-san/moi'
+    | '/quan-ly/ban-do/'
+    | '/quan-ly/doi-tac/'
+    | '/quan-ly/hop-dong/'
+    | '/quan-ly/nhac-lich/'
+    | '/quan-ly/tai-san/'
+    | '/quan-ly/thu-chi/'
+    | '/quan-ly/tai-san/$id_/sua'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   R403Route: typeof R403Route
   ConfirmEmailRoute: typeof ConfirmEmailRoute
+  DangTinRoute: typeof DangTinRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
-  MyListingsRoute: typeof MyListingsRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TinCuaToiRoute: typeof TinCuaToiRoute
   AdminListingsRoute: typeof AdminListingsRoute
-  HopDongIdRoute: typeof HopDongIdRoute
-  HopDongMoiRoute: typeof HopDongMoiRoute
-  TaiSanIdRoute: typeof TaiSanIdRoute
-  TaiSanMoiRoute: typeof TaiSanMoiRoute
   TinDangSlugRoute: typeof TinDangSlugRoute
-  BanDoIndexRoute: typeof BanDoIndexRoute
   DaLuuIndexRoute: typeof DaLuuIndexRoute
-  DoiTacIndexRoute: typeof DoiTacIndexRoute
-  HopDongIndexRoute: typeof HopDongIndexRoute
-  NhacLichIndexRoute: typeof NhacLichIndexRoute
-  TaiSanIndexRoute: typeof TaiSanIndexRoute
-  ThuChiIndexRoute: typeof ThuChiIndexRoute
+  QuanLyIndexRoute: typeof QuanLyIndexRoute
   TinDangIndexRoute: typeof TinDangIndexRoute
   YeuCauIndexRoute: typeof YeuCauIndexRoute
-  TaiSanIdSuaRoute: typeof TaiSanIdSuaRoute
+  QuanLyHopDongIdRoute: typeof QuanLyHopDongIdRoute
+  QuanLyHopDongMoiRoute: typeof QuanLyHopDongMoiRoute
+  QuanLyTaiSanIdRoute: typeof QuanLyTaiSanIdRoute
+  QuanLyTaiSanMoiRoute: typeof QuanLyTaiSanMoiRoute
+  QuanLyBanDoIndexRoute: typeof QuanLyBanDoIndexRoute
+  QuanLyDoiTacIndexRoute: typeof QuanLyDoiTacIndexRoute
+  QuanLyHopDongIndexRoute: typeof QuanLyHopDongIndexRoute
+  QuanLyNhacLichIndexRoute: typeof QuanLyNhacLichIndexRoute
+  QuanLyTaiSanIndexRoute: typeof QuanLyTaiSanIndexRoute
+  QuanLyThuChiIndexRoute: typeof QuanLyThuChiIndexRoute
+  QuanLyTaiSanIdSuaRoute: typeof QuanLyTaiSanIdSuaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -378,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dang-tin': {
+      id: '/dang-tin'
+      path: '/dang-tin'
+      fullPath: '/dang-tin'
+      preLoaderRoute: typeof DangTinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -390,13 +423,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/my-listings': {
-      id: '/my-listings'
-      path: '/my-listings'
-      fullPath: '/my-listings'
-      preLoaderRoute: typeof MyListingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -420,18 +446,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tin-cua-toi': {
+      id: '/tin-cua-toi'
+      path: '/tin-cua-toi'
+      fullPath: '/tin-cua-toi'
+      preLoaderRoute: typeof TinCuaToiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/listings': {
       id: '/admin/listings'
       path: '/admin/listings'
       fullPath: '/admin/listings'
       preLoaderRoute: typeof AdminListingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ban-do/': {
-      id: '/ban-do/'
-      path: '/ban-do'
-      fullPath: '/ban-do/'
-      preLoaderRoute: typeof BanDoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/da-luu/': {
@@ -441,67 +467,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DaLuuIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/doi-tac/': {
-      id: '/doi-tac/'
-      path: '/doi-tac'
-      fullPath: '/doi-tac/'
-      preLoaderRoute: typeof DoiTacIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hop-dong/': {
-      id: '/hop-dong/'
-      path: '/hop-dong'
-      fullPath: '/hop-dong/'
-      preLoaderRoute: typeof HopDongIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hop-dong/$id': {
-      id: '/hop-dong/$id'
-      path: '/hop-dong/$id'
-      fullPath: '/hop-dong/$id'
-      preLoaderRoute: typeof HopDongIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hop-dong/moi': {
-      id: '/hop-dong/moi'
-      path: '/hop-dong/moi'
-      fullPath: '/hop-dong/moi'
-      preLoaderRoute: typeof HopDongMoiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/nhac-lich/': {
-      id: '/nhac-lich/'
-      path: '/nhac-lich'
-      fullPath: '/nhac-lich/'
-      preLoaderRoute: typeof NhacLichIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tai-san/': {
-      id: '/tai-san/'
-      path: '/tai-san'
-      fullPath: '/tai-san/'
-      preLoaderRoute: typeof TaiSanIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tai-san/$id': {
-      id: '/tai-san/$id'
-      path: '/tai-san/$id'
-      fullPath: '/tai-san/$id'
-      preLoaderRoute: typeof TaiSanIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tai-san/moi': {
-      id: '/tai-san/moi'
-      path: '/tai-san/moi'
-      fullPath: '/tai-san/moi'
-      preLoaderRoute: typeof TaiSanMoiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/thu-chi/': {
-      id: '/thu-chi/'
-      path: '/thu-chi'
-      fullPath: '/thu-chi/'
-      preLoaderRoute: typeof ThuChiIndexRouteImport
+    '/quan-ly/': {
+      id: '/quan-ly/'
+      path: '/quan-ly'
+      fullPath: '/quan-ly/'
+      preLoaderRoute: typeof QuanLyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tin-dang/': {
@@ -525,11 +495,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof YeuCauIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tai-san/$id_/sua': {
-      id: '/tai-san/$id_/sua'
-      path: '/tai-san/$id/sua'
-      fullPath: '/tai-san/$id/sua'
-      preLoaderRoute: typeof TaiSanIdSuaRouteImport
+    '/quan-ly/ban-do/': {
+      id: '/quan-ly/ban-do/'
+      path: '/quan-ly/ban-do'
+      fullPath: '/quan-ly/ban-do/'
+      preLoaderRoute: typeof QuanLyBanDoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/doi-tac/': {
+      id: '/quan-ly/doi-tac/'
+      path: '/quan-ly/doi-tac'
+      fullPath: '/quan-ly/doi-tac/'
+      preLoaderRoute: typeof QuanLyDoiTacIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/hop-dong/': {
+      id: '/quan-ly/hop-dong/'
+      path: '/quan-ly/hop-dong'
+      fullPath: '/quan-ly/hop-dong/'
+      preLoaderRoute: typeof QuanLyHopDongIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/hop-dong/$id': {
+      id: '/quan-ly/hop-dong/$id'
+      path: '/quan-ly/hop-dong/$id'
+      fullPath: '/quan-ly/hop-dong/$id'
+      preLoaderRoute: typeof QuanLyHopDongIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/hop-dong/moi': {
+      id: '/quan-ly/hop-dong/moi'
+      path: '/quan-ly/hop-dong/moi'
+      fullPath: '/quan-ly/hop-dong/moi'
+      preLoaderRoute: typeof QuanLyHopDongMoiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/nhac-lich/': {
+      id: '/quan-ly/nhac-lich/'
+      path: '/quan-ly/nhac-lich'
+      fullPath: '/quan-ly/nhac-lich/'
+      preLoaderRoute: typeof QuanLyNhacLichIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/tai-san/': {
+      id: '/quan-ly/tai-san/'
+      path: '/quan-ly/tai-san'
+      fullPath: '/quan-ly/tai-san/'
+      preLoaderRoute: typeof QuanLyTaiSanIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/tai-san/$id': {
+      id: '/quan-ly/tai-san/$id'
+      path: '/quan-ly/tai-san/$id'
+      fullPath: '/quan-ly/tai-san/$id'
+      preLoaderRoute: typeof QuanLyTaiSanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/tai-san/moi': {
+      id: '/quan-ly/tai-san/moi'
+      path: '/quan-ly/tai-san/moi'
+      fullPath: '/quan-ly/tai-san/moi'
+      preLoaderRoute: typeof QuanLyTaiSanMoiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/thu-chi/': {
+      id: '/quan-ly/thu-chi/'
+      path: '/quan-ly/thu-chi'
+      fullPath: '/quan-ly/thu-chi/'
+      preLoaderRoute: typeof QuanLyThuChiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quan-ly/tai-san/$id_/sua': {
+      id: '/quan-ly/tai-san/$id_/sua'
+      path: '/quan-ly/tai-san/$id/sua'
+      fullPath: '/quan-ly/tai-san/$id/sua'
+      preLoaderRoute: typeof QuanLyTaiSanIdSuaRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -539,28 +579,30 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   R403Route: R403Route,
   ConfirmEmailRoute: ConfirmEmailRoute,
+  DangTinRoute: DangTinRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
-  MyListingsRoute: MyListingsRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TinCuaToiRoute: TinCuaToiRoute,
   AdminListingsRoute: AdminListingsRoute,
-  HopDongIdRoute: HopDongIdRoute,
-  HopDongMoiRoute: HopDongMoiRoute,
-  TaiSanIdRoute: TaiSanIdRoute,
-  TaiSanMoiRoute: TaiSanMoiRoute,
   TinDangSlugRoute: TinDangSlugRoute,
-  BanDoIndexRoute: BanDoIndexRoute,
   DaLuuIndexRoute: DaLuuIndexRoute,
-  DoiTacIndexRoute: DoiTacIndexRoute,
-  HopDongIndexRoute: HopDongIndexRoute,
-  NhacLichIndexRoute: NhacLichIndexRoute,
-  TaiSanIndexRoute: TaiSanIndexRoute,
-  ThuChiIndexRoute: ThuChiIndexRoute,
+  QuanLyIndexRoute: QuanLyIndexRoute,
   TinDangIndexRoute: TinDangIndexRoute,
   YeuCauIndexRoute: YeuCauIndexRoute,
-  TaiSanIdSuaRoute: TaiSanIdSuaRoute,
+  QuanLyHopDongIdRoute: QuanLyHopDongIdRoute,
+  QuanLyHopDongMoiRoute: QuanLyHopDongMoiRoute,
+  QuanLyTaiSanIdRoute: QuanLyTaiSanIdRoute,
+  QuanLyTaiSanMoiRoute: QuanLyTaiSanMoiRoute,
+  QuanLyBanDoIndexRoute: QuanLyBanDoIndexRoute,
+  QuanLyDoiTacIndexRoute: QuanLyDoiTacIndexRoute,
+  QuanLyHopDongIndexRoute: QuanLyHopDongIndexRoute,
+  QuanLyNhacLichIndexRoute: QuanLyNhacLichIndexRoute,
+  QuanLyTaiSanIndexRoute: QuanLyTaiSanIndexRoute,
+  QuanLyThuChiIndexRoute: QuanLyThuChiIndexRoute,
+  QuanLyTaiSanIdSuaRoute: QuanLyTaiSanIdSuaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

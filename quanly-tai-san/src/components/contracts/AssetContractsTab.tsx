@@ -25,7 +25,7 @@ export function AssetContractsTab({ assetId }: { assetId: string }) {
           <FileText className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-sm text-muted-foreground">Chưa có hợp đồng nào cho tài sản này.</p>
           <Button className="mt-4" size="sm" asChild>
-            <Link to="/hop-dong/moi" search={{ assetId }}>
+            <Link to="/quan-ly/hop-dong/moi" search={{ assetId }}>
               <Plus className="h-4 w-4 mr-1.5" />
               Tạo hợp đồng
             </Link>
@@ -39,14 +39,14 @@ export function AssetContractsTab({ assetId }: { assetId: string }) {
     <div className="space-y-2">
       <div className="flex justify-end">
         <Button size="sm" asChild>
-          <Link to="/hop-dong/moi" search={{ assetId }}>
+          <Link to="/quan-ly/hop-dong/moi" search={{ assetId }}>
             <Plus className="h-4 w-4 mr-1.5" />
             Tạo hợp đồng
           </Link>
         </Button>
       </div>
       {items.map((c) => (
-        <Link key={c.id} to="/hop-dong/$id" params={{ id: c.id }} className="block">
+        <Link key={c.id} to="/quan-ly/hop-dong/$id" params={{ id: c.id }} className="block">
           <Card className="hover:border-primary/50 transition">
             <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
               <div className="min-w-0">

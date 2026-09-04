@@ -25,7 +25,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertTriangle, FileText, RefreshCw } from "lucide-react";
 
-export const Route = createFileRoute("/hop-dong/")({
+export const Route = createFileRoute("/quan-ly/hop-dong/")({
   head: () => ({ meta: [{ title: "Quản lý hợp đồng — Quản Lý Tài Sản" }] }),
   component: ContractListPage,
 });
@@ -69,7 +69,7 @@ export function ContractListPage({ embedded = false }: { embedded?: boolean } = 
             {q.data ? `${q.data.totalCount} hợp đồng` : "Đang tải..."}
           </p>
         </div>
-        <Button onClick={() => navigate({ to: "/hop-dong/moi" })}>
+        <Button onClick={() => navigate({ to: "/quan-ly/hop-dong/moi" })}>
           <Plus className="h-4 w-4 mr-1.5" />
           Tạo hợp đồng
         </Button>
@@ -110,7 +110,7 @@ export function ContractListPage({ embedded = false }: { embedded?: boolean } = 
           <CardContent className="py-16 text-center">
             <FileText className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">Chưa có hợp đồng nào.</p>
-            <Button className="mt-4" size="sm" onClick={() => navigate({ to: "/hop-dong/moi" })}>
+            <Button className="mt-4" size="sm" onClick={() => navigate({ to: "/quan-ly/hop-dong/moi" })}>
               <Plus className="h-4 w-4 mr-1.5" />
               Tạo hợp đồng
             </Button>
@@ -139,11 +139,11 @@ export function ContractListPage({ embedded = false }: { embedded?: boolean } = 
                     <TableRow
                       key={c.id}
                       className="cursor-pointer hover:bg-muted/40"
-                      onClick={() => navigate({ to: "/hop-dong/$id", params: { id: c.id } })}
+                      onClick={() => navigate({ to: "/quan-ly/hop-dong/$id", params: { id: c.id } })}
                     >
                       <TableCell>
                         <Link
-                          to="/tai-san/$id"
+                          to="/quan-ly/tai-san/$id"
                           params={{ id: c.assetId }}
                           className="hover:underline"
                           onClick={(e) => e.stopPropagation()}

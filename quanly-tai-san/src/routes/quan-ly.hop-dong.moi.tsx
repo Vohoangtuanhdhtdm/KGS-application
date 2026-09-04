@@ -52,7 +52,7 @@ const searchSchema = z.object({
   counterpartyId: z.string().optional(),
 });
 
-export const Route = createFileRoute("/hop-dong/moi")({
+export const Route = createFileRoute("/quan-ly/hop-dong/moi")({
   head: () => ({ meta: [{ title: "Tạo hợp đồng mới — Quản Lý Tài Sản" }] }),
   validateSearch: searchSchema,
   component: NewContract,
@@ -137,7 +137,7 @@ function NewContract() {
       qc.invalidateQueries({ queryKey: ["contracts"] });
       qc.invalidateQueries({ queryKey: ["contracts-expiring"] });
       qc.invalidateQueries({ queryKey: ["reminders"] });
-      navigate({ to: "/hop-dong/$id", params: { id: created.id } });
+      navigate({ to: "/quan-ly/hop-dong/$id", params: { id: created.id } });
     },
     onError: (err) => {
       if (err instanceof ApiError && err.status === 409) {
@@ -185,7 +185,7 @@ function NewContract() {
   return (
     <div className="p-6 max-w-3xl space-y-5">
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/hop-dong">
+        <Link to="/quan-ly/hop-dong">
           <ArrowLeft className="h-4 w-4 mr-1" />
           Quay lại
         </Link>
@@ -540,7 +540,7 @@ function NewContract() {
       <div className="flex justify-between">
         <Button
           variant="outline"
-          onClick={() => (step === 0 ? navigate({ to: "/hop-dong" }) : setStep(step - 1))}
+          onClick={() => (step === 0 ? navigate({ to: "/quan-ly/hop-dong" }) : setStep(step - 1))}
           disabled={create.isPending}
         >
           <ArrowLeft className="h-4 w-4 mr-1.5" />

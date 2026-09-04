@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StoreProvider } from "@/lib/store";
-import { AuthProvider } from "@/lib/auth/AuthContext";
+import { AuthProvider, useAuth } from "@/lib/auth/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailNotConfirmedBanner } from "@/components/auth/EmailNotConfirmedBanner";
 import { UserMenu } from "@/components/layout/UserMenu";
@@ -32,10 +32,10 @@ function NotFoundComponent() {
         </p>
         <div className="mt-6">
           <Link
-            to="/ban-do"
+            to="/"
             className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Về bản đồ tài sản
+            Về trang chủ
           </Link>
         </div>
       </div>
@@ -81,25 +81,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Tổng quan — Quản Lý Tài Sản" },
+      { title: "KGS — Tìm kiếm và kết nối bất động sản" },
       {
         name: "description",
         content:
-          "Quản lý tài sản, hợp đồng thuê, thu chi, giấy tờ và nhắc lịch cho chủ sở hữu và người quản lý bất động sản cá nhân.",
+          "Nền tảng tìm kiếm và kết nối bất động sản: nhà trọ, phòng cho thuê, căn hộ và nhà đất. Xem đầy đủ chi phí, nội quy và tiện nghi trước khi đi xem.",
       },
-      { property: "og:title", content: "Tổng quan — Quản Lý Tài Sản" },
+      { property: "og:title", content: "KGS — Tìm kiếm và kết nối bất động sản" },
       {
         property: "og:description",
         content:
-          "Quản lý tài sản, hợp đồng thuê, thu chi, giấy tờ và nhắc lịch cho chủ sở hữu và người quản lý bất động sản cá nhân.",
+          "Nền tảng tìm kiếm và kết nối bất động sản: nhà trọ, phòng cho thuê, căn hộ và nhà đất. Xem đầy đủ chi phí, nội quy và tiện nghi trước khi đi xem.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Tổng quan — Quản Lý Tài Sản" },
+      { name: "twitter:title", content: "KGS — Tìm kiếm và kết nối bất động sản" },
       {
         name: "twitter:description",
         content:
-          "Quản lý tài sản, hợp đồng thuê, thu chi, giấy tờ và nhắc lịch cho chủ sở hữu và người quản lý bất động sản cá nhân.",
+          "Nền tảng tìm kiếm và kết nối bất động sản: nhà trọ, phòng cho thuê, căn hộ và nhà đất. Xem đầy đủ chi phí, nội quy và tiện nghi trước khi đi xem.",
       },
       {
         property: "og:image",
@@ -158,14 +158,22 @@ function RootComponent() {
 }
 
 /** Route mà bản đồ phải chiếm trọn viewport — rail thu gọn, không header, không banner. */
-const MAP_PATH = "/ban-do";
+const MAP_PATH = "/quan-ly/ban-do";
 
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { isAuthenticated } = useAuth();
   const isMapPage = pathname === MAP_PATH || pathname === MAP_PATH + "/";
 
+  // Trang cong khai tu lo header rieng (PublicHeader). Nguoi da dang nhap van thay thanh
+  // dieu huong de di tiep sang Dang tin / Tin cua toi ma khong phai quay ve.
   if (isPublicPath(pathname)) {
-    return <Outlet />;
+    return (
+      <>
+        <Outlet />
+        {isAuthenticated && <BottomTabBar />}
+      </>
+    );
   }
 
   return (
@@ -174,7 +182,7 @@ function AppShell() {
           header mảnh. Điều hướng chung nằm ở BottomTabBar nổi đáy. */}
       {!isMapPage && (
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card/80 px-4 backdrop-blur">
-          <div className="flex-1 text-sm text-muted-foreground">Nền tảng Quản Lý Tài Sản</div>
+          <div className="flex-1 text-sm text-muted-foreground">KGS — Nền tảng bất động sản</div>
           <UserMenu />
         </header>
       )}

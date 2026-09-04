@@ -149,7 +149,7 @@ export function AssetListOverlay({
                           <MapPinOff className="h-3 w-3 shrink-0" />
                           Chưa có vị trí
                           <Link
-                            to="/tai-san/$id/sua"
+                            to="/quan-ly/tai-san/$id/sua"
                             params={{ id: a.id }}
                             className="font-medium text-primary hover:underline"
                           >

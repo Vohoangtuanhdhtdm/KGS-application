@@ -37,7 +37,7 @@ import {
   type SpecsState,
 } from "@/components/assets/AssetSpecsFields";
 
-export const Route = createFileRoute("/tai-san/$id_/sua")({
+export const Route = createFileRoute("/quan-ly/tai-san/$id_/sua")({
   head: () => ({ meta: [{ title: "Sửa tài sản — Quản Lý Tài Sản" }] }),
   component: EditAsset,
 });
@@ -98,7 +98,7 @@ function EditAsset() {
       toast.success("Đã cập nhật tài sản");
       qc.invalidateQueries({ queryKey: ["assets"] });
       qc.invalidateQueries({ queryKey: ["asset", id] });
-      navigate({ to: "/tai-san/$id", params: { id } });
+      navigate({ to: "/quan-ly/tai-san/$id", params: { id } });
     },
     onError: (err) => toast.error(getErrorMessage(err, "Không cập nhật được tài sản")),
   });
@@ -147,7 +147,7 @@ function EditAsset() {
   return (
     <div className="p-6 max-w-3xl space-y-5">
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/tai-san/$id" params={{ id }}>
+        <Link to="/quan-ly/tai-san/$id" params={{ id }}>
           <ArrowLeft className="h-4 w-4 mr-1" />
           Quay lại
         </Link>
@@ -287,7 +287,7 @@ function EditAsset() {
       <AssetSpecsFields value={specs} onChange={setSpecs} />
       <div className="flex justify-end gap-2">
         <Button variant="outline" asChild>
-          <Link to="/tai-san/$id" params={{ id }}>
+          <Link to="/quan-ly/tai-san/$id" params={{ id }}>
             Huỷ
           </Link>
         </Button>

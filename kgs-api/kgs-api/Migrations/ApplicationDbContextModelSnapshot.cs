@@ -350,7 +350,7 @@ namespace kgs_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FileDeletionQueueItems");
+                    b.ToTable("FileDeletionQueueItems", (string)null);
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.Listing", b =>
@@ -551,7 +551,7 @@ namespace kgs_api.Migrations
 
                     b.HasIndex("AssetId", "Type");
 
-                    b.ToTable("AssetDocuments");
+                    b.ToTable("AssetDocuments", (string)null);
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.AssetMedia", b =>
@@ -589,7 +589,7 @@ namespace kgs_api.Migrations
 
                     b.HasIndex("AssetId", "TakenAt");
 
-                    b.ToTable("AssetMedia");
+                    b.ToTable("AssetMedia", (string)null);
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.AssetUnit", b =>
@@ -757,7 +757,7 @@ namespace kgs_api.Migrations
 
                     b.HasIndex("UserId", "Type");
 
-                    b.ToTable("ContactParties");
+                    b.ToTable("ContactParties", (string)null);
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.LeaseContract", b =>
@@ -1083,41 +1083,7 @@ namespace kgs_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.StoredFile", "Thumbnail", b1 =>
-                        {
-                            b1.Property<Guid>("AssetId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("ContentType")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("FileName")
-                                .HasMaxLength(255)
-                                .HasColumnType("character varying(255)");
-
-                            b1.Property<string>("PublicId")
-                                .IsRequired()
-                                .HasMaxLength(255)
-                                .HasColumnType("character varying(255)");
-
-                            b1.Property<long?>("SizeBytes")
-                                .HasColumnType("bigint");
-
-                            b1.Property<string>("Url")
-                                .IsRequired()
-                                .HasMaxLength(1000)
-                                .HasColumnType("character varying(1000)");
-
-                            b1.HasKey("AssetId");
-
-                            b1.ToTable("Assets");
-
-                            b1.WithOwner()
-                                .HasForeignKey("AssetId");
-                        });
-
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.Address", "Address", b1 =>
+                    b.OwnsOne("kgs_api.Domain.Entity.Asset.Address#kgs_api.Domain.ValueObjects.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("AssetId")
                                 .HasColumnType("uuid");
@@ -1148,7 +1114,41 @@ namespace kgs_api.Migrations
 
                             b1.HasKey("AssetId");
 
-                            b1.ToTable("Assets");
+                            b1.ToTable("Assets", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("AssetId");
+                        });
+
+                    b.OwnsOne("kgs_api.Domain.Entity.Asset.Thumbnail#kgs_api.Domain.ValueObjects.StoredFile", "Thumbnail", b1 =>
+                        {
+                            b1.Property<Guid>("AssetId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("ContentType")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<string>("FileName")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)");
+
+                            b1.Property<string>("PublicId")
+                                .IsRequired()
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)");
+
+                            b1.Property<long?>("SizeBytes")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("Url")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("character varying(1000)");
+
+                            b1.HasKey("AssetId");
+
+                            b1.ToTable("Assets", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("AssetId");
@@ -1175,7 +1175,7 @@ namespace kgs_api.Migrations
                         .HasForeignKey("AssetUnitId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.ListingTerms", "Terms", b1 =>
+                    b.OwnsOne("kgs_api.Domain.Entity.Listing.Terms#kgs_api.Domain.ValueObjects.ListingTerms", "Terms", b1 =>
                         {
                             b1.Property<Guid>("ListingId")
                                 .HasColumnType("uuid");
@@ -1224,7 +1224,7 @@ namespace kgs_api.Migrations
 
                             b1.HasKey("ListingId");
 
-                            b1.ToTable("Listings");
+                            b1.ToTable("Listings", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ListingId");
@@ -1262,7 +1262,7 @@ namespace kgs_api.Migrations
                         .HasForeignKey("LeaseContractId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.StoredFile", "File", b1 =>
+                    b.OwnsOne("kgs_api.Domain.Entity.SubEntity.AssetDocument.File#kgs_api.Domain.ValueObjects.StoredFile", "File", b1 =>
                         {
                             b1.Property<Guid>("AssetDocumentId")
                                 .HasColumnType("uuid");
@@ -1290,7 +1290,7 @@ namespace kgs_api.Migrations
 
                             b1.HasKey("AssetDocumentId");
 
-                            b1.ToTable("AssetDocuments");
+                            b1.ToTable("AssetDocuments", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("AssetDocumentId");
@@ -1312,7 +1312,7 @@ namespace kgs_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.StoredFile", "File", b1 =>
+                    b.OwnsOne("kgs_api.Domain.Entity.SubEntity.AssetMedia.File#kgs_api.Domain.ValueObjects.StoredFile", "File", b1 =>
                         {
                             b1.Property<Guid>("AssetMediaId")
                                 .HasColumnType("uuid");
@@ -1342,7 +1342,7 @@ namespace kgs_api.Migrations
 
                             b1.HasIndex("PublicId");
 
-                            b1.ToTable("AssetMedia");
+                            b1.ToTable("AssetMedia", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("AssetMediaId");
@@ -1383,7 +1383,7 @@ namespace kgs_api.Migrations
                         .HasForeignKey("LeaseContractId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.StoredFile", "Receipt", b1 =>
+                    b.OwnsOne("kgs_api.Domain.Entity.SubEntity.CashFlowEntry.Receipt#kgs_api.Domain.ValueObjects.StoredFile", "Receipt", b1 =>
                         {
                             b1.Property<Guid>("CashFlowEntryId")
                                 .HasColumnType("uuid");
@@ -1411,7 +1411,7 @@ namespace kgs_api.Migrations
 
                             b1.HasKey("CashFlowEntryId");
 
-                            b1.ToTable("CashFlowEntries");
+                            b1.ToTable("CashFlowEntries", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("CashFlowEntryId");
@@ -1478,7 +1478,7 @@ namespace kgs_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.StoredFile", "File", b1 =>
+                    b.OwnsOne("kgs_api.Domain.Entity.SubEntity.ListingImage.File#kgs_api.Domain.ValueObjects.StoredFile", "File", b1 =>
                         {
                             b1.Property<Guid>("ListingImageId")
                                 .HasColumnType("uuid");
@@ -1506,7 +1506,7 @@ namespace kgs_api.Migrations
 
                             b1.HasKey("ListingImageId");
 
-                            b1.ToTable("ListingImages");
+                            b1.ToTable("ListingImages", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ListingImageId");

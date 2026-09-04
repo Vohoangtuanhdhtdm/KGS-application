@@ -4,6 +4,7 @@ using kgs_api.Domain.ValueObjects;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
+using kgs_api.Storage;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using System.Text;
@@ -21,10 +22,16 @@ namespace kgs_api.Services
     /// nhau âm thầm kể từ lúc đăng.</summary>
     public sealed class ListingService : IListingService
     {
+        /// <summary>Trần số ảnh mỗi tin. Batdongsan và Chợ Tốt đều giới hạn quanh mức này;
+        /// không giới hạn thì một tin có thể ngốn hết hạn mức lưu trữ.</summary>
+        private const int MaxImagesPerListing = 20;
+
         private readonly IRepository<Asset> _assets;
         private readonly IRepository<AssetUnit> _units;
         private readonly IRepository<Listing> _listings;
+        private readonly IRepository<ListingImage> _images;
         private readonly IRepository<AssetMedia> _media;
+        private readonly IFileStorageService _files;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
         private readonly GeometryFactory _geometryFactory;
@@ -33,12 +40,15 @@ namespace kgs_api.Services
             IRepository<Asset> assets,
             IRepository<AssetUnit> units,
             IRepository<Listing> listings,
+            IRepository<ListingImage> images,
             IRepository<AssetMedia> media,
+            IFileStorageService files,
             IUnitOfWork uow,
             ICurrentUserService currentUser,
             GeometryFactory geometryFactory)
         {
-            _assets = assets; _units = units; _listings = listings; _media = media;
+            _assets = assets; _units = units; _listings = listings; _images = images;
+            _media = media; _files = files;
             _uow = uow; _currentUser = currentUser; _geometryFactory = geometryFactory;
         }
 
@@ -317,6 +327,201 @@ namespace kgs_api.Services
                 listing.ViewCount + 1, listing.PublishedAt,
                 ToTermsDto(listing.Terms), listing.Amenities, TotalMonthlyCost(listing),
                 owner.Name, owner.PhoneNumber ?? "Chưa cập nhật số điện thoại");
+        }
+
+        // ==================== ĐĂNG TIN TRỰC TIẾP (Giai đoạn 1) ====================
+
+        public async Task<OwnerListingDto> CreateDirectAsync(
+            CreateListingDirectRequest request, CancellationToken ct = default)
+        {
+            var userId = _currentUser.UserId;
+
+            if (request.Type == ListingType.Rent && request.RentPaymentCycle is null)
+                throw new ValidationFailedException("Tin cho thuê bắt buộc phải chọn chu kỳ thanh toán.");
+
+            var address = new Address
+            {
+                City = request.City.Trim(),
+                District = request.District.Trim(),
+                Ward = request.Ward.Trim(),
+                Detail = request.AddressDetail?.Trim() ?? string.Empty
+            };
+
+            // Dùng lại tài sản nếu người dùng đã có một cái ở ĐÚNG địa chỉ này. Không có
+            // bước này thì đăng tin lần hai cho cùng căn nhà sẽ đẻ ra tài sản trùng, và
+            // Giai đoạn 4 sẽ thừa hưởng một danh mục đầy bản sao.
+            var asset = await _assets.Query()
+                .FirstOrDefaultAsync(a => a.UserId == userId
+                                       && a.Address.City == address.City
+                                       && a.Address.District == address.District
+                                       && a.Address.Ward == address.Ward
+                                       && a.Address.Detail == address.Detail, ct);
+
+            if (asset is null)
+            {
+                asset = new Asset
+                {
+                    UserId = userId,
+                    // Tên tài sản suy từ địa chỉ — người đăng không nhập, cũng không thấy.
+                    Name = string.IsNullOrWhiteSpace(address.Detail)
+                        ? $"{address.Ward}, {address.District}"
+                        : $"{address.Detail}, {address.District}",
+                    TypeProperty = request.PropertyType,
+                    OwnershipType = AssetOwnershipType.Owned,
+                    Status = AssetStatus.InUse,
+                    Address = address,
+                    Location = request.Latitude is not null && request.Longitude is not null
+                        ? _geometryFactory.CreatePoint(new Coordinate(request.Longitude.Value, request.Latitude.Value))
+                        : null,
+                    Area = request.Area,
+                    Frontage = request.Frontage,
+                    Bedrooms = request.Bedrooms,
+                    Bathrooms = request.Bathrooms,
+                    Floors = request.Floors,
+                    HouseDirection = request.HouseDirection?.Trim(),
+                    LegalStatus = request.LegalStatus?.Trim(),
+                    FurnitureState = request.FurnitureState?.Trim()
+                };
+                await _assets.AddAsync(asset, ct);
+            }
+            else
+            {
+                // Tài sản đã có: cập nhật những đặc điểm người đăng vừa khai, nhưng KHÔNG
+                // ghi đè bằng giá trị rỗng — tin mới thiếu thông tin không được xoá thông
+                // tin cũ đang đúng.
+                asset.Area ??= request.Area;
+                asset.Frontage ??= request.Frontage;
+                asset.Bedrooms ??= request.Bedrooms;
+                asset.Bathrooms ??= request.Bathrooms;
+                asset.Floors ??= request.Floors;
+                asset.HouseDirection ??= request.HouseDirection?.Trim();
+                asset.LegalStatus ??= request.LegalStatus?.Trim();
+                asset.FurnitureState ??= request.FurnitureState?.Trim();
+
+                if (asset.Location is null && request.Latitude is not null && request.Longitude is not null)
+                    asset.Location = _geometryFactory.CreatePoint(
+                        new Coordinate(request.Longitude.Value, request.Latitude.Value));
+            }
+
+            var listing = new Listing
+            {
+                Asset = asset,
+                AssetUnitId = null,
+                Title = request.Title.Trim(),
+                Description = request.Description,
+                Price = request.Price,
+                Type = request.Type,
+                RentPaymentCycle = request.Type == ListingType.Rent ? request.RentPaymentCycle : null,
+                // Bắt đầu ở Draft: người đăng còn phải thêm ảnh, và có thể bỏ dở giữa chừng.
+                Status = ListingStatus.Draft,
+                Slug = await GenerateUniqueSlugAsync(request.Title, ct),
+                ViewCount = 0,
+                Terms = MapTerms(request.Terms),
+                Amenities = NormalizeAmenities(request.Amenities)
+            };
+
+            await _listings.AddAsync(listing, ct);
+            await _uow.SaveChangesAsync(ct);
+
+            return await GetOwnedDtoAsync(listing.Id, ct);
+        }
+
+        public async Task<IReadOnlyList<ListingImageDto>> AddImagesAsync(
+            Guid listingId, IFormFileCollection files, CancellationToken ct = default)
+        {
+            var listing = await GetOwnedListingAsync(listingId, ct);
+
+            if (listing.Status == ListingStatus.Closed)
+                throw new ConflictException("Tin đã đóng — không thêm ảnh được.");
+
+            if (files.Count == 0)
+                throw new ValidationFailedException("Chưa chọn ảnh nào.");
+
+            var existing = await _images.Query()
+                .Where(i => i.ListingId == listingId)
+                .CountAsync(ct);
+
+            if (existing + files.Count > MaxImagesPerListing)
+                throw new ValidationFailedException(
+                    $"Mỗi tin tối đa {MaxImagesPerListing} ảnh (đang có {existing}).");
+
+            var sortOrder = existing;
+            foreach (var file in files)
+            {
+                if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                    throw new ValidationFailedException($"Tệp '{file.FileName}' không phải ảnh.");
+
+                var stored = await _files.UploadImageAsync(file, folder: $"listings/{listingId}", ct);
+                await _images.AddAsync(new ListingImage
+                {
+                    ListingId = listingId,
+                    File = stored,
+                    SortOrder = sortOrder++
+                }, ct);
+            }
+
+            await _uow.SaveChangesAsync(ct);
+            return await GetImagesAsync(listingId, ct);
+        }
+
+        public async Task<IReadOnlyList<ListingImageDto>> GetImagesAsync(
+            Guid listingId, CancellationToken ct = default)
+        {
+            await GetOwnedListingAsync(listingId, ct);
+
+            return await _images.Query().AsNoTracking()
+                .Where(i => i.ListingId == listingId)
+                .OrderBy(i => i.SortOrder)
+                .Select(i => new ListingImageDto(i.Id, i.File.Url, i.SortOrder))
+                .ToListAsync(ct);
+        }
+
+        public async Task RemoveImageAsync(Guid listingId, Guid imageId, CancellationToken ct = default)
+        {
+            await GetOwnedListingAsync(listingId, ct);
+
+            var image = await _images.Query()
+                .FirstOrDefaultAsync(i => i.Id == imageId && i.ListingId == listingId, ct)
+                ?? throw new NotFoundException("Không tìm thấy ảnh.");
+
+            // Đẩy file lên hàng đợi xoá trong CÙNG transaction với việc xoá bản ghi —
+            // nếu SaveChanges hỏng thì file trên Cloudinary cũng không bị xoá oan.
+            _files.ScheduleDeletion(image.File);
+            _images.Remove(image);
+            await _uow.SaveChangesAsync(ct);
+        }
+
+        public async Task<OwnerListingDto> SubmitAsync(Guid listingId, CancellationToken ct = default)
+        {
+            var listing = await GetOwnedListingAsync(listingId, ct);
+
+            if (listing.Status != ListingStatus.Draft)
+                throw new ConflictException("Chỉ gửi duyệt được bản nháp.");
+
+            // Bản nháp cố tình cho phép thiếu. Ràng buộc tối thiểu chỉ áp ở đây, lúc gửi đi.
+            var imageCount = await _images.Query().CountAsync(i => i.ListingId == listingId, ct);
+            if (imageCount == 0)
+                throw new ValidationFailedException("Cần ít nhất 1 ảnh trước khi gửi duyệt.");
+
+            if (string.IsNullOrWhiteSpace(listing.Description) || listing.Description.Trim().Length < 30)
+                throw new ValidationFailedException("Mô tả cần ít nhất 30 ký tự để người xem hiểu được tin.");
+
+            // Một chỗ chỉ được có một tin đang sống. Kiểm ở đây thay vì lúc tạo, vì bản
+            // nháp không nằm trong ràng buộc đó — người dùng có thể soạn nhiều nháp.
+            var hasLive = await _listings.Query().AnyAsync(l =>
+                l.AssetId == listing.AssetId
+                && l.AssetUnitId == listing.AssetUnitId
+                && l.Id != listing.Id
+                && (l.Status == ListingStatus.Pending || l.Status == ListingStatus.Approved), ct);
+            if (hasLive)
+                throw new ConflictException(
+                    "Địa chỉ này đã có một tin đang hiển thị hoặc chờ duyệt — hãy sửa tin đó thay vì đăng thêm.");
+
+            listing.Status = ListingStatus.Pending;
+            listing.ModerationNote = null;
+            await _uow.SaveChangesAsync(ct);
+
+            return await GetOwnedDtoAsync(listingId, ct);
         }
 
         // ==================== Helpers ====================

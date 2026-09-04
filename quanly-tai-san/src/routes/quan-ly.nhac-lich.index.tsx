@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Trash2, Bell, CircleCheck } from "lucide-react";
 
-export const Route = createFileRoute("/nhac-lich/")({
+export const Route = createFileRoute("/quan-ly/nhac-lich/")({
   head: () => ({ meta: [{ title: "Nhắc lịch — Quản Lý Tài Sản" }] }),
   component: RemindersPage,
 });

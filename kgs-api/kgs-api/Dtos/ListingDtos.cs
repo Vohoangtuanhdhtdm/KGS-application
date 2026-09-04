@@ -48,6 +48,45 @@ namespace kgs_api.Dtos
         ListingTermsDto? Terms,
         List<string>? Amenities);
 
+    /// <summary>Đăng tin TRỰC TIẾP — không cần tạo tài sản trước.
+    ///
+    /// Đây là luồng chính của nền tảng môi giới. Luồng cũ qua
+    /// <c>POST /api/assets/{id}/listings</c> vẫn giữ cho Giai đoạn 4, khi người dùng đã có
+    /// sẵn danh mục tài sản và muốn đăng tin cho một phòng cụ thể.
+    ///
+    /// Asset được tạo NGẦM từ chính dữ liệu của tin. Người đăng không bao giờ nhìn thấy
+    /// khái niệm "tài sản" — họ chỉ đang đăng một tin.</summary>
+    public sealed record CreateListingDirectRequest(
+        // ---- Nội dung tin ----
+        ListingType Type,
+        [Required, MaxLength(200)] string Title,
+        [Required] string Description,
+        [Range(0.01, (double)decimal.MaxValue)] decimal Price,
+        PaymentCycle? RentPaymentCycle,
+
+        // ---- Bất động sản: dùng để tạo Asset ngầm ----
+        [Required, MaxLength(100)] string City,
+        [Required, MaxLength(100)] string District,
+        [Required, MaxLength(100)] string Ward,
+        [MaxLength(500)] string? AddressDetail,
+        [Range(-90, 90)] double? Latitude,
+        [Range(-180, 180)] double? Longitude,
+        AssetDomainType PropertyType,
+        [Range(0, double.MaxValue)] double? Area,
+        [Range(0, 1000)] double? Frontage,
+        [Range(0, 100)] int? Bedrooms,
+        [Range(0, 100)] int? Bathrooms,
+        [Range(0, 200)] int? Floors,
+        [MaxLength(50)] string? HouseDirection,
+        [MaxLength(100)] string? LegalStatus,
+        [MaxLength(100)] string? FurnitureState,
+
+        // ---- Điều kiện thuê ----
+        ListingTermsDto? Terms,
+        List<string>? Amenities);
+
+    public sealed record ListingImageDto(Guid Id, string Url, int SortOrder);
+
     public sealed record PublicListingSearchQuery(
         ListingType? Type,
         string? City,

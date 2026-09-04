@@ -56,6 +56,43 @@ namespace kgs_api.Controllers
             Guid listingId, [FromBody] UpdateListingRequest request, CancellationToken ct)
             => Ok(await _listings.UpdateAsync(listingId, request, ct));
 
+        // ---- Luồng đăng tin trực tiếp: tạo nháp → thêm ảnh → gửi duyệt ----
+
+        /// <summary>Đăng tin không cần tạo tài sản trước. Trả về bản nháp; ảnh và bước gửi
+        /// duyệt đi ở hai lời gọi sau, để form hiện được tiến trình tải ảnh và để người
+        /// đăng bỏ dở giữa chừng vẫn không mất dữ liệu.</summary>
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<OwnerListingDto>> CreateDirect(
+            [FromBody] CreateListingDirectRequest request, CancellationToken ct)
+            => Ok(await _listings.CreateDirectAsync(request, ct));
+
+        [HttpGet("{listingId:guid}/images")]
+        [Authorize]
+        public async Task<ActionResult<IReadOnlyList<ListingImageDto>>> GetImages(
+            Guid listingId, CancellationToken ct)
+            => Ok(await _listings.GetImagesAsync(listingId, ct));
+
+        [HttpPost("{listingId:guid}/images")]
+        [Authorize]
+        [RequestSizeLimit(120_000_000)]   // ~10MB × 10 ảnh, đệm an toàn
+        public async Task<ActionResult<IReadOnlyList<ListingImageDto>>> AddImages(
+            Guid listingId, IFormFileCollection files, CancellationToken ct)
+            => Ok(await _listings.AddImagesAsync(listingId, files, ct));
+
+        [HttpDelete("{listingId:guid}/images/{imageId:guid}")]
+        [Authorize]
+        public async Task<IActionResult> RemoveImage(Guid listingId, Guid imageId, CancellationToken ct)
+        {
+            await _listings.RemoveImageAsync(listingId, imageId, ct);
+            return NoContent();
+        }
+
+        [HttpPost("{listingId:guid}/submit")]
+        [Authorize]
+        public async Task<ActionResult<OwnerListingDto>> Submit(Guid listingId, CancellationToken ct)
+            => Ok(await _listings.SubmitAsync(listingId, ct));
+
         /// <summary>Đóng tin khi đã có khách / đã bán. Không xoá — giữ lượt xem và lịch sử.</summary>
         [HttpPost("{listingId:guid}/close")]
         [Authorize]

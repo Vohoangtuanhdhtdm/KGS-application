@@ -17,7 +17,7 @@ import { findSheet, SHEET_KEYS } from "@/components/navigation/sheetRoutes";
 import { Button } from "@/components/ui/button";
 import { Building2, Plus, AlertTriangle } from "lucide-react";
 
-export const Route = createFileRoute("/ban-do/")({
+export const Route = createFileRoute("/quan-ly/ban-do/")({
   // `?sheet=` mở tính năng phụ ĐÈ LÊN bản đồ mà không đổi route → bản đồ không unmount,
   // giữ nguyên vị trí/zoom; Back của trình duyệt bỏ param này nên tự đóng sheet.
   validateSearch: (s: Record<string, unknown>): { sheet?: string } =>
@@ -151,7 +151,7 @@ function AssetMapDashboard() {
           Ẩn khi danh mục rỗng vì lúc đó đã có nút gọi hành động ở giữa màn hình. */}
       {!isEmpty && (
         <Link
-          to="/tai-san/moi"
+          to="/quan-ly/tai-san/moi"
           aria-label="Thêm tài sản"
           className="fixed right-5 bottom-[104px] z-[870] flex items-center gap-2 rounded-full bg-[#1E2761] p-3.5 text-sm font-medium text-white shadow-lg transition-transform hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none sm:py-3 sm:pr-5 sm:pl-4"
         >
@@ -177,7 +177,7 @@ function AssetMapDashboard() {
             Thêm tài sản đầu tiên để bắt đầu theo dõi danh mục của bạn.
           </p>
           <Button className="mt-4" asChild>
-            <Link to="/tai-san/moi">
+            <Link to="/quan-ly/tai-san/moi">
               <Plus className="mr-1.5 h-4 w-4" />
               Thêm tài sản
             </Link>
@@ -200,7 +200,7 @@ function AssetMapDashboard() {
       {activeSheet && (
         <FeatureSheet
           title={activeSheet.title}
-          onClose={() => navigate({ to: "/ban-do", search: {} })}
+          onClose={() => navigate({ to: "/quan-ly/ban-do", search: {} })}
         >
           <activeSheet.Component embedded />
         </FeatureSheet>

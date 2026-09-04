@@ -87,7 +87,7 @@ export function QuickRenewDialog({
       qc.invalidateQueries({ queryKey: ["contracts"] });
       qc.invalidateQueries({ queryKey: ["contracts-expiring"] });
       onOpenChange(false);
-      navigate({ to: "/hop-dong/$id", params: { id: newContract.id } });
+      navigate({ to: "/quan-ly/hop-dong/$id", params: { id: newContract.id } });
     },
     onError: (err) => toast.error(getErrorMessage(err, "Không gia hạn được")),
   });

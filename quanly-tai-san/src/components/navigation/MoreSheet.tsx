@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Users, Megaphone, Globe, X, ShieldCheck, Inbox, Heart, Map as MapIcon } from "lucide-react";
+import { X, ShieldCheck, Inbox, Heart, Building2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useSwipeToClose } from "@/hooks/useSwipeToClose";
@@ -15,12 +15,11 @@ export interface MoreItem {
 }
 
 const BASE_ITEMS: MoreItem[] = [
-  { label: "Bản đồ tài sản", icon: MapIcon, path: "/ban-do" },
-  { label: "Sổ đối tác", icon: Users, sheetKey: "doi-tac", path: "/doi-tac" },
-  { label: "Tin đăng của tôi", icon: Megaphone, sheetKey: "my-listings", path: "/my-listings" },
-  { label: "Yêu cầu xem nhà", icon: Inbox, sheetKey: "yeu-cau", path: "/yeu-cau" },
-  { label: "Tin đã lưu", icon: Heart, sheetKey: "da-luu", path: "/da-luu" },
-  { label: "Marketplace", icon: Globe, path: "/tin-dang", external: true },
+  { label: "Tin đã lưu", icon: Heart, path: "/da-luu" },
+  { label: "Yêu cầu xem nhà", icon: Inbox, path: "/yeu-cau" },
+  // Toàn bộ khu quản lý tài sản (Giai đoạn 4) nằm sau MỘT lối vào duy nhất, không
+  // trải ra thanh điều hướng chính nữa.
+  { label: "Quản lý tài sản", icon: Building2, path: "/quan-ly" },
 ];
 
 export interface MoreSheetProps {

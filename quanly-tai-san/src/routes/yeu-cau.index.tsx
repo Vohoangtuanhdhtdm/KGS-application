@@ -83,7 +83,7 @@ function ReceivedList() {
         action: {
           label: "Tạo hợp đồng",
           onClick: () =>
-            navigate({ to: "/hop-dong/moi", search: { counterpartyId: res.contactPartyId } }),
+            navigate({ to: "/quan-ly/hop-dong/moi", search: { counterpartyId: res.contactPartyId } }),
         },
       });
     },
@@ -226,7 +226,7 @@ function InquiryCard({
           )}
           {converted && (
             <Link
-              to="/hop-dong/moi"
+              to="/quan-ly/hop-dong/moi"
               search={{ counterpartyId: q.convertedContactPartyId! }}
               className="text-sm text-primary hover:underline inline-flex items-center gap-1"
             >

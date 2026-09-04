@@ -208,7 +208,7 @@ export function MapStatPanels({
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
                           <Link
-                            to="/hop-dong/$id"
+                            to="/quan-ly/hop-dong/$id"
                             params={{ id: c.id }}
                             className="block truncate text-xs font-medium hover:underline"
                           >
@@ -244,7 +244,7 @@ export function MapStatPanels({
                   ))}
                 </ul>
                 <Link
-                  to="/hop-dong"
+                  to="/quan-ly/hop-dong"
                   className="mt-1 flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-accent"
                 >
                   Xem tất cả hợp đồng
