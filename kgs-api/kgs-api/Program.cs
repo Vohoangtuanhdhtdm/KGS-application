@@ -11,6 +11,7 @@ using static kgs_api.Common.Common;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationServices(builder.Configuration, builder.Environment);
+builder.Services.AddKgsRateLimiting();
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -77,6 +78,11 @@ app.UseCors(policy => policy
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// SAU UseAuthentication: chính sách chia ngăn theo user id khi đã đăng nhập, mà danh tính
+// chỉ tồn tại sau khi token được giải mã. Đặt trước thì mọi request đều rơi vào ngăn IP, và
+// cả văn phòng dùng chung NAT sẽ chia nhau một hạn mức.
+app.UseRateLimiter();
 
 // Seed role + admin — chạy một lần lúc khởi động
 using (var scope = app.Services.CreateScope())

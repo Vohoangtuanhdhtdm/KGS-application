@@ -40,6 +40,7 @@ namespace kgs_api.Services
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
         private readonly GeometryFactory _geometryFactory;
+        private readonly IListingViewTracker _views;
 
         /// <summary>Số tin mỗi dải gợi ý dưới trang chi tiết. Đủ lấp một hàng cuộn ngang
         /// mà không biến trang chi tiết thành một trang tìm kiếm thứ hai.</summary>
@@ -55,11 +56,13 @@ namespace kgs_api.Services
             IFileStorageService files,
             IUnitOfWork uow,
             ICurrentUserService currentUser,
-            GeometryFactory geometryFactory)
+            GeometryFactory geometryFactory,
+            IListingViewTracker views)
         {
             _assets = assets; _units = units; _listings = listings; _images = images;
             _media = media; _files = files;
             _uow = uow; _currentUser = currentUser; _geometryFactory = geometryFactory;
+            _views = views;
         }
 
         // ==================== ĐĂNG TIN ====================
@@ -253,12 +256,11 @@ namespace kgs_api.Services
                 .FirstOrDefaultAsync(l => l.Slug == slug && l.Status == ListingStatus.Approved, ct)
                 ?? throw new NotFoundException("Không tìm thấy tin đăng.");
 
-            // Tăng lượt xem bằng UPDATE trực tiếp thay vì tải-sửa-lưu: một GET công khai
-            // không nên kéo theo change tracking và một transaction đầy đủ. Vẫn chưa chống
-            // trùng theo IP — xem docs, việc đó thuộc giai đoạn sau.
-            await _listings.Query()
-                .Where(l => l.Id == listing.Id)
-                .ExecuteUpdateAsync(s => s.SetProperty(l => l.ViewCount, l => l.ViewCount + 1), ct);
+            // Lượt xem giờ đi qua ListingViewTracker: khử trùng theo (người xem, tin, ngày)
+            // rồi mới tăng bộ đếm. Trước đây mỗi request cộng một, nên chủ tin bấm F5 mười
+            // lần là tin có mười lượt xem — một con số ai cũng biết là sai thì không ai dùng
+            // để quyết định gì, mà bảng phân tích lại dựng ngay trên nó.
+            var isNewView = await _views.TrackAsync(listing.Id, ct);
 
             var owner = await _assets.Query().AsNoTracking()
                 .Where(a => a.Id == listing.AssetId)
@@ -290,7 +292,9 @@ namespace kgs_api.Services
                 asset.TypeProperty, AssetTypeLabel(asset.TypeProperty), listing.AssetUnit?.Name,
                 asset.Location?.Y, asset.Location?.X,   // Y=lat, X=lng — dễ đảo nhầm
                 listing.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).ToList(),
-                listing.ViewCount + 1, listing.PublishedAt,
+                // Thực thể đọc ra TRƯỚC khi tracker tăng bộ đếm, nên cộng bù ở đây để con số
+                // hiện trên trang khớp với thứ vừa ghi xuống.
+                listing.ViewCount + (isNewView ? 1 : 0), listing.PublishedAt,
                 ToTermsDto(listing.Terms), listing.Amenities, TotalMonthlyCost(listing),
                 owner.Name, owner.PhoneNumber ?? "Chưa cập nhật số điện thoại",
                 owner.AvatarUrl, owner.CreatedAt, ownerActiveCount);

@@ -1,4 +1,6 @@
-﻿using kgs_api.Dtos;
+﻿using kgs_api.Extensions;
+using Microsoft.AspNetCore.RateLimiting;
+using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -54,6 +56,7 @@ namespace kgs_api.Controllers
         /// <see cref="Domain.Entity.SubEntity.ListingReport"/>.</summary>
         [HttpPost("{slug}/reports")]
         [Authorize]
+        [EnableRateLimiting(RateLimitingExtensions.ContactOthers)]
         public async Task<IActionResult> Report(
             string slug, [FromBody] CreateListingReportRequest request,
             [FromServices] IListingReportService reports, CancellationToken ct)
@@ -90,6 +93,7 @@ namespace kgs_api.Controllers
         /// đăng bỏ dở giữa chừng vẫn không mất dữ liệu.</summary>
         [HttpPost]
         [Authorize]
+        [EnableRateLimiting(RateLimitingExtensions.CreateListing)]
         public async Task<ActionResult<OwnerListingDto>> CreateDirect(
             [FromBody] CreateListingDirectRequest request, CancellationToken ct)
             => Ok(await _listings.CreateDirectAsync(request, ct));
@@ -172,6 +176,7 @@ namespace kgs_api.Controllers
 
         /// <summary>Đăng tin cho nguyên căn (AssetUnitId = null) hoặc cho một phòng cụ thể.</summary>
         [HttpPost]
+        [EnableRateLimiting(RateLimitingExtensions.CreateListing)]
         public async Task<ActionResult<OwnerListingDto>> Create(
             Guid assetId, [FromBody] CreateListingRequest request, CancellationToken ct)
             => Ok(await _listings.CreateAsync(assetId, request, ct));

@@ -1,3 +1,5 @@
+﻿using kgs_api.Extensions;
+using Microsoft.AspNetCore.RateLimiting;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -83,6 +85,7 @@ namespace kgs_api.Controllers
         public PropertyInquiryController(IMarketplaceEngagementService engagement) => _engagement = engagement;
 
         [HttpPost]
+        [EnableRateLimiting(RateLimitingExtensions.ContactOthers)]
         public async Task<ActionResult<SentInquiryDto>> Create(
             string slug, [FromBody] CreateInquiryRequest request, CancellationToken ct)
             => Ok(await _engagement.CreateInquiryAsync(slug, request, ct));

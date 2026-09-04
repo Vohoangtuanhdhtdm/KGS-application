@@ -18,6 +18,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ThongKeTinRouteImport } from './routes/thong-ke-tin'
 import { Route as TinCuaToiRouteImport } from './routes/tin-cua-toi'
 import { Route as AdminListingsRouteImport } from './routes/admin.listings'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
@@ -81,6 +82,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThongKeTinRoute = ThongKeTinRouteImport.update({
+  id: '/thong-ke-tin',
+  path: '/thong-ke-tin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TinCuaToiRoute = TinCuaToiRouteImport.update({
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/reset-password'
+    | '/thong-ke-tin'
     | '/tin-cua-toi'
     | '/admin/listings'
     | '/admin/reports'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/reset-password'
+    | '/thong-ke-tin'
     | '/tin-cua-toi'
     | '/admin/listings'
     | '/admin/reports'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/reset-password'
+    | '/thong-ke-tin'
     | '/tin-cua-toi'
     | '/admin/listings'
     | '/admin/reports'
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ThongKeTinRoute: typeof ThongKeTinRoute
   TinCuaToiRoute: typeof TinCuaToiRoute
   AdminListingsRoute: typeof AdminListingsRoute
   AdminReportsRoute: typeof AdminReportsRoute
@@ -457,6 +470,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thong-ke-tin': {
+      id: '/thong-ke-tin'
+      path: '/thong-ke-tin'
+      fullPath: '/thong-ke-tin'
+      preLoaderRoute: typeof ThongKeTinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tin-cua-toi': {
@@ -605,6 +625,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ThongKeTinRoute: ThongKeTinRoute,
   TinCuaToiRoute: TinCuaToiRoute,
   AdminListingsRoute: AdminListingsRoute,
   AdminReportsRoute: AdminReportsRoute,

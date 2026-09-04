@@ -78,6 +78,8 @@ namespace kgs_api.Extensions
             services.AddScoped<IListingRetrievalService, ListingRetrievalService>();
             services.AddScoped<ISavedSearchService, SavedSearchService>();
             services.AddScoped<IListingReportService, ListingReportService>();
+            services.AddScoped<IListingViewTracker, ListingViewTracker>();
+            services.AddScoped<IListingAnalyticsService, ListingAnalyticsService>();
           
 
 
