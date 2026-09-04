@@ -30,7 +30,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate({ to: (redirect as string) || "/ban-do", replace: true });
+      navigate({ to: (redirect as string) || "/quan-ly/ban-do", replace: true });
     }
   }, [authLoading, isAuthenticated, redirect, navigate]);
 
@@ -45,7 +45,7 @@ function LoginPage() {
     try {
       await login(email, password);
       toast.success("Đăng nhập thành công");
-      navigate({ to: (redirect as string) || "/ban-do", replace: true });
+      navigate({ to: (redirect as string) || "/quan-ly/ban-do", replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : "Đăng nhập thất bại.");
     } finally {
@@ -107,7 +107,7 @@ function LoginPage() {
             </div>
           </form>
           <GoogleLoginSection
-            onSuccess={() => navigate({ to: (redirect as string) || "/ban-do", replace: true })}
+            onSuccess={() => navigate({ to: (redirect as string) || "/quan-ly/ban-do", replace: true })}
           />
         </CardContent>
       </Card>

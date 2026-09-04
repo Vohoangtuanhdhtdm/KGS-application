@@ -5,7 +5,10 @@
         // Vòng đời kiểm duyệt của một tin đăng công khai.
         // Closed thay cho Sold cũ (giữ nguyên giá trị 4): tin cho thuê thì "đã có khách",
         // tin bán thì "đã bán" — cùng một trạng thái kết thúc.
-        public enum ListingStatus { Pending = 1, Approved = 2, Rejected = 3, Closed = 4 }
+        // Draft = 5 chu khong phai 0: dat o cuoi de khong dung cham gia tri da nam trong
+        // du lieu. Ban nhap KHONG nam trong partial unique index UX_Listings_OneLivePerSlot
+        // (loc Status IN 1,2) nen mot cho co the co nhieu ban nhap cung luc.
+        public enum ListingStatus { Pending = 1, Approved = 2, Rejected = 3, Closed = 4, Draft = 5 }
 
         public enum AssetDomainType { PrivateHouse = 1, Apartment = 2, Land = 3, Villa = 4, Shophouse = 5, Office = 6, Other = 99 }
 

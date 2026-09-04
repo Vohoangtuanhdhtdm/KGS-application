@@ -32,12 +32,14 @@ export const Route = createFileRoute("/admin/listings")({
   ),
 });
 
+// Ban nhap (5) khong hien o dashboard admin: chua gui di duyet thi khong phai viec cua admin.
 const STAT_ORDER: ListingStatusCode[] = [1, 2, 3, 4];
 const STAT_TONE: Record<ListingStatusCode, string> = {
   1: "text-muted-foreground",
   2: "text-success",
   3: "text-destructive",
   4: "text-foreground",
+  5: "text-muted-foreground",
 };
 
 function AdminPropertiesPage() {

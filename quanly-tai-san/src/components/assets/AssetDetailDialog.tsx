@@ -80,14 +80,14 @@ export function AssetDetailDialog({ assetId, onClose }: AssetDetailDialogProps) 
           </h2>
           <div className="flex shrink-0 items-center gap-2">
             <Button size="sm" variant="outline" asChild>
-              <Link to="/tai-san/$id/sua" params={{ id: assetId }}>
+              <Link to="/quan-ly/tai-san/$id/sua" params={{ id: assetId }}>
                 <Pencil className="mr-1.5 h-3.5 w-3.5" />
                 Sửa
               </Link>
             </Button>
             {/* Lối thoát sang trang đầy đủ — để chia sẻ link hoặc thao tác cần nhiều chỗ */}
             <Button size="sm" variant="ghost" asChild>
-              <Link to="/tai-san/$id" params={{ id: assetId }}>
+              <Link to="/quan-ly/tai-san/$id" params={{ id: assetId }}>
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Mở trang
               </Link>

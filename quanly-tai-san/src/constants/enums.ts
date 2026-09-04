@@ -175,6 +175,7 @@ export const LISTING_STATUS = {
   2: "Đang hiển thị",
   3: "Bị từ chối",
   4: "Đã đóng",
+  5: "Bản nháp",
 } as const;
 export type ListingStatusCode = keyof typeof LISTING_STATUS;
 
@@ -183,6 +184,7 @@ export const LISTING_STATUS_CLASS: Record<ListingStatusCode, string> = {
   2: "bg-success/15 text-success border-success/30",
   3: "bg-destructive/15 text-destructive border-destructive/30",
   4: "bg-secondary text-secondary-foreground border-border",
+  5: "bg-warning/20 text-warning-foreground border-warning/40",
 };
 
 // ---- Thông tin mô tả chi tiết của tài sản (dùng lại khi đăng tin công khai) ----

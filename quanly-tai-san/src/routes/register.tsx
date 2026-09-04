@@ -59,7 +59,7 @@ function RegisterPage() {
         phoneNumber: form.phoneNumber.trim() || undefined,
       });
       toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
-      navigate({ to: "/ban-do", replace: true });
+      navigate({ to: "/quan-ly/ban-do", replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : "Đăng ký thất bại.");
     } finally {
@@ -160,7 +160,7 @@ function RegisterPage() {
               </Link>
             </div>
           </form>
-          <GoogleLoginSection onSuccess={() => navigate({ to: "/ban-do", replace: true })} />
+          <GoogleLoginSection onSuccess={() => navigate({ to: "/quan-ly/ban-do", replace: true })} />
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { listingsApi, formatListingPrice, type OwnerListingDto } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -18,7 +19,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Eye, Megaphone } from "lucide-react";
 
-export const Route = createFileRoute("/my-listings")({
+export const Route = createFileRoute("/tin-cua-toi")({
   head: () => ({ meta: [{ title: "Tin đăng của tôi — Quản Lý Tài Sản" }] }),
   component: MyListingsPage,
 });
@@ -84,10 +85,12 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
               {getErrorMessage(query.error, "Không tải được danh sách tin đăng")}
             </div>
           ) : rows.length === 0 ? (
-            <div className="py-14 text-center text-sm text-muted-foreground">
-              <Megaphone className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
-              Bạn chưa đăng tin nào lên marketplace. Vào chi tiết một tài sản → tab Tin đăng để
-              đăng tin công khai.
+            <div className="py-14 text-center text-sm text-muted-foreground space-y-3">
+              <Megaphone className="h-10 w-10 mx-auto text-muted-foreground/40" />
+              <p>Bạn chưa đăng tin nào.</p>
+              <Button asChild>
+                <Link to="/dang-tin">Đăng tin đầu tiên</Link>
+              </Button>
             </div>
           ) : (
             <TooltipProvider>

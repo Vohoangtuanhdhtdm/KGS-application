@@ -1,410 +1,250 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { reportsApi, type VacantUnitDto } from "@/lib/api/reports";
-import { remindersApi, type ReminderDto } from "@/lib/api/reminders";
-import { contractsApi } from "@/lib/api/contracts";
-import { inquiriesApi } from "@/lib/api/engagement";
-import { getErrorMessage } from "@/lib/api/errors";
-import { formatCurrency, formatDate, daysUntil } from "@/lib/format";
-import { REMINDER_TYPE } from "@/constants/enums";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { listingsApi, formatListingPrice } from "@/lib/api/listings";
+import { PublicHeader } from "@/components/public/PublicHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  CircleCheck,
-  DoorOpen,
-  Inbox,
-  Map as MapIcon,
-  Megaphone,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { BedDouble, Building2, MapPin, Megaphone, Ruler, Search } from "lucide-react";
 
 /**
- * BÀN VẬN HÀNH — trang chủ mới.
+ * TRANG CHỦ MARKETPLACE — mặt tiền của sản phẩm.
  *
- * Trước đây "/" chuyển hướng thẳng sang /ban-do, tức là bản đồ đóng vai trang chủ và mọi
- * tính năng quản lý mở dạng sheet đè lên nó. Cấu trúc đó nói với người dùng rằng bản đồ là
- * sản phẩm, còn hợp đồng và dòng tiền là phụ lục — với người thuê nguyên căn chia phòng cho
- * thuê lại thì đúng ngược lại.
+ * Trước đây "/" là Bàn vận hành, tức là thứ đầu tiên khách nhìn thấy là một công cụ quản
+ * lý nội bộ. Với định vị "nền tảng hỗ trợ tìm kiếm và kết nối bất động sản" thì mặt tiền
+ * phải là nơi tìm nhà. Bàn vận hành chuyển về /quan-ly.
  *
- * Màn hình này trả lời ba câu hỏi vận hành của buổi sáng:
- *   1. Tháng này lãi thật bao nhiêu, sau khi đã trừ tiền trả chủ nhà?
- *   2. Hôm nay tôi cần làm gì?
- *   3. Phòng nào đang trống, và trống bao lâu rồi?
- *
- * Bản đồ vẫn còn nguyên, chỉ thôi làm khung xương chính — nay là một lối vào từ đây.
+ * Trang này CÔNG KHAI: khách chưa đăng nhập vẫn tìm và xem tin được. Đó là điều kiện để
+ * một nền tảng tin đăng có lưu lượng — bắt đăng nhập trước khi cho xem là tự chặn mình.
  */
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Bàn vận hành — Quản Lý Tài Sản" }] }),
-  component: OperationsDesk,
+  head: () => ({
+    meta: [
+      { title: "KGS — Tìm nhà trọ, căn hộ cho thuê và bất động sản" },
+      {
+        name: "description",
+        content:
+          "Nền tảng tìm kiếm và kết nối bất động sản: nhà trọ, phòng cho thuê, căn hộ và nhà đất trên toàn quốc.",
+      },
+    ],
+  }),
+  component: MarketplaceHome,
 });
 
-function OperationsDesk() {
-  const now = new Date();
+const CITIES = ["TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Bình Dương", "Đồng Nai"];
 
-  const dashboardQ = useQuery({
-    queryKey: ["ops-dashboard", now.getFullYear(), now.getMonth() + 1],
-    queryFn: () => reportsApi.dashboard(),
+/** Khoảng giá thuê phổ biến ở thị trường Việt Nam, tính theo triệu đồng mỗi tháng. */
+const PRICE_BANDS: { label: string; max?: number; min?: number }[] = [
+  { label: "Dưới 3 triệu", max: 3_000_000 },
+  { label: "3 – 5 triệu", min: 3_000_000, max: 5_000_000 },
+  { label: "5 – 8 triệu", min: 5_000_000, max: 8_000_000 },
+  { label: "Trên 8 triệu", min: 8_000_000 },
+];
+
+function MarketplaceHome() {
+  const navigate = useNavigate();
+  const [keyword, setKeyword] = useState("");
+  const [city, setCity] = useState<string>("");
+
+  const submit = () => {
+    navigate({
+      to: "/tin-dang",
+      search: { keyword: keyword.trim() || undefined, city: city || undefined },
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <PublicHeader />
+
+      {/* Hero: ô tìm kiếm là thứ đầu tiên và to nhất trên trang. */}
+      <section className="border-b bg-muted/30">
+        <div className="mx-auto max-w-[1200px] px-4 py-12 lg:py-16 space-y-6">
+          <div className="space-y-2 max-w-2xl">
+            <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight text-balance">
+              Tìm nơi ở tiếp theo của bạn
+            </h1>
+            <p className="text-muted-foreground">
+              Nhà trọ, phòng cho thuê, căn hộ và nhà đất — xem đầy đủ chi phí, nội quy và tiện nghi
+              trước khi đi xem.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 max-w-3xl">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submit()}
+                placeholder="Nhập khu vực, đường, hoặc mô tả nơi bạn muốn ở"
+                className="pl-9 h-12"
+                aria-label="Từ khoá tìm kiếm"
+              />
+            </div>
+            <Select value={city || "all"} onValueChange={(v) => setCity(v === "all" ? "" : v)}>
+              <SelectTrigger className="h-12 sm:w-[200px]" aria-label="Tỉnh/thành phố">
+                <SelectValue placeholder="Toàn quốc" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toàn quốc</SelectItem>
+                {CITIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button className="h-12 px-8" onClick={submit}>
+              <Search className="h-4 w-4 mr-1.5" />
+              Tìm kiếm
+            </Button>
+          </div>
+
+          {/* Lối tắt theo khoảng giá — thứ người thuê lọc trước tiên. */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <span className="text-sm text-muted-foreground self-center mr-1">Cho thuê:</span>
+            {PRICE_BANDS.map((b) => (
+              <Button
+                key={b.label}
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  navigate({
+                    to: "/tin-dang",
+                    search: { type: 2, priceMin: b.min, priceMax: b.max },
+                  })
+                }
+              >
+                {b.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-[1200px] px-4 py-10 space-y-10">
+        <LatestListings />
+        <PostCta />
+      </div>
+    </div>
+  );
+}
+
+/** Tin mới nhất — bằng chứng nền tảng đang sống. Trang chủ trống là tín hiệu xấu nhất. */
+function LatestListings() {
+  const query = useQuery({
+    queryKey: ["home-latest"],
+    queryFn: () => listingsApi.search({ pageSize: 8 }),
     retry: 1,
   });
 
-  const d = dashboardQ.data;
+  const items = query.data?.items ?? [];
 
   return (
-    <div className="p-6 space-y-6 max-w-[1200px]">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Bàn vận hành</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tháng {now.getMonth() + 1}/{now.getFullYear()}
-          </p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link to="/ban-do">
-            <MapIcon className="h-4 w-4 mr-1.5" />
-            Xem bản đồ
-          </Link>
+    <section className="space-y-4">
+      <div className="flex items-end justify-between gap-4">
+        <h2 className="text-xl font-semibold tracking-tight">Tin đăng mới nhất</h2>
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/tin-dang">Xem tất cả</Link>
         </Button>
       </div>
 
-      {dashboardQ.isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {query.isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
+            <Skeleton key={i} className="h-64 w-full" />
           ))}
         </div>
-      ) : dashboardQ.isError ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-destructive">
-            {getErrorMessage(dashboardQ.error, "Không tải được số liệu vận hành")}
-          </CardContent>
-        </Card>
-      ) : d ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Con số quan trọng nhất của cả sản phẩm: lãi ĐÃ TRỪ tiền trả chủ nhà.
-              Ghi rõ khoản trả chủ nhà ngay dưới — đó là thứ Excel không tự tính. */}
-          <Kpi
-            primary
-            icon={TrendingUp}
-            label="Lãi thật tháng này"
-            value={formatCurrency(d.profit)}
-            sub={
-              d.rentExpense > 0
-                ? `Đã trừ ${formatCurrency(d.rentExpense)} trả chủ nhà`
-                : "Chưa có khoản trả chủ nhà"
-            }
-          />
-          <Kpi
-            icon={Wallet}
-            label="Đã thu tiền thuê"
-            value={formatCurrency(d.rentIncome)}
-            sub={`Chi khác ${formatCurrency(d.otherExpense)}`}
-          />
-          <Kpi
-            icon={DoorOpen}
-            label="Lấp đầy"
-            value={`${d.unitsOccupied}/${d.unitsTotal}`}
-            sub={
-              d.unitsVacant > 0
-                ? `${d.unitsVacant} trống${d.unitsMaintenance > 0 ? ` · ${d.unitsMaintenance} đang sửa` : ""}`
-                : "Không còn phòng trống"
-            }
-            tone={d.unitsVacant > 0 ? "warn" : "ok"}
-          />
-          <Kpi
-            icon={Wallet}
-            label="Cọc đang giữ"
-            value={formatCurrency(d.depositHeld)}
-            sub="Phải trả lại — không tính vào lãi"
-          />
+      ) : items.length === 0 ? (
+        <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
+          <Building2 className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
+          Chưa có tin đăng nào được duyệt.
         </div>
-      ) : null}
-
-      <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr] items-start">
-        <TodoPanel />
-        <VacancyPanel units={d?.vacantUnits ?? []} loading={dashboardQ.isLoading} />
-      </div>
-    </div>
-  );
-}
-
-function Kpi({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  primary = false,
-  tone,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  sub: string;
-  primary?: boolean;
-  tone?: "warn" | "ok";
-}) {
-  return (
-    <Card className={primary ? "border-primary/40 bg-primary/5" : undefined}>
-      <CardContent className="p-4 space-y-1">
-        <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
-          <Icon className="h-3.5 w-3.5" />
-          {label}
-        </div>
-        <div
-          className={`text-xl font-semibold tabular-nums ${
-            primary ? "text-primary" : tone === "warn" ? "text-warning-foreground" : ""
-          }`}
-        >
-          {value}
-        </div>
-        <div className="text-xs text-muted-foreground">{sub}</div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * Việc cần làm — gộp ba nguồn vốn nằm ở ba màn hình khác nhau: nhắc lịch đến hạn, hợp đồng
- * sắp hết hạn, và yêu cầu xem nhà chưa xử lý.
- *
- * Nút "Đã thu/Đã trả" đặt NGAY TRÊN DÒNG, không bắt điều hướng sang /nhac-lich. Nếu người
- * dùng bỏ qua bước xác nhận này thì ô "Lãi thật" phía trên sẽ báo thấp giả tạo và mất niềm
- * tin ngay tuần đầu — nên phải làm cho nó rẻ nhất có thể.
- */
-function TodoPanel() {
-  const qc = useQueryClient();
-
-  const remindersQ = useQuery({
-    queryKey: ["reminders-upcoming", 14],
-    queryFn: () => remindersApi.upcoming(14),
-    retry: 1,
-  });
-
-  const expiringQ = useQuery({
-    queryKey: ["contracts-expiring", 30],
-    queryFn: () => contractsApi.expiring(30),
-    retry: 1,
-  });
-
-  const inquiriesQ = useQuery({
-    queryKey: ["inquiries", "received", 1],
-    queryFn: () => inquiriesApi.received(1),
-    retry: 1,
-  });
-
-  const settle = useMutation({
-    mutationFn: (r: ReminderDto) => remindersApi.settle(r.id),
-    onSuccess: (entry) => {
-      qc.invalidateQueries({ queryKey: ["ops-dashboard"] });
-      qc.invalidateQueries({ queryKey: ["reminders-upcoming", 14] });
-      qc.invalidateQueries({ queryKey: ["cashflows"] });
-      toast.success("Đã ghi vào sổ thu chi", {
-        description: `${formatCurrency(entry.amount)} — ${entry.description ?? entry.assetName}`,
-      });
-    },
-    onError: (e) => toast.error(getErrorMessage(e, "Không ghi được bút toán")),
-  });
-
-  const reminders = remindersQ.data ?? [];
-  const expiring = expiringQ.data ?? [];
-  const newInquiries = inquiriesQ.data ?? [];
-  const loading = remindersQ.isLoading || expiringQ.isLoading || inquiriesQ.isLoading;
-  const empty = !loading && reminders.length === 0 && expiring.length === 0 && newInquiries.length === 0;
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Việc cần làm</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1">
-        {loading ? (
-          <div className="space-y-2 py-1">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-9 w-full" />
-            ))}
-          </div>
-        ) : empty ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Không có việc nào đến hạn trong 2 tuần tới.
-          </p>
-        ) : (
-          <>
-            {newInquiries.length > 0 && (
-              <Row
-                when="Mới"
-                what={`${newInquiries.length} yêu cầu xem nhà chưa xử lý`}
-                right={
-                  <Button size="sm" variant="outline" asChild>
-                    <Link to="/yeu-cau">
-                      <Inbox className="h-3.5 w-3.5 mr-1.5" />
-                      Xem
-                    </Link>
-                  </Button>
-                }
-              />
-            )}
-
-            {reminders.map((r) => {
-              const left = daysUntil(r.dueDate);
-              const settleable = r.leaseContractId !== null && (r.type === 1 || r.type === 2);
-              return (
-                <Row
-                  key={r.id}
-                  when={left <= 0 ? "Đến hạn" : `Còn ${left} ngày`}
-                  overdue={left <= 0}
-                  what={r.title}
-                  hint={REMINDER_TYPE[r.type]}
-                  right={
-                    settleable ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={settle.isPending}
-                        onClick={() => settle.mutate(r)}
-                      >
-                        <CircleCheck className="h-3.5 w-3.5 mr-1.5" />
-                        {r.type === 1 ? "Đã thu" : "Đã trả"}
-                      </Button>
-                    ) : null
-                  }
-                />
-              );
-            })}
-
-            {expiring.map((c) => (
-              <Row
-                key={c.id}
-                when={`Còn ${c.daysLeft} ngày`}
-                overdue={c.daysLeft <= 7}
-                what={`HĐ hết hạn: ${c.assetName}${c.assetUnitName ? ` — ${c.assetUnitName}` : ""}`}
-                hint={c.counterpartyName}
-                right={
-                  <Button size="sm" variant="ghost" asChild>
-                    <Link to="/hop-dong/$id" params={{ id: c.id }}>
-                      Tái ký
-                    </Link>
-                  </Button>
-                }
-              />
-            ))}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Row({
-  when,
-  what,
-  hint,
-  right,
-  overdue = false,
-}: {
-  when: string;
-  what: string;
-  hint?: string;
-  right?: React.ReactNode;
-  overdue?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-3 py-2 border-b last:border-b-0 border-dashed">
-      <span
-        className={`text-xs tabular-nums whitespace-nowrap w-20 shrink-0 ${
-          overdue ? "text-destructive font-medium" : "text-muted-foreground"
-        }`}
-      >
-        {when}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm truncate">{what}</div>
-        {hint && <div className="text-xs text-muted-foreground truncate">{hint}</div>}
-      </div>
-      {right}
-    </div>
-  );
-}
-
-/**
- * Phòng trống là doanh thu đang chảy mất, nên hiển thị SỐ NGÀY đã trống chứ không chỉ
- * trạng thái. Phòng nào chưa có tin đăng thì đưa thẳng nút đăng tin ra — đây chính là chỗ
- * hai nửa sản phẩm (quản lý và marketplace) gặp nhau.
- */
-function VacancyPanel({ units, loading }: { units: VacantUnitDto[]; loading: boolean }) {
-  const navigate = useNavigate();
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Phòng trống</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1">
-        {loading ? (
-          <div className="space-y-2 py-1">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-9 w-full" />
-            ))}
-          </div>
-        ) : units.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Tất cả phòng đều đang có khách. 🎉
-          </p>
-        ) : (
-          units.map((u) => {
-            const days = u.vacantSince ? Math.max(0, -daysUntil(u.vacantSince)) : null;
-            return (
-              <div
-                key={`${u.assetId}-${u.unitId ?? "whole"}`}
-                className="flex items-center gap-3 py-2 border-b last:border-b-0 border-dashed"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm truncate">
-                    {u.unitName}
-                    {u.area ? <span className="text-muted-foreground"> · {u.area} m²</span> : null}
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((l) => (
+            <Link
+              key={l.id}
+              to="/tin-dang/$slug"
+              params={{ slug: l.slug }}
+              className="group rounded-lg border bg-card overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="aspect-[4/3] bg-muted overflow-hidden">
+                {l.thumbnailUrl ? (
+                  <img
+                    src={l.thumbnailUrl}
+                    alt={l.title}
+                    loading="lazy"
+                    className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="h-full grid place-items-center text-muted-foreground/40">
+                    <Building2 className="h-8 w-8" />
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">{u.assetName}</div>
-                </div>
-
-                {days !== null ? (
-                  <Badge variant="outline" className="whitespace-nowrap">
-                    Trống {days} ngày
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="whitespace-nowrap">
-                    Chưa cho thuê
-                  </Badge>
-                )}
-
-                {u.hasLiveListing ? (
-                  <Badge
-                    variant="outline"
-                    className="bg-success/10 text-success border-success/30 whitespace-nowrap"
-                  >
-                    Đang đăng tin
-                  </Badge>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate({ to: "/tai-san/$id", params: { id: u.assetId } })}
-                  >
-                    <Megaphone className="h-3.5 w-3.5 mr-1.5" />
-                    Đăng tin
-                  </Button>
                 )}
               </div>
-            );
-          })
-        )}
-        {units.length > 0 && (
-          <p className="pt-2 text-xs text-muted-foreground">
-            Sắp theo thời gian trống lâu nhất. Cập nhật lần cuối {formatDate(new Date())}.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+              <div className="p-3 space-y-1.5">
+                <div className="font-medium leading-snug line-clamp-2 min-h-[2.6em]">{l.title}</div>
+                <div className="text-primary font-semibold">
+                  {formatListingPrice(l.price, l.type, l.rentPaymentCycle)}
+                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-2.5 flex-wrap">
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {l.district}
+                  </span>
+                  {l.area ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Ruler className="h-3 w-3" />
+                      {l.area} m²
+                    </span>
+                  ) : null}
+                  {l.bedrooms ? (
+                    <span className="inline-flex items-center gap-1">
+                      <BedDouble className="h-3 w-3" />
+                      {l.bedrooms}
+                    </span>
+                  ) : null}
+                </p>
+                {l.unitName && (
+                  <Badge variant="secondary" className="font-normal text-xs">
+                    {l.unitName}
+                  </Badge>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PostCta() {
+  return (
+    <section className="rounded-lg border bg-card p-6 lg:p-8 flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight">Bạn có nhà hoặc phòng cho thuê?</h2>
+        <p className="text-sm text-muted-foreground">
+          Đăng tin miễn phí, tiếp cận người đang tìm thuê ngay trong khu vực của bạn.
+        </p>
+      </div>
+      <Button size="lg" asChild>
+        <Link to="/dang-tin">
+          <Megaphone className="h-4 w-4 mr-1.5" />
+          Đăng tin ngay
+        </Link>
+      </Button>
+    </section>
   );
 }

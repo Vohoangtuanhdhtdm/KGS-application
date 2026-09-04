@@ -122,7 +122,7 @@ function LiveListings({ listings }: { listings: OwnerListingDto[] }) {
           {l.moderationNote && (
             <span className="text-xs text-warning-foreground">{l.moderationNote}</span>
           )}
-          <Link to="/my-listings" className="text-sm text-primary hover:underline ml-auto">
+          <Link to="/tin-cua-toi" className="text-sm text-primary hover:underline ml-auto">
             Quản lý
           </Link>
         </div>
@@ -378,7 +378,7 @@ function PublishDialog({
                 Thông số lấy trực tiếp từ tài sản, không nhập lại ở đây — sửa một lần ở trang
                 tài sản là mọi tin đăng cập nhật theo.{" "}
                 <Link
-                  to="/tai-san/$id/sua"
+                  to="/quan-ly/tai-san/$id/sua"
                   params={{ id: assetId }}
                   className="text-primary hover:underline"
                 >
@@ -513,7 +513,7 @@ function ConfirmStep({
         <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive space-y-1.5">
           <div>{conflict}</div>
           <Link
-            to="/my-listings"
+            to="/tin-cua-toi"
             className="inline-flex items-center gap-1 font-medium hover:underline"
           >
             Tới "Tin đăng của tôi" để sửa tin hiện có

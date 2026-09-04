@@ -75,7 +75,7 @@ import {
 } from "recharts";
 import { Plus, Trash2, Receipt, Wallet, Loader2, X } from "lucide-react";
 
-export const Route = createFileRoute("/thu-chi/")({
+export const Route = createFileRoute("/quan-ly/thu-chi/")({
   head: () => ({ meta: [{ title: "Sổ thu chi & Báo cáo — Quản Lý Tài Sản" }] }),
   component: CashflowPage,
 });

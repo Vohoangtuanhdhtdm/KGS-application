@@ -1,4 +1,4 @@
-import { api, toQuery } from "./http";
+import { api, apiForm, toQuery } from "./http";
 import type { PagedResult } from "./assets";
 import type {
   ListingTypeCode,
@@ -135,6 +135,39 @@ export interface OwnerListingDto {
   completenessPercent: number;
 }
 
+export interface ListingImageDto {
+  id: string;
+  url: string;
+  sortOrder: number;
+}
+
+export interface CreateListingDirectInput {
+  type: ListingTypeCode;
+  title: string;
+  description: string;
+  price: number;
+  rentPaymentCycle?: PaymentCycleCode | null;
+
+  city: string;
+  district: string;
+  ward: string;
+  addressDetail?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  propertyType: number;
+  area?: number | null;
+  frontage?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  floors?: number | null;
+  houseDirection?: string | null;
+  legalStatus?: string | null;
+  furnitureState?: string | null;
+
+  terms?: ListingTermsDto | null;
+  amenities?: string[];
+}
+
 export interface PublicListingFilters {
   type?: ListingTypeCode | "";
   city?: string;
@@ -217,4 +250,18 @@ export const listingsApi = {
   update: (listingId: string, body: UpdateListingInput) =>
     api<OwnerListingDto>(`/listings/${listingId}`, { method: "PUT", body }),
   close: (listingId: string) => api<void>(`/listings/${listingId}/close`, { method: "POST" }),
+
+  // ---- Luong dang tin truc tiep: tao nhap -> them anh -> gui duyet ----
+  createDirect: (body: CreateListingDirectInput) =>
+    api<OwnerListingDto>("/listings", { method: "POST", body }),
+  images: (listingId: string) => api<ListingImageDto[]>(`/listings/${listingId}/images`),
+  addImages: (listingId: string, files: File[]) => {
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f));
+    return apiForm<ListingImageDto[]>(`/listings/${listingId}/images`, form);
+  },
+  removeImage: (listingId: string, imageId: string) =>
+    api<void>(`/listings/${listingId}/images/${imageId}`, { method: "DELETE" }),
+  submit: (listingId: string) =>
+    api<OwnerListingDto>(`/listings/${listingId}/submit`, { method: "POST" }),
 };

@@ -43,7 +43,7 @@ import { ClientMap } from "@/components/map/ClientMap";
 // Default center — TP.HCM
 const DEFAULT_CENTER: [number, number] = [10.7769, 106.7009];
 
-export const Route = createFileRoute("/tai-san/")({
+export const Route = createFileRoute("/quan-ly/tai-san/")({
   head: () => ({ meta: [{ title: "Danh sách tài sản — Quản Lý Tài Sản" }] }),
   component: AssetList,
 });
@@ -111,7 +111,7 @@ function AssetList() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button onClick={() => navigate({ to: "/tai-san/moi" })}>
+          <Button onClick={() => navigate({ to: "/quan-ly/tai-san/moi" })}>
             <Plus className="h-4 w-4 mr-1.5" />
             Thêm tài sản
           </Button>
@@ -230,7 +230,7 @@ function AssetList() {
                 <p className="text-sm text-muted-foreground mt-1">
                   Thêm tài sản đầu tiên để bắt đầu.
                 </p>
-                <Button className="mt-5" onClick={() => navigate({ to: "/tai-san/moi" })}>
+                <Button className="mt-5" onClick={() => navigate({ to: "/quan-ly/tai-san/moi" })}>
                   <Plus className="h-4 w-4 mr-1.5" />
                   Thêm tài sản
                 </Button>
@@ -241,7 +241,7 @@ function AssetList() {
           {data && data.items.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {data.items.map((a) => (
-                <Link key={a.id} to="/tai-san/$id" params={{ id: a.id }} className="group">
+                <Link key={a.id} to="/quan-ly/tai-san/$id" params={{ id: a.id }} className="group">
                   <Card className="overflow-hidden transition hover:shadow-md hover:border-primary/40">
                     <div className="relative h-40 bg-muted flex items-center justify-center">
                       {a.thumbnailUrl ? (

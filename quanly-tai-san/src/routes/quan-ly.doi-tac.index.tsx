@@ -52,7 +52,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Phone, Mail, Pencil, Trash2, Users, RefreshCw } from "lucide-react";
 
-export const Route = createFileRoute("/doi-tac/")({
+export const Route = createFileRoute("/quan-ly/doi-tac/")({
   head: () => ({ meta: [{ title: "Sổ đối tác — Quản Lý Tài Sản" }] }),
   component: ContactsPage,
 });
