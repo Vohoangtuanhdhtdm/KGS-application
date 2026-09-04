@@ -113,6 +113,50 @@ export interface PublicListingDetailDto {
   totalMonthlyCost: number;
   ownerName: string;
   ownerPhone: string;
+  ownerAvatarUrl: string | null;
+  ownerJoinedAt: string;
+  ownerActiveListingCount: number;
+}
+
+/** Hai dải gợi ý dưới trang chi tiết. */
+export interface RelatedListingsDto {
+  similar: PublicListingSummaryDto[];
+  fromOwner: PublicListingSummaryDto[];
+}
+
+/** Khớp với enum ListingReportReason phía backend. */
+export const REPORT_REASON = {
+  1: "Tin rác, đăng trùng lặp",
+  2: "Thông tin sai (giá, diện tích, địa chỉ)",
+  3: "Đã cho thuê/bán rồi mà tin vẫn còn",
+  4: "Có dấu hiệu lừa đảo",
+  5: "Nội dung không phù hợp",
+  6: "Lý do khác",
+} as const;
+export type ReportReasonCode = keyof typeof REPORT_REASON;
+
+export const REPORT_STATUS = {
+  1: "Chờ xử lý",
+  2: "Đã xử lý",
+  3: "Không vi phạm",
+} as const;
+export type ReportStatusCode = keyof typeof REPORT_STATUS;
+
+export interface ListingReportDto {
+  id: string;
+  listingId: string;
+  listingTitle: string;
+  listingSlug: string | null;
+  listingStatus: ListingStatusCode;
+  reason: ReportReasonCode;
+  detail: string | null;
+  status: ReportStatusCode;
+  reporterName: string;
+  createdAt: string;
+  handledAt: string | null;
+  handlerNote: string | null;
+  /** Số người khác nhau cùng đang báo tin này. */
+  pendingCountOnListing: number;
 }
 
 export interface OwnerListingDto {
@@ -299,6 +343,10 @@ export const listingsApi = {
       { skipAuth: true },
     ),
   detail: (slug: string) => api<PublicListingDetailDto>(`/listings/${slug}`, { skipAuth: true }),
+  related: (slug: string) =>
+    api<RelatedListingsDto>(`/listings/${slug}/related`, { skipAuth: true }),
+  report: (slug: string, reason: ReportReasonCode, detail: string | null) =>
+    api<void>(`/listings/${slug}/reports`, { method: "POST", body: { reason, detail } }),
 
   // Cần đăng nhập
   mine: () => api<OwnerListingDto[]>("/listings/mine"),

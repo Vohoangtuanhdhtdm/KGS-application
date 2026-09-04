@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, ShieldCheck, Inbox, Heart, Building2 } from "lucide-react";
+import { X, ShieldCheck, Inbox, Heart, Building2, Flag } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useSwipeToClose } from "@/hooks/useSwipeToClose";
@@ -36,6 +36,7 @@ export function MoreSheet({ onClose, onPick }: MoreSheetProps) {
     ? [
         ...BASE_ITEMS,
         { label: "Duyệt tin đăng", icon: ShieldCheck, path: "/admin/listings" } as MoreItem,
+        { label: "Báo vi phạm", icon: Flag, path: "/admin/reports" } as MoreItem,
       ]
     : BASE_ITEMS;
 

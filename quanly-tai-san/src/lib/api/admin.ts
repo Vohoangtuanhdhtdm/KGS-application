@@ -1,4 +1,5 @@
 import { api, toQuery } from "./http";
+import type { ListingReportDto, ReportStatusCode } from "./listings";
 import type { ListingTypeCode, ListingStatusCode } from "@/constants/enums";
 
 export interface AdminPendingListing {
@@ -106,4 +107,17 @@ export const adminApi = {
     }),
   reject: (listingId: string, reason: string) =>
     api<void>(`/admin/listings/${listingId}/reject`, { method: "POST", body: { reason } }),
+};
+
+export const adminReportsApi = {
+  /** Bỏ trống status để lấy tất cả. */
+  list: (status?: ReportStatusCode) =>
+    api<ListingReportDto[]>(`/admin/listing-reports${toQuery({ status })}`),
+
+  /** confirmed = true nghĩa là có vi phạm thật; false nghĩa là tin không sai. */
+  resolve: (id: string, confirmed: boolean, note: string | null) =>
+    api<void>(`/admin/listing-reports/${id}/resolve`, {
+      method: "POST",
+      body: { confirmed, note },
+    }),
 };

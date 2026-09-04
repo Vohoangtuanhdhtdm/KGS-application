@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Dtos
@@ -189,7 +189,53 @@ namespace kgs_api.Dtos
         double? Latitude, double? Longitude,
         IReadOnlyList<string> ImageUrls, int ViewCount, DateTime? PublishedAt,
         ListingTermsDto Terms, IReadOnlyList<string> Amenities, decimal TotalMonthlyCost,
-        string OwnerName, string OwnerPhone);   // hiện trực tiếp theo quyết định đã chốt
+
+        // ---- Hồ sơ người đăng (nhiệm vụ 1.7) ----
+        // Người tìm nhà quyết định có gọi hay không dựa trên việc họ tin ai đang ở đầu dây
+        // bên kia. Một cái tên trần trụi không nói được gì; "tham gia 8 tháng trước, đang có
+        // 5 tin" thì nói được — và nó cũng làm tài khoản mở hôm qua để đăng tin ma trở nên
+        // dễ nhận ra.
+        string OwnerName, string OwnerPhone,   // hiện trực tiếp theo quyết định đã chốt
+        string? OwnerAvatarUrl,
+        DateTime OwnerJoinedAt,
+        int OwnerActiveListingCount);
+
+    /// <summary>Hai dải tin gợi ý dưới trang chi tiết, gộp trong một lần gọi.
+    ///
+    /// Tách thành hai endpoint thì trang chi tiết phải chờ hai vòng mạng cho phần nằm dưới
+    /// màn hình đầu — không đáng, vì cả hai đều truy vấn từ chính tin đang xem.</summary>
+    public sealed record RelatedListingsDto(
+        /// <summary>Tin cùng khu vực, cùng loại, giá xấp xỉ.</summary>
+        IReadOnlyList<PublicListingSummaryDto> Similar,
+        /// <summary>Tin khác của cùng người đăng.</summary>
+        IReadOnlyList<PublicListingSummaryDto> FromOwner);
+
+    public sealed record CreateListingReportRequest(
+        ListingReportReason Reason,
+        [MaxLength(1000)] string? Detail);
+
+    public sealed record ListingReportDto(
+        Guid Id,
+        Guid ListingId,
+        string ListingTitle,
+        string? ListingSlug,
+        ListingStatus ListingStatus,
+        ListingReportReason Reason,
+        string? Detail,
+        ListingReportStatus Status,
+        string ReporterName,
+        DateTime CreatedAt,
+        DateTime? HandledAt,
+        string? HandlerNote,
+        /// <summary>Tổng số báo cáo đang chờ trên CÙNG tin đăng này. Ba người khác nhau
+        /// cùng phản ánh một tin thì đó là tín hiệu mạnh hơn hẳn một người phản ánh ba
+        /// lần — mà ràng buộc một-báo-cáo-mỗi-người đã loại trừ khả năng thứ hai.</summary>
+        int PendingCountOnListing);
+
+    public sealed record ResolveListingReportRequest(
+        /// <summary>true = có vi phạm thật (Resolved); false = tin không sai (Dismissed).</summary>
+        bool Confirmed,
+        [MaxLength(500)] string? Note);
 
     public sealed record OwnerListingDto(
         Guid Id, string? Slug, string Title, ListingType Type, ListingStatus Status,

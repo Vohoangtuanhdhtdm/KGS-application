@@ -99,5 +99,34 @@
         // Cach sap xep ket qua tim kiem cong khai. Nearest chi co nghia khi truy van kem
         // toa do — khong co toa do thi service tu lui ve Newest thay vi tra thu tu ngau nhien.
         public enum ListingSort { Newest = 1, PriceAsc = 2, PriceDesc = 3, AreaDesc = 4, Nearest = 5 }
+
+        /// <summary>Lý do báo vi phạm một tin đăng.
+        ///
+        /// Danh sách cố ý ngắn và cụ thể. Ô "mô tả thêm" tự do thì ai cũng viết một câu
+        /// khác nhau, và người kiểm duyệt phải đọc từng cái mới biết nên xử lý ra sao;
+        /// phân loại sẵn cho phép xếp hàng đợi theo mức nghiêm trọng.</summary>
+        public enum ListingReportReason
+        {
+            /// <summary>Đăng trùng, đăng lại liên tục, nội dung rác.</summary>
+            Spam = 1,
+            /// <summary>Sai giá, sai diện tích, sai địa chỉ so với thực tế.</summary>
+            WrongInfo = 2,
+            /// <summary>Đã cho thuê/bán rồi mà tin vẫn hiển thị.</summary>
+            AlreadyTaken = 3,
+            /// <summary>Có dấu hiệu lừa đảo — đòi cọc trước khi xem nhà, ảnh lấy từ nơi khác.</summary>
+            Scam = 4,
+            /// <summary>Nội dung không phù hợp.</summary>
+            Inappropriate = 5,
+            Other = 6
+        }
+
+        public enum ListingReportStatus
+        {
+            Pending = 1,
+            /// <summary>Đã xác nhận có vi phạm và đã xử lý tin đăng.</summary>
+            Resolved = 2,
+            /// <summary>Đã xem và kết luận tin không vi phạm.</summary>
+            Dismissed = 3
+        }
     }
 }

@@ -1,4 +1,4 @@
-using kgs_api.Dtos;
+﻿using kgs_api.Dtos;
 using static kgs_api.Common.Common;
 
 namespace kgs_api.Interfaces
@@ -52,5 +52,9 @@ namespace kgs_api.Interfaces
 
         Task<PagedResult<PublicListingSummaryDto>> SearchPublicAsync(PublicListingSearchQuery query, CancellationToken ct = default);
         Task<PublicListingDetailDto> GetPublicBySlugAsync(string slug, CancellationToken ct = default);
+
+        /// <summary>Hai dải gợi ý dưới trang chi tiết: tin tương tự và tin khác của cùng
+        /// người đăng. Gộp một lần gọi vì cả hai đều suy ra từ chính tin đang xem.</summary>
+        Task<RelatedListingsDto> GetRelatedAsync(string slug, CancellationToken ct = default);
     }
 }

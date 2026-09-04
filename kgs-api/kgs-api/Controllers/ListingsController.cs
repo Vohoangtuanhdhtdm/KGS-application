@@ -1,4 +1,4 @@
-using kgs_api.Dtos;
+﻿using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +42,33 @@ namespace kgs_api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<PublicListingDetailDto>> GetBySlug(string slug, CancellationToken ct)
             => Ok(await _listings.GetPublicBySlugAsync(slug, ct));
+
+        /// <summary>Hai dải gợi ý dưới trang chi tiết. Tách khỏi endpoint chi tiết vì nó
+        /// nằm dưới màn hình đầu — trang không nên chờ phần này mới hiện được nội dung chính.</summary>
+        [HttpGet("{slug}/related")]
+        [AllowAnonymous]
+        public async Task<ActionResult<RelatedListingsDto>> GetRelated(string slug, CancellationToken ct)
+            => Ok(await _listings.GetRelatedAsync(slug, ct));
+
+        /// <summary>Báo tin đăng có vấn đề. Bắt buộc đăng nhập — xem ghi chú trong
+        /// <see cref="Domain.Entity.SubEntity.ListingReport"/>.</summary>
+        [HttpPost("{slug}/reports")]
+        [Authorize]
+        public async Task<IActionResult> Report(
+            string slug, [FromBody] CreateListingReportRequest request,
+            [FromServices] IListingReportService reports, CancellationToken ct)
+        {
+            try
+            {
+                await reports.ReportAsync(slug, request, ct);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Tự báo tin của chính mình — lỗi của người dùng, không phải lỗi hệ thống.
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
         // ---- Cần đăng nhập — chủ tài sản quản lý tin của mình ----
 

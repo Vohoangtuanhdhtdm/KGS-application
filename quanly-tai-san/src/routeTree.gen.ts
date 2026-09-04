@@ -20,6 +20,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TinCuaToiRouteImport } from './routes/tin-cua-toi'
 import { Route as AdminListingsRouteImport } from './routes/admin.listings'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as DaLuuIndexRouteImport } from './routes/da-luu.index'
 import { Route as QuanLyIndexRouteImport } from './routes/quan-ly.index'
 import { Route as TinDangIndexRouteImport } from './routes/tin-dang.index'
@@ -90,6 +91,11 @@ const TinCuaToiRoute = TinCuaToiRouteImport.update({
 const AdminListingsRoute = AdminListingsRouteImport.update({
   id: '/admin/listings',
   path: '/admin/listings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DaLuuIndexRoute = DaLuuIndexRouteImport.update({
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/da-luu/': typeof DaLuuIndexRoute
   '/quan-ly/': typeof QuanLyIndexRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/da-luu': typeof DaLuuIndexRoute
   '/quan-ly': typeof QuanLyIndexRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/listings': typeof AdminListingsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/da-luu/': typeof DaLuuIndexRoute
   '/quan-ly/': typeof QuanLyIndexRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/tin-cua-toi'
     | '/admin/listings'
+    | '/admin/reports'
     | '/tin-dang/$slug'
     | '/da-luu/'
     | '/quan-ly/'
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/tin-cua-toi'
     | '/admin/listings'
+    | '/admin/reports'
     | '/tin-dang/$slug'
     | '/da-luu'
     | '/quan-ly'
@@ -333,6 +344,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/tin-cua-toi'
     | '/admin/listings'
+    | '/admin/reports'
     | '/tin-dang/$slug'
     | '/da-luu/'
     | '/quan-ly/'
@@ -363,6 +375,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TinCuaToiRoute: typeof TinCuaToiRoute
   AdminListingsRoute: typeof AdminListingsRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   TinDangSlugRoute: typeof TinDangSlugRoute
   DaLuuIndexRoute: typeof DaLuuIndexRoute
   QuanLyIndexRoute: typeof QuanLyIndexRoute
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/listings'
       fullPath: '/admin/listings'
       preLoaderRoute: typeof AdminListingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/da-luu/': {
@@ -587,6 +607,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TinCuaToiRoute: TinCuaToiRoute,
   AdminListingsRoute: AdminListingsRoute,
+  AdminReportsRoute: AdminReportsRoute,
   TinDangSlugRoute: TinDangSlugRoute,
   DaLuuIndexRoute: DaLuuIndexRoute,
   QuanLyIndexRoute: QuanLyIndexRoute,
