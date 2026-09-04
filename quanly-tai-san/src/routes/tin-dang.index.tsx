@@ -8,11 +8,13 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import type L from "leaflet";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   listingsApi,
   type PublicListingFilters,
+  LISTING_SORT,
+  type ListingSortCode,
   type PublicListingSummaryDto,
 } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -27,12 +29,21 @@ import { DemandSearchSheet, type DemandSearchResult } from "@/components/public/
 import { useGeolocationOnDemand, type LatLng } from "@/hooks/useGeolocationOnDemand";
 import { useViewportKind } from "@/hooks/useViewportKind";
 import { geocodeAddress } from "@/lib/geocode";
+import { formatCurrency } from "@/lib/format";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -49,6 +60,7 @@ import {
   AlertTriangle,
   Target,
   X,
+  ArrowUpDown,
 } from "lucide-react";
 
 export const Route = createFileRoute("/tin-dang/")({
@@ -61,6 +73,9 @@ const DEFAULT_RADIUS_METERS = 5000;
 const LIST_WIDTH_STORAGE_KEY = "tin-dang:list-width-percent";
 const DEMAND_BANNER_DISMISSED_KEY = "tin-dang:demand-banner-dismissed";
 
+/** "8,5 trieu" — chip loc phai doc luot duoc, khong phai dem so 0. */
+const fmtShort = (v: number) => formatCurrency(v, { compact: true });
+
 function PublicListingsPage() {
   const viewportKind = useViewportKind();
 
@@ -72,7 +87,7 @@ function PublicListingsPage() {
   const [bedroomsMin, setBedroomsMin] = useState<number | null>(null);
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<ListingSortCode>(1);
 
   // Đồng bộ hover 2 chiều Card <-> Marker + click marker cuộn tới card
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -120,7 +135,6 @@ function PublicListingsPage() {
       setUsingMyLocation(true);
       setMyLocationRadiusKm(km);
       setShowSearchAreaButton(false);
-      setPage(1);
       setRadiusPopoverOpen(false);
     } else if (geoStatus === "denied" || geoStatus === "unsupported") {
       toast.error(
@@ -151,7 +165,6 @@ function PublicListingsPage() {
     setRadiusMeters(null);
     setUsingMyLocation(false);
     setShowSearchAreaButton(false);
-    setPage(1);
   };
 
   // ---- Ô tìm khu vực (geocoding) — debounce 500ms ----
@@ -182,7 +195,6 @@ function PublicListingsPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       setKeyword(keywordInput.trim());
-      setPage(1);
     }, 400);
     return () => clearTimeout(t);
   }, [keywordInput]);
@@ -218,7 +230,6 @@ function PublicListingsPage() {
     } else if (result.location?.kind === "myLocation") {
       triggerLocationSearch(result.location.radiusKm);
     }
-    setPage(1);
     setDemandSheetOpen(false);
   };
 
@@ -233,19 +244,56 @@ function PublicListingsPage() {
     latitude: searchCenter?.lat ?? "",
     longitude: searchCenter?.lng ?? "",
     radiusMeters: searchCenter && radiusMeters ? radiusMeters : "",
-    page,
+    sortBy,
     pageSize: 20,
   };
 
-  const query = useQuery({
+  // Phan trang vo han thay cho nut Trang truoc/Trang sau.
+  //
+  // Doi bo loc lam doi queryKey nen ket qua tu reset ve trang dau — khong con phai goi
+  // setPage(1) rai rac o hang chuc cho, vốn là nguồn lỗi khi thêm bộ lọc mới mà quên.
+  //
+  // Bam vao mot tin roi quay lai: TanStack Query tra cache cho dung queryKey nen ca danh
+  // sach da tai van con, khong bi keo ve dau trang.
+  const query = useInfiniteQuery({
     queryKey: ["public-listings", filters],
-    queryFn: () => listingsApi.search(filters),
-    placeholderData: keepPreviousData,
+    queryFn: ({ pageParam }) => listingsApi.search({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.page < last.totalPages ? last.page + 1 : undefined),
     retry: 1,
   });
 
-  const data = query.data;
-  const items = useMemo(() => data?.items ?? [], [data]);
+  const pages = query.data?.pages ?? [];
+  const totalCount = pages[0]?.totalCount ?? 0;
+  const items = useMemo(() => pages.flatMap((p) => p.items), [pages]);
+
+  // Nap trang ke tiep khi cot moc duoi cuoi danh sach loṭ vao khung nhin.
+  //
+  // Dung callback ref chu khong phai useRef: trang render danh sach o ba nhanh
+  // desktop/tablet/mobile loai tru nhau, nen node cot moc bi thao va dung lai moi khi
+  // doi breakpoint. useRef khong bao cho ta biet dieu do, con callback ref thi co.
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query;
+
+  const sentinelRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      observerRef.current?.disconnect();
+      if (!node || !hasNextPage) return;
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          // Chan goi chong: isFetchingNextPage van con true trong luc request bay,
+          // ma cot moc thi chua kip bi day ra khoi khung nhin.
+          if (entries[0]?.isIntersecting && !isFetchingNextPage) void fetchNextPage();
+        },
+        // Nap truoc khi con cach day mot man hinh — nguoi dung khong thay khoang trong.
+        { rootMargin: "600px" },
+      );
+      observerRef.current.observe(node);
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
+  );
+
+  useEffect(() => () => observerRef.current?.disconnect(), []);
 
   const mapPoints: PropertyMapPoint[] = useMemo(
     () =>
@@ -284,7 +332,6 @@ function PublicListingsPage() {
     if (radiusMeters == null) setRadiusMeters(DEFAULT_RADIUS_METERS);
     setUsingMyLocation(false);
     setShowSearchAreaButton(false);
-    setPage(1);
   };
 
   const handleSearchThisArea = () => {
@@ -297,7 +344,6 @@ function PublicListingsPage() {
     setRadiusMeters(newRadius);
     setUsingMyLocation(false);
     setShowSearchAreaButton(false);
-    setPage(1);
   };
 
   // ---- Giai đoạn 3: state responsive ----
@@ -350,6 +396,124 @@ function PublicListingsPage() {
 
   const activeFilterCount = (city.trim() ? 1 : 0) + (district.trim() ? 1 : 0);
 
+  // ---- Chip cho cac bo loc ĐANG ap dung ----
+  //
+  // Khac han khoi `filterChips` ben duoi: kia la NUT MO bo loc (luon hien du chua chon
+  // gi), day la thu da chon va go duoc tung cai. Khong co hang nay, nguoi dung cuon
+  // xuong mot doan roi khong con biet vi sao ket qua it — ho chi thay "khong tim thay
+  // tin nao" va bo di, trong khi thu phai go chi la mot bo loc gia dat tu luc truoc.
+  const appliedFilters: { key: string; label: string; clear: () => void }[] = [];
+  if (keyword.trim())
+    appliedFilters.push({
+      key: "keyword",
+      label: `Từ khoá: ${keyword.trim()}`,
+      clear: () => {
+        setKeywordInput("");
+        setKeyword("");
+      },
+    });
+  if (district.trim())
+    appliedFilters.push({
+      key: "district",
+      label: district.trim(),
+      clear: () => setDistrict(""),
+    });
+  if (city.trim())
+    appliedFilters.push({ key: "city", label: city.trim(), clear: () => setCity("") });
+  if (priceMin != null || priceMax != null)
+    appliedFilters.push({
+      key: "price",
+      label:
+        priceMin != null && priceMax != null
+          ? `${fmtShort(priceMin)} – ${fmtShort(priceMax)}`
+          : priceMin != null
+            ? `Từ ${fmtShort(priceMin)}`
+            : `Đến ${fmtShort(priceMax!)}`,
+      clear: () => {
+        setPriceMin(null);
+        setPriceMax(null);
+      },
+    });
+  if (bedroomsMin != null)
+    appliedFilters.push({
+      key: "bedrooms",
+      label: `Từ ${bedroomsMin} phòng ngủ`,
+      clear: () => setBedroomsMin(null),
+    });
+  if (searchCenter)
+    appliedFilters.push({
+      key: "area",
+      label: usingMyLocation
+        ? `Quanh tôi ${myLocationRadiusKm} km`
+        : `Trong bán kính ${Math.round((radiusMeters ?? DEFAULT_RADIUS_METERS) / 1000)} km`,
+      clear: clearMyLocationSearch,
+    });
+
+  const clearAllFilters = () => appliedFilters.forEach((f) => f.clear());
+
+  const appliedFilterBar =
+    appliedFilters.length === 0 ? null : (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {appliedFilters.map((f) => (
+          <Badge
+            key={f.key}
+            variant="secondary"
+            className="gap-1 pr-1 font-normal max-w-[220px]"
+          >
+            <span className="truncate">{f.label}</span>
+            <button
+              type="button"
+              aria-label={`Bỏ lọc ${f.label}`}
+              onClick={f.clear}
+              className="rounded-full p-0.5 hover:bg-background/80 shrink-0"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+        {appliedFilters.length > 1 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs text-muted-foreground"
+            onClick={clearAllFilters}
+          >
+            Xoá tất cả
+          </Button>
+        )}
+      </div>
+    );
+
+  // "Gần tôi nhất" chi xep duoc khi da co toa do — bay khong thi backend tu lui ve
+  // "Mới nhất", nen an luon cho khoi hua hen thu minh khong lam duoc.
+  const sortOptions = (Object.keys(LISTING_SORT) as unknown as ListingSortCode[])
+    .map(Number)
+    .filter((code) => code !== 5 || searchCenter != null) as ListingSortCode[];
+
+  const resultsBar = (
+    <div className="flex items-center justify-between gap-2">
+      <p className="text-sm text-muted-foreground">
+        {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
+      </p>
+      <Select
+        value={String(sortBy)}
+        onValueChange={(v) => setSortBy(Number(v) as ListingSortCode)}
+      >
+        <SelectTrigger className="h-8 w-auto gap-1.5 border-none shadow-none px-2 text-sm">
+          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="end">
+          {sortOptions.map((code) => (
+            <SelectItem key={code} value={String(code)}>
+              {LISTING_SORT[code]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   // ---- Nội dung filter chips (dùng chung desktop/tablet/trong Sheet mobile) ----
   const filterChips = (
     <>
@@ -360,7 +524,6 @@ function PublicListingsPage() {
           className="h-8 rounded-sm"
           onClick={() => {
             setType(1);
-            setPage(1);
           }}
         >
           Bán
@@ -371,7 +534,6 @@ function PublicListingsPage() {
           className="h-8 rounded-sm"
           onClick={() => {
             setType(2);
-            setPage(1);
           }}
         >
           Cho thuê
@@ -393,7 +555,6 @@ function PublicListingsPage() {
               value={priceMin}
               onChange={(v) => {
                 setPriceMin(v);
-                setPage(1);
               }}
             />
           </div>
@@ -403,7 +564,6 @@ function PublicListingsPage() {
               value={priceMax}
               onChange={(v) => {
                 setPriceMax(v);
-                setPage(1);
               }}
             />
           </div>
@@ -429,7 +589,6 @@ function PublicListingsPage() {
                 className="h-8 flex-1 px-0"
                 onClick={() => {
                   setBedroomsMin(n);
-                  setPage(1);
                 }}
               >
                 {n == null ? "Tất cả" : `${n}+`}
@@ -456,7 +615,6 @@ function PublicListingsPage() {
               value={city}
               onChange={(e) => {
                 setCity(e.target.value);
-                setPage(1);
               }}
               placeholder="VD: TP. Hồ Chí Minh"
             />
@@ -467,7 +625,6 @@ function PublicListingsPage() {
               value={district}
               onChange={(e) => {
                 setDistrict(e.target.value);
-                setPage(1);
               }}
               placeholder="VD: Quận 7"
             />
@@ -582,7 +739,7 @@ function PublicListingsPage() {
     // thay skeleton hoàn toàn để tránh "giật" bố cục
     <div
       className={`space-y-4 transition-opacity duration-200 ${
-        query.isFetching ? "opacity-60" : "opacity-100"
+        query.isFetching && !isFetchingNextPage ? "opacity-60" : "opacity-100"
       }`}
     >
       <div className="grid grid-cols-2 gap-3">
@@ -600,29 +757,21 @@ function PublicListingsPage() {
           />
         ))}
       </div>
-      {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Trang trước
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Trang {data.page}/{data.totalPages}
+      {/* Cot moc cuon vo han. Van giu nut bam duoi day: IntersectionObserver khong
+          chay khi nguoi dung dieu huong bang ban phim hoac trinh duyet chan no. */}
+      <div ref={sentinelRef} className="pt-2 pb-4 text-center">
+        {isFetchingNextPage ? (
+          <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Đang tải thêm...
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= data.totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Trang sau
+        ) : hasNextPage ? (
+          <Button variant="outline" size="sm" onClick={() => void fetchNextPage()}>
+            Xem thêm
           </Button>
-        </div>
-      )}
+        ) : (
+          <span className="text-xs text-muted-foreground">Đã hiển thị hết kết quả</span>
+        )}
+      </div>
     </div>
   );
 
@@ -713,7 +862,6 @@ function PublicListingsPage() {
                 className="h-8 rounded-sm"
                 onClick={() => {
                   setType(1);
-                  setPage(1);
                 }}
               >
                 Bán
@@ -724,7 +872,6 @@ function PublicListingsPage() {
                 className="h-8 rounded-sm"
                 onClick={() => {
                   setType(2);
-                  setPage(1);
                 }}
               >
                 Cho thuê
@@ -762,9 +909,8 @@ function PublicListingsPage() {
             style={{ width: `${listWidthPercent}%` }}
           >
             {demandBanner}
-            <p className="text-sm text-muted-foreground">
-              {query.isLoading ? "Đang tải..." : `${data?.totalCount ?? 0} bất động sản`}
-            </p>
+            {appliedFilterBar}
+            {resultsBar}
             {listContent}
           </div>
           {/* Thanh kéo chỉnh tỷ lệ List/Map — giới hạn 25%-60%, lưu vào localStorage */}
@@ -788,9 +934,8 @@ function PublicListingsPage() {
             className={`absolute inset-0 overflow-y-auto p-4 space-y-4 ${tabletView === "list" ? "" : "invisible pointer-events-none"}`}
           >
             {demandBanner}
-            <p className="text-sm text-muted-foreground">
-              {query.isLoading ? "Đang tải..." : `${data?.totalCount ?? 0} bất động sản`}
-            </p>
+            {appliedFilterBar}
+            {resultsBar}
             {listContent}
           </div>
           <div
@@ -806,12 +951,14 @@ function PublicListingsPage() {
         <div className="flex-1 min-h-0 relative">
           {mapContent}
           <MobileListSheet
-            totalCount={data?.totalCount ?? 0}
+            totalCount={totalCount}
             activeSnap={mobileSnap}
             onActiveSnapChange={setMobileSnap}
           >
             <div className="space-y-3">
               {demandBanner}
+              {appliedFilterBar}
+              {resultsBar}
               {listContent}
             </div>
           </MobileListSheet>
