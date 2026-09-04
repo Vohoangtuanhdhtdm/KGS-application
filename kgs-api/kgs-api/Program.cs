@@ -96,6 +96,11 @@ using (var scope = app.Services.CreateScope())
     // để danh sách phòng trống buổi sáng đã đúng.
     recurringJobs.AddOrUpdate<ContractExpiryJob>(
         "contract-expiry", j => j.RunAsync(CancellationToken.None), "30 0 * * *");
+
+    // 01:00 UTC = 08:00 gio Viet Nam — dong tin qua han truoc gio nguoi dung vao xem,
+    // de marketplace buoi sang khong con tin da cho thue tu lau.
+    recurringJobs.AddOrUpdate<ListingExpiryJob>(
+        "listing-expiry", j => j.RunAsync(CancellationToken.None), "0 1 * * *");
 }
 
 

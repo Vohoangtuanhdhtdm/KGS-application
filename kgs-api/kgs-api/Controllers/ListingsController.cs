@@ -93,6 +93,35 @@ namespace kgs_api.Controllers
         public async Task<ActionResult<OwnerListingDto>> Submit(Guid listingId, CancellationToken ct)
             => Ok(await _listings.SubmitAsync(listingId, ct));
 
+        // ---- Vòng đời tin đăng ----
+
+        /// <summary>Nạp lại tin vào biểu mẫu: dùng cho cả soạn tiếp bản nháp lẫn sửa tin.</summary>
+        [HttpGet("{listingId:guid}/edit")]
+        [Authorize]
+        public async Task<ActionResult<EditListingDto>> GetForEdit(Guid listingId, CancellationToken ct)
+            => Ok(await _listings.GetForEditAsync(listingId, ct));
+
+        /// <summary>Đẩy tin lên đầu danh sách. Giới hạn 24 giờ một lần.</summary>
+        [HttpPost("{listingId:guid}/bump")]
+        [Authorize]
+        public async Task<ActionResult<OwnerListingDto>> Bump(Guid listingId, CancellationToken ct)
+            => Ok(await _listings.BumpAsync(listingId, ct));
+
+        /// <summary>Mở lại tin đã đóng — quay về bản nháp để sửa rồi gửi duyệt lại.</summary>
+        [HttpPost("{listingId:guid}/reopen")]
+        [Authorize]
+        public async Task<ActionResult<OwnerListingDto>> Reopen(Guid listingId, CancellationToken ct)
+            => Ok(await _listings.ReopenAsync(listingId, ct));
+
+        /// <summary>Xoá hẳn — chỉ với bản nháp.</summary>
+        [HttpDelete("{listingId:guid}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteDraft(Guid listingId, CancellationToken ct)
+        {
+            await _listings.DeleteDraftAsync(listingId, ct);
+            return NoContent();
+        }
+
         /// <summary>Đóng tin khi đã có khách / đã bán. Không xoá — giữ lượt xem và lịch sử.</summary>
         [HttpPost("{listingId:guid}/close")]
         [Authorize]

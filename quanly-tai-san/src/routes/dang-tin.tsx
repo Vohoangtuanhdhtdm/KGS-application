@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   listingsApi,
@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ImagePlus, Loader2, Send, Trash2, X } from "lucide-react";
+import { AlertCircle, ImagePlus, Loader2, Save, Send, X } from "lucide-react";
 
 /**
  * ĐĂNG TIN — một biểu mẫu duy nhất.
@@ -43,13 +43,20 @@ import { ImagePlus, Loader2, Send, Trash2, X } from "lucide-react";
  * khổng lồ. Nhờ vậy ảnh tải lên có tiến trình thật, và bỏ dở giữa chừng thì bản nháp vẫn
  * còn nguyên thay vì mất trắng.
  */
+// ?id= — soạn tiếp bản nháp hoặc sửa một tin đã đăng. Cùng một biểu mẫu cho cả hai:
+// người dùng không cần học hai màn hình khác nhau cho cùng một việc.
 export const Route = createFileRoute("/dang-tin")({
+  validateSearch: (s: Record<string, unknown>): { id?: string } =>
+    typeof s.id === "string" ? { id: s.id } : {},
   head: () => ({ meta: [{ title: "Đăng tin — KGS" }] }),
   component: CreateListingPage,
 });
 
 function CreateListingPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { id: editingId } = Route.useSearch();
+  const isEditing = !!editingId;
 
   // Bước 1 — nội dung tin
   const [type, setType] = useState<1 | 2>(2);
@@ -74,9 +81,52 @@ function CreateListingPage() {
   const [amenities, setAmenities] = useState<string[]>([]);
 
   // Bước 4 — ảnh. Chỉ tải lên được sau khi bản nháp đã tồn tại (cần listingId).
-  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(editingId ?? null);
   const [images, setImages] = useState<ListingImageDto[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Khoá phần thông tin bất động sản khi tài sản còn tin đăng khác — sửa ở đây sẽ
+  // đổi luôn nội dung của những tin kia mà người dùng không hề biết.
+  const [canEditProperty, setCanEditProperty] = useState(true);
+  const [moderationNote, setModerationNote] = useState<string | null>(null);
+  const [status, setStatus] = useState<number | null>(null);
+
+  const existingQ = useQuery({
+    queryKey: ["listing-edit", editingId],
+    queryFn: () => listingsApi.forEdit(editingId!),
+    enabled: isEditing,
+    retry: 1,
+  });
+
+  // Nạp một lần khi có dữ liệu. Dùng useEffect thay vì set thẳng trong thân render
+  // để không ghi đè những gì người dùng vừa gõ ở các lần render sau.
+  const loaded = useRef(false);
+  useEffect(() => {
+    const d = existingQ.data;
+    if (!d || loaded.current) return;
+    loaded.current = true;
+
+    setType(d.type);
+    setTitle(d.title);
+    setDescription(d.description);
+    setPrice(d.price);
+    if (d.rentPaymentCycle) setCycle(d.rentPaymentCycle);
+    setCity(d.city);
+    setDistrict(d.district);
+    setWard(d.ward);
+    setAddressDetail(d.addressDetail);
+    setPropertyType(d.propertyType);
+    setArea(d.area?.toString() ?? "");
+    setBedrooms(d.bedrooms?.toString() ?? "");
+    setBathrooms(d.bathrooms?.toString() ?? "");
+    setFloors(d.floors?.toString() ?? "");
+    setTerms(d.terms);
+    setAmenities(d.amenities);
+    setImages(d.images);
+    setCanEditProperty(d.canEditPropertyFields);
+    setModerationNote(d.moderationNote);
+    setStatus(d.status);
+  }, [existingQ.data]);
 
   const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
 
@@ -100,12 +150,43 @@ function CreateListingPage() {
   });
 
   const saveDraft = useMutation({
-    mutationFn: () => listingsApi.createDirect(buildBody()),
+    mutationFn: async () => {
+      if (draftId) {
+        const b = buildBody();
+        return listingsApi.update(draftId, {
+          title: b.title,
+          description: b.description,
+          price: b.price,
+          rentPaymentCycle: b.rentPaymentCycle,
+          terms: b.terms,
+          amenities: b.amenities,
+          // Chỉ gửi phần vật lý khi được phép sửa; backend cũng tự bỏ qua nếu tài
+          // sản còn tin khác, nhưng không gửi thì rõ ràng hơn.
+          ...(canEditProperty
+            ? {
+                city: b.city,
+                district: b.district,
+                ward: b.ward,
+                addressDetail: b.addressDetail,
+                propertyType: b.propertyType,
+                area: b.area,
+                bedrooms: b.bedrooms,
+                bathrooms: b.bathrooms,
+                floors: b.floors,
+              }
+            : {}),
+        });
+      }
+      return listingsApi.createDirect(buildBody());
+    },
     onSuccess: (l) => {
       setDraftId(l.id);
-      toast.success("Đã lưu nháp", { description: "Giờ bạn có thể thêm ảnh." });
+      qc.invalidateQueries({ queryKey: ["my-listings"] });
+      toast.success(draftId ? "Đã lưu thay đổi" : "Đã lưu nháp", {
+        description: draftId ? undefined : "Giờ bạn có thể thêm ảnh.",
+      });
     },
-    onError: (e) => toast.error(getErrorMessage(e, "Không lưu được bản nháp")),
+    onError: (e) => toast.error(getErrorMessage(e, "Không lưu được")),
   });
 
   const upload = useMutation({
@@ -123,6 +204,7 @@ function CreateListingPage() {
   const submit = useMutation({
     mutationFn: () => listingsApi.submit(draftId!),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-listings"] });
       toast.success("Đã gửi tin đi duyệt", {
         description: "Tin sẽ hiển thị công khai sau khi quản trị viên duyệt.",
       });
@@ -144,11 +226,27 @@ function CreateListingPage() {
   return (
     <div className="mx-auto max-w-[820px] p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Đăng tin</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {isEditing ? "Sửa tin đăng" : "Đăng tin"}
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Điền một lần rồi gửi duyệt. Bản nháp được lưu lại nên bạn có thể quay lại sau.
+          {isEditing
+            ? "Sửa xong bấm Lưu thay đổi, rồi gửi duyệt lại."
+            : "Điền một lần rồi gửi duyệt. Bản nháp được lưu lại nên bạn có thể quay lại sau."}
         </p>
       </div>
+
+      {/* Tin bị từ chối: lý do phải hiện ngay đầu trang, cạnh chỗ sửa. Đặt nó ở màn
+          hình khác đồng nghĩa với việc người dùng sửa mà không nhớ mình sai gì. */}
+      {status === 3 && moderationNote && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 flex gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Tin đã bị từ chối</p>
+            <p className="text-sm text-muted-foreground">{moderationNote}</p>
+          </div>
+        </div>
+      )}
 
       {/* ---------- Loại tin ---------- */}
       <Card>
@@ -212,6 +310,14 @@ function CreateListingPage() {
         <CardContent className="p-5 space-y-4">
           <h2 className="font-medium">Thông tin bất động sản</h2>
 
+          {!canEditProperty && (
+            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+              Địa chỉ này còn tin đăng khác nên phần dưới đang khoá — sửa ở đây sẽ đổi
+              luôn nội dung của những tin kia.
+            </div>
+          )}
+
+          <fieldset disabled={!canEditProperty} className="space-y-4 disabled:opacity-60">
           <VietnamAddressPicker
             city={city}
             district={district}
@@ -262,6 +368,7 @@ function CreateListingPage() {
               <Input type="number" min={0} value={floors} onChange={(e) => setFloors(e.target.value)} />
             </Field>
           </div>
+          </fieldset>
         </CardContent>
       </Card>
 
@@ -296,7 +403,7 @@ function CreateListingPage() {
                 variant="outline"
                 disabled={!contentReady || busy}
                 onClick={() => saveDraft.mutate()}
-              >
+              >  {/* eslint-disable-line */}
                 {saveDraft.isPending ? (
                   <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 ) : (
@@ -368,6 +475,17 @@ function CreateListingPage() {
 
       {/* ---------- Gửi ---------- */}
       <div className="flex items-center gap-3 flex-wrap">
+        {draftId && (
+          <Button variant="outline" size="lg" disabled={busy} onClick={() => saveDraft.mutate()}>
+            {saveDraft.isPending ? (
+              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-1.5" />
+            )}
+            Lưu thay đổi
+          </Button>
+        )}
+
         <Button
           size="lg"
           disabled={!draftId || images.length === 0 || busy}
@@ -378,13 +496,12 @@ function CreateListingPage() {
           ) : (
             <Send className="h-4 w-4 mr-1.5" />
           )}
-          Gửi duyệt
+          {status === 3 ? "Gửi duyệt lại" : "Gửi duyệt"}
         </Button>
 
         {draftId && (
           <Button variant="ghost" onClick={() => navigate({ to: "/tin-cua-toi" })} disabled={busy}>
-            <Trash2 className="h-4 w-4 mr-1.5" />
-            Để sau, xem bản nháp
+            Để sau
           </Button>
         )}
 

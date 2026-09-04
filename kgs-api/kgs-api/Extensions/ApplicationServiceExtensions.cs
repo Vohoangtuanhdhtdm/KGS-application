@@ -150,6 +150,7 @@ namespace kgs_api.Extensions
             services.AddScoped<ReminderProcessingJob>();
             services.AddScoped<FileCleanupJob>();
             services.AddScoped<ContractExpiryJob>();
+            services.AddScoped<ListingExpiryJob>();
 
            
 

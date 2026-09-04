@@ -26,6 +26,10 @@ namespace kgs_api.Services
         /// không giới hạn thì một tin có thể ngốn hết hạn mức lưu trữ.</summary>
         private const int MaxImagesPerListing = 20;
 
+        /// <summary>Khoảng chờ giữa hai lần đẩy tin. Không có nó thì "đẩy tin" biến thành
+        /// nút bấm liên tục và thứ tự marketplace chỉ còn phản ánh ai rảnh tay nhất.</summary>
+        private static readonly TimeSpan BumpCooldown = TimeSpan.FromHours(24);
+
         private readonly IRepository<Asset> _assets;
         private readonly IRepository<AssetUnit> _units;
         private readonly IRepository<Listing> _listings;
@@ -147,6 +151,8 @@ namespace kgs_api.Services
             listing.Terms = MapTerms(request.Terms);
             listing.Amenities = NormalizeAmenities(request.Amenities);
 
+            await ApplyPropertyFieldsAsync(listing, request, ct);
+
             // Sửa nội dung thì phải duyệt lại — nếu không, người đăng có thể được duyệt một
             // nội dung sạch rồi thay bằng nội dung khác.
             if (listing.Status == ListingStatus.Approved)
@@ -248,7 +254,7 @@ namespace kgs_api.Services
 
             var ordered = hasGeoSearch
                 ? q.OrderBy(l => l.Asset.Location!.Distance(origin))
-                : q.OrderByDescending(l => l.PublishedAt ?? l.CreatedAt);
+                : q.OrderByDescending(l => l.BumpedAt ?? l.PublishedAt ?? l.CreatedAt);
 
             // Giữ nguyên Point trong projection, tách Y/X sau khi materialize —
             // ST_Y(geography) không tồn tại nên không tách được trong biểu thức SQL.
@@ -495,8 +501,10 @@ namespace kgs_api.Services
         {
             var listing = await GetOwnedListingAsync(listingId, ct);
 
-            if (listing.Status != ListingStatus.Draft)
-                throw new ConflictException("Chỉ gửi duyệt được bản nháp.");
+            // Cho phep ca Rejected: sua xong roi gui lai chinh la luong "dang lai" — bat
+            // nguoi dung tao tin moi tu dau se lam mat luot xem va lich su cua tin cu.
+            if (listing.Status is not (ListingStatus.Draft or ListingStatus.Rejected))
+                throw new ConflictException("Chỉ gửi duyệt được bản nháp hoặc tin đã bị từ chối.");
 
             // Bản nháp cố tình cho phép thiếu. Ràng buộc tối thiểu chỉ áp ở đây, lúc gửi đi.
             var imageCount = await _images.Query().CountAsync(i => i.ListingId == listingId, ct);
@@ -524,7 +532,132 @@ namespace kgs_api.Services
             return await GetOwnedDtoAsync(listingId, ct);
         }
 
+        // ==================== VÒNG ĐỜI TIN ĐĂNG (nhiệm vụ 1.4) ====================
+
+        public async Task<EditListingDto> GetForEditAsync(Guid listingId, CancellationToken ct = default)
+        {
+            var listing = await _listings.Query().AsNoTracking()
+                .Include(l => l.Asset)
+                .FirstOrDefaultAsync(l => l.Id == listingId && l.Asset.UserId == _currentUser.UserId, ct)
+                ?? throw new NotFoundException("Không tìm thấy tin đăng.");
+
+            // Tài sản còn tin khác thì phần vật lý phải khoá: sửa địa chỉ ở đây sẽ đổi
+            // luôn nội dung của những tin kia mà người dùng không hề biết.
+            var otherListings = await _listings.Query()
+                .CountAsync(l => l.AssetId == listing.AssetId && l.Id != listingId, ct);
+
+            var images = await _images.Query().AsNoTracking()
+                .Where(i => i.ListingId == listingId)
+                .OrderBy(i => i.SortOrder)
+                .Select(i => new ListingImageDto(i.Id, i.File.Url, i.SortOrder))
+                .ToListAsync(ct);
+
+            var a = listing.Asset;
+
+            return new EditListingDto(
+                listing.Id, listing.Status, listing.Type, listing.Title, listing.Description,
+                listing.Price, listing.RentPaymentCycle,
+                a.Address.City, a.Address.District, a.Address.Ward, a.Address.Detail,
+                a.TypeProperty, a.Area, a.Frontage, a.Bedrooms, a.Bathrooms, a.Floors,
+                a.HouseDirection, a.LegalStatus, a.FurnitureState,
+                ToTermsDto(listing.Terms), listing.Amenities, images,
+                CanEditPropertyFields: otherListings == 0,
+                listing.ModerationNote);
+        }
+
+        public async Task<OwnerListingDto> BumpAsync(Guid listingId, CancellationToken ct = default)
+        {
+            var listing = await GetOwnedListingAsync(listingId, ct);
+
+            if (listing.Status != ListingStatus.Approved)
+                throw new ConflictException("Chỉ đẩy được tin đang hiển thị.");
+
+            var last = listing.BumpedAt ?? listing.PublishedAt ?? listing.CreatedAt;
+            var elapsed = DateTime.UtcNow - last;
+
+            if (elapsed < BumpCooldown)
+            {
+                var wait = BumpCooldown - elapsed;
+                throw new ConflictException(
+                    $"Mỗi tin chỉ đẩy được {BumpCooldown.TotalHours:0} giờ một lần. " +
+                    $"Thử lại sau {wait.TotalHours:0} giờ {wait.Minutes} phút.");
+            }
+
+            listing.BumpedAt = DateTime.UtcNow;
+            await _uow.SaveChangesAsync(ct);
+
+            return await GetOwnedDtoAsync(listingId, ct);
+        }
+
+        public async Task<OwnerListingDto> ReopenAsync(Guid listingId, CancellationToken ct = default)
+        {
+            var listing = await GetOwnedListingAsync(listingId, ct);
+
+            if (listing.Status != ListingStatus.Closed)
+                throw new ConflictException("Chỉ mở lại được tin đã đóng.");
+
+            // Về bản nháp chứ không thẳng lên Approved: nội dung có thể đã cũ (giá, ngày
+            // trống), và tin mở lại vẫn phải qua kiểm duyệt như mọi tin khác.
+            listing.Status = ListingStatus.Draft;
+            listing.ModerationNote = null;
+            await _uow.SaveChangesAsync(ct);
+
+            return await GetOwnedDtoAsync(listingId, ct);
+        }
+
+        public async Task DeleteDraftAsync(Guid listingId, CancellationToken ct = default)
+        {
+            var listing = await GetOwnedListingAsync(listingId, ct);
+
+            if (listing.Status != ListingStatus.Draft)
+                throw new ConflictException(
+                    "Chỉ xoá được bản nháp. Tin đã từng công khai thì đóng lại chứ không xoá — " +
+                    "để giữ lịch sử và số liệu lượt xem.");
+
+            var images = await _images.Query().Where(i => i.ListingId == listingId).ToListAsync(ct);
+            foreach (var img in images) _files.ScheduleDeletion(img.File);
+
+            _listings.Remove(listing);   // ListingImages cascade theo FK
+            await _uow.SaveChangesAsync(ct);
+        }
+
         // ==================== Helpers ====================
+
+        /// <summary>Áp các trường vật lý lên Asset — CHỈ khi tài sản không còn tin nào khác.
+        ///
+        /// Nếu tài sản đang có nhiều tin (ví dụ mỗi phòng một tin), sửa địa chỉ hay diện tích
+        /// ở đây sẽ đổi luôn nội dung của những tin kia mà người dùng không hề biết. Trường
+        /// hợp đó bỏ qua trong im lặng vì biểu mẫu đã khoá phần này lại rồi — xem
+        /// EditListingDto.CanEditPropertyFields.</summary>
+        private async Task ApplyPropertyFieldsAsync(
+            Listing listing, UpdateListingRequest request, CancellationToken ct)
+        {
+            if (request.City is null && request.Area is null && request.PropertyType is null)
+                return;   // client không gửi phần này
+
+            var hasOtherListings = await _listings.Query()
+                .AnyAsync(l => l.AssetId == listing.AssetId && l.Id != listing.Id, ct);
+            if (hasOtherListings) return;
+
+            var asset = await _assets.Query()
+                .FirstOrDefaultAsync(a => a.Id == listing.AssetId, ct);
+            if (asset is null) return;
+
+            if (!string.IsNullOrWhiteSpace(request.City)) asset.Address.City = request.City.Trim();
+            if (!string.IsNullOrWhiteSpace(request.District)) asset.Address.District = request.District.Trim();
+            if (!string.IsNullOrWhiteSpace(request.Ward)) asset.Address.Ward = request.Ward.Trim();
+            if (request.AddressDetail is not null) asset.Address.Detail = request.AddressDetail.Trim();
+
+            if (request.PropertyType is not null) asset.TypeProperty = request.PropertyType.Value;
+            if (request.Area is not null) asset.Area = request.Area;
+            if (request.Frontage is not null) asset.Frontage = request.Frontage;
+            if (request.Bedrooms is not null) asset.Bedrooms = request.Bedrooms;
+            if (request.Bathrooms is not null) asset.Bathrooms = request.Bathrooms;
+            if (request.Floors is not null) asset.Floors = request.Floors;
+            if (request.HouseDirection is not null) asset.HouseDirection = request.HouseDirection.Trim();
+            if (request.LegalStatus is not null) asset.LegalStatus = request.LegalStatus.Trim();
+            if (request.FurnitureState is not null) asset.FurnitureState = request.FurnitureState.Trim();
+        }
 
         private async Task<Listing> GetOwnedListingAsync(Guid listingId, CancellationToken ct)
             => await _listings.Query()
