@@ -159,6 +159,9 @@ namespace kgs_api.Dtos
         /// <summary>Tin phải có ĐỦ mọi tiện nghi trong danh sách (phép AND).</summary>
         List<string>? Amenities,
 
+        /// <summary>Bo trong = Nearest khi co toa do, nguoc lai Newest.</summary>
+        ListingSort? SortBy,
+
         int Page = 1,
         int PageSize = 20);
 

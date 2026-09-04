@@ -252,9 +252,28 @@ namespace kgs_api.Services
             var pageSize = Math.Clamp(query.PageSize, 1, 50);
             var page = Math.Max(query.Page, 1);
 
-            var ordered = hasGeoSearch
-                ? q.OrderBy(l => l.Asset.Location!.Distance(origin))
-                : q.OrderByDescending(l => l.BumpedAt ?? l.PublishedAt ?? l.CreatedAt);
+            // Mặc định: có toạ độ thì gần nhất trước, không thì mới nhất trước.
+            // "Nearest" mà không có toạ độ sẽ tự lùi về "Newest" — trả về thứ tự ngẫu nhiên
+            // trong trường hợp đó còn tệ hơn là bỏ qua lựa chọn của người dùng.
+            var sort = query.SortBy ?? (hasGeoSearch ? ListingSort.Nearest : ListingSort.Newest);
+            if (sort == ListingSort.Nearest && !hasGeoSearch) sort = ListingSort.Newest;
+
+            var ordered = sort switch
+            {
+                ListingSort.Nearest => q.OrderBy(l => l.Asset.Location!.Distance(origin)),
+                ListingSort.PriceAsc => q.OrderBy(l => l.Price),
+                ListingSort.PriceDesc => q.OrderByDescending(l => l.Price),
+                ListingSort.AreaDesc => q
+                    .OrderByDescending(l => l.AssetUnit != null ? l.AssetUnit.Area : l.Asset.Area),
+                // Mới nhất = theo mốc đẩy tin trước, rồi mới tới ngày duyệt — cùng thứ tự
+                // ưu tiên mà nút "đẩy tin" dựa vào.
+                _ => q.OrderByDescending(l => l.BumpedAt ?? l.PublishedAt ?? l.CreatedAt)
+            };
+
+            // Chốt thứ tự bằng Id: hai tin cùng giá hoặc cùng diện tích mà không có khoá phụ
+            // thì PostgreSQL được phép trả về thứ tự khác nhau giữa các lần gọi, và phân
+            // trang sẽ lặp hoặc bỏ sót bản ghi.
+            ordered = ordered.ThenBy(l => l.Id);
 
             // Giữ nguyên Point trong projection, tách Y/X sau khi materialize —
             // ST_Y(geography) không tồn tại nên không tách được trong biểu thức SQL.

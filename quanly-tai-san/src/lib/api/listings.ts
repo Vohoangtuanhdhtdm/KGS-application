@@ -200,6 +200,16 @@ export interface EditListingDto {
   moderationNote: string | null;
 }
 
+/** Khop voi enum ListingSort phia backend. */
+export const LISTING_SORT = {
+  1: "Mới nhất",
+  2: "Giá thấp đến cao",
+  3: "Giá cao đến thấp",
+  4: "Diện tích lớn nhất",
+  5: "Gần tôi nhất",
+} as const;
+export type ListingSortCode = keyof typeof LISTING_SORT;
+
 export interface PublicListingFilters {
   type?: ListingTypeCode | "";
   city?: string;
@@ -218,6 +228,7 @@ export interface PublicListingFilters {
   sharedWithOwner?: boolean | "";
   availableBy?: string;
   amenities?: string[];
+  sortBy?: ListingSortCode | "";
   page?: number;
   pageSize?: number;
 }

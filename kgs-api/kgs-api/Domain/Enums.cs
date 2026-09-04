@@ -95,5 +95,9 @@
         // Hai cách tính tiền nước phổ biến ở nhà trọ Việt Nam. Người thuê so sánh rất khác
         // nhau giữa hai cách nên không gộp thành một con số được.
         public enum WaterPricingMode { PerCubicMeter = 1, PerPerson = 2 }
+
+        // Cach sap xep ket qua tim kiem cong khai. Nearest chi co nghia khi truy van kem
+        // toa do — khong co toa do thi service tu lui ve Newest thay vi tra thu tu ngau nhien.
+        public enum ListingSort { Newest = 1, PriceAsc = 2, PriceDesc = 3, AreaDesc = 4, Nearest = 5 }
     }
 }
