@@ -25,6 +25,8 @@ import { MobileListSheet } from "@/components/public/MobileListSheet";
 import { PropertyMapClient } from "@/components/map/PropertyMapClient";
 import type { PropertyMapPoint } from "@/components/map/PropertyMap";
 import { LocationSearchPopover } from "@/components/public/LocationSearchPopover";
+import { SavedSearchesPopover } from "@/components/public/SavedSearchesPopover";
+import type { SavedSearchCriteria } from "@/lib/api/savedSearches";
 import { DemandSearchSheet, type DemandSearchResult } from "@/components/public/DemandSearchSheet";
 import { useGeolocationOnDemand, type LatLng } from "@/hooks/useGeolocationOnDemand";
 import { useViewportKind } from "@/hooks/useViewportKind";
@@ -451,6 +453,35 @@ function PublicListingsPage() {
 
   const clearAllFilters = () => appliedFilters.forEach((f) => f.clear());
 
+  // Ap mot bo loc da luu tro lai trang. Phai dat TOAN BO state, ke ca ve null nhung o
+  // nguoi dung khong dat — neu chi ghi de nhung truong co gia tri, bo loc cu con sot lai
+  // se tron voi bo loc vua mo ra, va ket qua khong con giong luc ho bam luu.
+  const applySavedSearch = (c: SavedSearchCriteria) => {
+    setType((c.type ?? 1) as ListingTypeCode);
+    setCity(c.city ?? "");
+    setDistrict(c.district ?? "");
+    setPriceMin(c.priceMin ?? null);
+    setPriceMax(c.priceMax ?? null);
+    setBedroomsMin(c.bedroomsMin ?? null);
+    setKeywordInput(c.keyword ?? "");
+    setKeyword(c.keyword ?? "");
+
+    if (c.latitude != null && c.longitude != null && c.radiusMeters != null) {
+      setSearchCenter({ lat: c.latitude, lng: c.longitude });
+      setRadiusMeters(c.radiusMeters);
+      // Toa do da luu la mot DIEM co dinh, khong phai "vi tri hien tai cua toi" — nguoi
+      // dung co the dang o thanh pho khac so voi luc luu.
+      setUsingMyLocation(false);
+    } else {
+      clearMyLocationSearch();
+    }
+    setShowSearchAreaButton(false);
+  };
+
+  // Ten goi y: tom tat chinh cac chip dang bat, de nguoi dung khong phai tu nghi ten.
+  const suggestedSearchName =
+    appliedFilters.map((f) => f.label).join(" · ").slice(0, 120) || "Bộ lọc của tôi";
+
   const appliedFilterBar =
     appliedFilters.length === 0 ? null : (
       <div className="flex flex-wrap items-center gap-1.5">
@@ -495,6 +526,13 @@ function PublicListingsPage() {
       <p className="text-sm text-muted-foreground">
         {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
       </p>
+      <div className="flex items-center gap-1">
+      <SavedSearchesPopover
+        currentFilters={filters}
+        suggestedName={suggestedSearchName}
+        hasAnyFilter={appliedFilters.length > 0}
+        onApply={applySavedSearch}
+      />
       <Select
         value={String(sortBy)}
         onValueChange={(v) => setSortBy(Number(v) as ListingSortCode)}
@@ -511,6 +549,7 @@ function PublicListingsPage() {
           ))}
         </SelectContent>
       </Select>
+      </div>
     </div>
   );
 
