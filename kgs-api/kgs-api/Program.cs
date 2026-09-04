@@ -101,6 +101,11 @@ using (var scope = app.Services.CreateScope())
     // de marketplace buoi sang khong con tin da cho thue tu lau.
     recurringJobs.AddOrUpdate<ListingExpiryJob>(
         "listing-expiry", j => j.RunAsync(CancellationToken.None), "0 1 * * *");
+
+    // 01:30 UTC = 08:30 gio Viet Nam — gui sau job dong tin qua han, de email khong bao ve
+    // mot tin vua bi dong ngay sang hom do.
+    recurringJobs.AddOrUpdate<SavedSearchAlertJob>(
+        "saved-search-alerts", j => j.RunAsync(CancellationToken.None), "30 1 * * *");
 }
 
 

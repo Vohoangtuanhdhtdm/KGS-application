@@ -1,5 +1,6 @@
-using kgs_api.Domain.Entity;
+﻿using kgs_api.Domain.Entity;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Domain.Rules;
 using kgs_api.Domain.ValueObjects;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
@@ -194,59 +195,16 @@ namespace kgs_api.Services
 
         public async Task<PagedResult<PublicListingSummaryDto>> SearchPublicAsync(PublicListingSearchQuery query, CancellationToken ct = default)
         {
-            var q = _listings.Query().AsNoTracking()
-                .Where(l => l.Status == ListingStatus.Approved);
-
-            if (query.Type is not null) q = q.Where(l => l.Type == query.Type);
-            if (!string.IsNullOrWhiteSpace(query.City)) q = q.Where(l => l.Asset.Address.City == query.City);
-            if (!string.IsNullOrWhiteSpace(query.District)) q = q.Where(l => l.Asset.Address.District == query.District);
-            if (query.PriceMin is not null) q = q.Where(l => l.Price >= query.PriceMin);
-            if (query.PriceMax is not null) q = q.Where(l => l.Price <= query.PriceMax);
-            if (query.BedroomsMin is not null) q = q.Where(l => l.Asset.Bedrooms >= query.BedroomsMin);
-
-            // ---- Bộ lọc điều kiện thuê (cũng là hard filter của AI Agent) ----
-            // So sánh trên TỔNG chi phí cố định chứ không phải giá thuê trần trụi: một phòng
-            // 7 triệu kèm 500k phí dịch vụ đắt hơn phòng 7,2 triệu đã bao trọn gói.
-            if (query.TotalCostMax is not null)
-                q = q.Where(l => l.Price
-                               + (l.Terms.ServiceFee ?? 0)
-                               + (l.Terms.ParkingFee ?? 0)
-                               + (l.Terms.InternetFee ?? 0) <= query.TotalCostMax);
-
-            // Chỉ khớp khi chủ tin đã KHAI tường minh — tin bỏ trống không được coi là "có".
-            if (query.PetsAllowed is not null) q = q.Where(l => l.Terms.PetsAllowed == query.PetsAllowed);
-            if (query.CurfewFree is not null) q = q.Where(l => l.Terms.CurfewFree == query.CurfewFree);
-            if (query.SharedWithOwner is not null) q = q.Where(l => l.Terms.SharedWithOwner == query.SharedWithOwner);
-
-            if (query.AvailableBy is not null)
-            {
-                var by = DateTime.SpecifyKind(query.AvailableBy.Value, DateTimeKind.Utc);
-                q = q.Where(l => l.Terms.AvailableFrom == null || l.Terms.AvailableFrom <= by);
-            }
-
-            // Phải có ĐỦ mọi tiện nghi yêu cầu. Npgsql dịch sang toán tử @> của PostgreSQL,
-            // chạy trên GIN index thay vì quét bảng.
-            var wantedAmenities = NormalizeAmenities(query.Amenities);
-            if (wantedAmenities.Count > 0)
-                q = q.Where(l => wantedAmenities.All(a => l.Amenities.Contains(a)));
-
-            if (!string.IsNullOrWhiteSpace(query.Keyword))
-            {
-                var kw = $"%{query.Keyword.Trim()}%";
-                q = q.Where(l => EF.Functions.ILike(l.Title, kw)
-                              || EF.Functions.ILike(l.Description, kw)
-                              || EF.Functions.ILike(l.Asset.Address.Detail, kw));
-            }
-
-            // Toạ độ nay đọc từ Asset.Location — GiST index đã có sẵn trên bảng Assets.
+            // Toa do phai dung truoc khi loc — GeometryFactory chi co o day, con
+            // ListingSearchFilter thi cong dung cho ca job nen nen khong giu no.
             Point? origin = null;
-            var hasGeoSearch = query.Latitude is not null && query.Longitude is not null && query.RadiusMeters is not null;
+            var hasGeoSearch = ListingSearchFilter.HasGeoSearch(query);
             if (hasGeoSearch)
-            {
-                origin = _geometryFactory.CreatePoint(new Coordinate(query.Longitude!.Value, query.Latitude!.Value));
-                q = q.Where(l => l.Asset.Location != null
-                              && EF.Functions.IsWithinDistance(l.Asset.Location, origin, query.RadiusMeters!.Value, true));
-            }
+                origin = _geometryFactory.CreatePoint(
+                    new Coordinate(query.Longitude!.Value, query.Latitude!.Value));
+
+            var q = ListingSearchFilter.Apply(
+                _listings.Query().AsNoTracking(), query, origin);
 
             var total = await q.CountAsync(ct);
             var pageSize = Math.Clamp(query.PageSize, 1, 50);
@@ -731,9 +689,7 @@ namespace kgs_api.Services
         /// AmenityKeys.All bị loại im lặng thay vì ném lỗi — client cũ gửi khoá lạ thì tin
         /// vẫn đăng được, chỉ là tiện nghi đó không được ghi nhận.</summary>
         private static List<string> NormalizeAmenities(IEnumerable<string>? input)
-            => input is null
-                ? new List<string>()
-                : input.Where(a => AmenityKeys.All.Contains(a)).Distinct().Order().ToList();
+            => ListingSearchFilter.NormalizeAmenities(input);
 
         /// <summary>Tổng chi phí cố định hàng tháng. Điện và nước tính theo mức dùng nên
         /// KHÔNG cộng vào đây — cộng vào sẽ tạo ra một con số trông chính xác mà sai.</summary>

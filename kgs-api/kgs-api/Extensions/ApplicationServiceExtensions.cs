@@ -76,6 +76,7 @@ namespace kgs_api.Extensions
 
             services.AddScoped<IListingService, ListingService>();
             services.AddScoped<IListingRetrievalService, ListingRetrievalService>();
+            services.AddScoped<ISavedSearchService, SavedSearchService>();
           
 
 
@@ -151,6 +152,7 @@ namespace kgs_api.Extensions
             services.AddScoped<FileCleanupJob>();
             services.AddScoped<ContractExpiryJob>();
             services.AddScoped<ListingExpiryJob>();
+            services.AddScoped<SavedSearchAlertJob>();
 
            
 
