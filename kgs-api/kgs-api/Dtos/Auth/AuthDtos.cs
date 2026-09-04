@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+using static kgs_api.Domain.Enums;
+
 namespace kgs_api.Dtos.Auth
 {
     // ==================== ĐĂNG KÝ / ĐĂNG NHẬP ====================
@@ -124,4 +126,45 @@ namespace kgs_api.Dtos.Auth
         string OwnerEmail,
         DateTime CreatedAt,
         int ImageCount);
+
+    /// <summary>Toàn bộ nội dung admin cần để RA QUYẾT ĐỊNH, trong một lời gọi.
+    ///
+    /// Trước đây trang duyệt chỉ có một bảng danh sách và admin phải bấm duyệt mà không
+    /// xem được nội dung tin — đó là kiểm duyệt hình thức, không dùng thật được.</summary>
+    public sealed record AdminListingDetailDto(
+        Guid Id,
+        string Title,
+        string Description,
+        ListingType Type,
+        ListingStatus Status,
+        decimal Price,
+        PaymentCycle? RentPaymentCycle,
+        decimal TotalMonthlyCost,
+
+        // Địa chỉ và đặc điểm — đọc từ Asset
+        string City, string District, string Ward, string AddressDetail,
+        double? Latitude, double? Longitude,
+        AssetDomainType AssetType, string AssetTypeLabel, string? UnitName,
+        double? Area, int? Bedrooms, int? Bathrooms, int? Floors,
+        string? HouseDirection, string? LegalStatus, string? FurnitureState,
+
+        IReadOnlyList<string> ImageUrls,
+        IReadOnlyList<string> Amenities,
+        int CompletenessPercent,
+
+        // Người đăng — để nhận ra tài khoản đăng hàng loạt tin rác
+        string OwnerId, string OwnerName, string OwnerEmail, string? OwnerPhone,
+        int OwnerListingCount,
+
+        DateTime CreatedAt,
+        string? ModerationNote);
+
+    /// <summary>Duyệt hoặc từ chối nhiều tin cùng lúc. Hàng đợi kiểm duyệt thật luôn có
+    /// những cụm tin rõ ràng cùng loại; bắt bấm từng cái là bắt làm việc thừa.</summary>
+    public sealed record BulkModerateRequest(
+        [Required] List<Guid> ListingIds,
+        bool Approve,
+        [MaxLength(500)] string? Reason);
+
+    public sealed record BulkModerateResultDto(int Succeeded, int Skipped, IReadOnlyList<string> Messages);
 }
