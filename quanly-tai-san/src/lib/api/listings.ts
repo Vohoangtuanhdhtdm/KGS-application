@@ -168,6 +168,38 @@ export interface CreateListingDirectInput {
   amenities?: string[];
 }
 
+export interface EditListingDto {
+  id: string;
+  status: ListingStatusCode;
+  type: ListingTypeCode;
+  title: string;
+  description: string;
+  price: number;
+  rentPaymentCycle: PaymentCycleCode | null;
+
+  city: string;
+  district: string;
+  ward: string;
+  addressDetail: string;
+  propertyType: number;
+  area: number | null;
+  frontage: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  floors: number | null;
+  houseDirection: string | null;
+  legalStatus: string | null;
+  furnitureState: string | null;
+
+  terms: ListingTermsDto;
+  amenities: string[];
+  images: ListingImageDto[];
+
+  /** false khi tai san con tin dang khac — sua dia chi luc do se doi luon cac tin kia. */
+  canEditPropertyFields: boolean;
+  moderationNote: string | null;
+}
+
 export interface PublicListingFilters {
   type?: ListingTypeCode | "";
   city?: string;
@@ -210,6 +242,21 @@ export interface UpdateListingInput {
   rentPaymentCycle?: PaymentCycleCode | null;
   terms?: ListingTermsDto | null;
   amenities?: string[];
+
+  // Chi duoc ap dung khi tai san CHI co dung tin nay (canEditPropertyFields).
+  city?: string | null;
+  district?: string | null;
+  ward?: string | null;
+  addressDetail?: string | null;
+  propertyType?: number | null;
+  area?: number | null;
+  frontage?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  floors?: number | null;
+  houseDirection?: string | null;
+  legalStatus?: string | null;
+  furnitureState?: string | null;
 }
 
 // ---- Helper hiển thị giá theo loại tin ----
@@ -264,4 +311,13 @@ export const listingsApi = {
     api<void>(`/listings/${listingId}/images/${imageId}`, { method: "DELETE" }),
   submit: (listingId: string) =>
     api<OwnerListingDto>(`/listings/${listingId}/submit`, { method: "POST" }),
+
+  // ---- Vong doi tin dang ----
+  forEdit: (listingId: string) => api<EditListingDto>(`/listings/${listingId}/edit`),
+  bump: (listingId: string) =>
+    api<OwnerListingDto>(`/listings/${listingId}/bump`, { method: "POST" }),
+  reopen: (listingId: string) =>
+    api<OwnerListingDto>(`/listings/${listingId}/reopen`, { method: "POST" }),
+  deleteDraft: (listingId: string) =>
+    api<void>(`/listings/${listingId}`, { method: "DELETE" }),
 };

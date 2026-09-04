@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { listingsApi, formatListingPrice, type OwnerListingDto } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatDate } from "@/lib/format";
@@ -17,7 +18,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Eye, Megaphone } from "lucide-react";
+import {
+  ArrowUp,
+  Eye,
+  Megaphone,
+  MoreHorizontal,
+  Pencil,
+  RotateCcw,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/tin-cua-toi")({
   head: () => ({ meta: [{ title: "Tin đăng của tôi — Quản Lý Tài Sản" }] }),
@@ -50,6 +66,51 @@ function Completeness({ percent }: { percent: number }) {
 
 export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["my-listings"] });
+
+  const bump = useMutation({
+    mutationFn: (id: string) => listingsApi.bump(id),
+    onSuccess: () => {
+      refresh();
+      toast.success("Đã đẩy tin lên đầu danh sách");
+    },
+    // Lỗi hay gặp nhất ở đây là chưa hết 24 giờ chờ — backend trả nguyên câu giải
+    // thích kèm thời gian còn lại, nên hiện thẳng nó ra.
+    onError: (e) => toast.error(getErrorMessage(e, "Không đẩy được tin")),
+  });
+
+  const close = useMutation({
+    mutationFn: (id: string) => listingsApi.close(id),
+    onSuccess: () => {
+      refresh();
+      toast.success("Đã đóng tin", { description: "Bạn có thể mở lại bất cứ lúc nào." });
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không đóng được tin")),
+  });
+
+  const reopen = useMutation({
+    mutationFn: (id: string) => listingsApi.reopen(id),
+    onSuccess: (l) => {
+      refresh();
+      toast.success("Đã mở lại", { description: "Tin về bản nháp — kiểm tra giá rồi gửi duyệt lại." });
+      navigate({ to: "/dang-tin", search: { id: l.id } });
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không mở lại được tin")),
+  });
+
+  const removeDraft = useMutation({
+    mutationFn: (id: string) => listingsApi.deleteDraft(id),
+    onSuccess: () => {
+      refresh();
+      toast.success("Đã xoá bản nháp");
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không xoá được bản nháp")),
+  });
+
+  const busy = bump.isPending || close.isPending || reopen.isPending || removeDraft.isPending;
+
   const query = useQuery({
     queryKey: ["my-listings"],
     queryFn: () => listingsApi.mine(),
@@ -104,6 +165,7 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                     <TableHead className="text-center">Lượt xem</TableHead>
                     <TableHead>Độ đầy đủ</TableHead>
                     <TableHead>Ngày đăng</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -137,6 +199,17 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDate(l.createdAt)}
                         </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <RowActions
+                            listing={l}
+                            busy={busy}
+                            onEdit={() => navigate({ to: "/dang-tin", search: { id: l.id } })}
+                            onBump={() => bump.mutate(l.id)}
+                            onClose={() => close.mutate(l.id)}
+                            onReopen={() => reopen.mutate(l.id)}
+                            onDelete={() => removeDraft.mutate(l.id)}
+                          />
+                        </TableCell>
                       </TableRow>
                     );
                     // Tin chờ duyệt: tooltip giải thích chưa hiển thị công khai
@@ -156,5 +229,77 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Thao tác theo trạng thái tin. Chỉ hiện những việc THỰC SỰ làm được ở trạng thái đó —
+ * hiện nút rồi báo lỗi khi bấm là cách nhanh nhất làm người dùng mất tin tưởng.
+ *
+ *   Nháp        → sửa, xoá
+ *   Chờ duyệt   → sửa (sẽ duyệt lại)
+ *   Đang hiển thị → sửa, đẩy tin, đóng
+ *   Bị từ chối  → sửa rồi gửi lại
+ *   Đã đóng     → mở lại
+ */
+function RowActions({
+  listing: l,
+  busy,
+  onEdit,
+  onBump,
+  onClose,
+  onReopen,
+  onDelete,
+}: {
+  listing: OwnerListingDto;
+  busy: boolean;
+  onEdit: () => void;
+  onBump: () => void;
+  onClose: () => void;
+  onReopen: () => void;
+  onDelete: () => void;
+}) {
+  const editable = l.status !== 4;   // mọi trạng thái trừ Đã đóng
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" disabled={busy} aria-label="Thao tác">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {editable && (
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="h-4 w-4 mr-2" />
+            {l.status === 3 ? "Sửa và gửi lại" : "Sửa tin"}
+          </DropdownMenuItem>
+        )}
+        {l.status === 2 && (
+          <DropdownMenuItem onClick={onBump}>
+            <ArrowUp className="h-4 w-4 mr-2" />
+            Đẩy lên đầu
+          </DropdownMenuItem>
+        )}
+        {l.status === 2 && (
+          <DropdownMenuItem onClick={onClose}>
+            <XCircle className="h-4 w-4 mr-2" />
+            Đóng tin
+          </DropdownMenuItem>
+        )}
+        {l.status === 4 && (
+          <DropdownMenuItem onClick={onReopen}>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Mở lại
+          </DropdownMenuItem>
+        )}
+        {l.status === 5 && (
+          <DropdownMenuItem onClick={onDelete} className="text-destructive">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Xoá bản nháp
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

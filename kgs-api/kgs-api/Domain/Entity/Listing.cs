@@ -59,6 +59,13 @@ namespace kgs_api.Domain.Entity
         /// echo lại trong response rồi vứt đi, chủ tin không bao giờ biết vì sao bị loại.</summary>
         [MaxLength(500)] public string? ModerationNote { get; set; }
 
+        /// <summary>Lần "đẩy tin" gần nhất. Marketplace sắp xếp theo mốc này trước, rồi mới
+        /// tới PublishedAt — đẩy tin đưa nó lên đầu danh sách mà không cần đăng lại từ đầu.
+        ///
+        /// Đây cũng là mốc tính hạn hiển thị: tin không được đẩy sẽ tự đóng sau một thời
+        /// gian, để marketplace không đầy những tin đã cho thuê từ lâu.</summary>
+        public DateTime? BumpedAt { get; set; }
+
         /// <summary>Điều kiện thuê thật: cọc, điện nước, phí, nội quy. Xem ListingTerms
         /// để biết vì sao đây là điều kiện tiên quyết của AI Agent tìm kiếm.</summary>
         public ListingTerms Terms { get; set; } = new();

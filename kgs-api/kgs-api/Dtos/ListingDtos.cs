@@ -46,7 +46,25 @@ namespace kgs_api.Dtos
         [Range(0.01, (double)decimal.MaxValue)] decimal Price,
         PaymentCycle? RentPaymentCycle,
         ListingTermsDto? Terms,
-        List<string>? Amenities);
+        List<string>? Amenities,
+
+        // ---- Trường vật lý của tài sản ----
+        // Chỉ được áp dụng khi tài sản CHỈ có đúng tin này. Nếu tài sản còn tin khác,
+        // sửa ở đây sẽ đổi luôn nội dung của chúng — service bỏ qua và không báo lỗi,
+        // vì biểu mẫu đã khoá phần này lại rồi (xem EditListingDto.CanEditPropertyFields).
+        [MaxLength(100)] string? City = null,
+        [MaxLength(100)] string? District = null,
+        [MaxLength(100)] string? Ward = null,
+        [MaxLength(500)] string? AddressDetail = null,
+        AssetDomainType? PropertyType = null,
+        [Range(0, double.MaxValue)] double? Area = null,
+        [Range(0, 1000)] double? Frontage = null,
+        [Range(0, 100)] int? Bedrooms = null,
+        [Range(0, 100)] int? Bathrooms = null,
+        [Range(0, 200)] int? Floors = null,
+        [MaxLength(50)] string? HouseDirection = null,
+        [MaxLength(100)] string? LegalStatus = null,
+        [MaxLength(100)] string? FurnitureState = null);
 
     /// <summary>Đăng tin TRỰC TIẾP — không cần tạo tài sản trước.
     ///
@@ -86,6 +104,32 @@ namespace kgs_api.Dtos
         List<string>? Amenities);
 
     public sealed record ListingImageDto(Guid Id, string Url, int SortOrder);
+
+    /// <summary>Dữ liệu nạp lại vào biểu mẫu đăng tin. Dùng cho cả soạn tiếp bản nháp lẫn
+    /// sửa tin đã đăng, nên gộp luôn cả trường của tin và trường vật lý của tài sản.</summary>
+    public sealed record EditListingDto(
+        Guid Id,
+        ListingStatus Status,
+        ListingType Type,
+        string Title,
+        string Description,
+        decimal Price,
+        PaymentCycle? RentPaymentCycle,
+
+        string City, string District, string Ward, string AddressDetail,
+        AssetDomainType PropertyType,
+        double? Area, double? Frontage,
+        int? Bedrooms, int? Bathrooms, int? Floors,
+        string? HouseDirection, string? LegalStatus, string? FurnitureState,
+
+        ListingTermsDto Terms,
+        IReadOnlyList<string> Amenities,
+        IReadOnlyList<ListingImageDto> Images,
+
+        /// <summary>false khi tài sản còn tin đăng khác — sửa địa chỉ hay diện tích lúc đó
+        /// sẽ đổi luôn cả các tin kia, nên biểu mẫu phải khoá phần đó lại.</summary>
+        bool CanEditPropertyFields,
+        string? ModerationNote);
 
     public sealed record PublicListingSearchQuery(
         ListingType? Type,
