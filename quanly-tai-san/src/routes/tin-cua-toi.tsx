@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   ArrowUp,
   Eye,
+  BarChart3,
   Megaphone,
   MoreHorizontal,
   Pencil,
@@ -126,11 +127,19 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
 
   return (
     <div className={embedded ? "space-y-5" : "p-6 space-y-5 max-w-[1200px]"}>
-      <div>
-        {!embedded && <h1 className="text-2xl font-semibold tracking-tight">Tin đăng của tôi</h1>}
-        <p className="text-sm text-muted-foreground mt-1">
-          Theo dõi trạng thái duyệt và lượt xem các tin đăng bạn đã gửi lên marketplace.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          {!embedded && <h1 className="text-2xl font-semibold tracking-tight">Tin đăng của tôi</h1>}
+          <p className="text-sm text-muted-foreground mt-1">
+            Theo dõi trạng thái duyệt và lượt xem các tin đăng bạn đã gửi lên marketplace.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="shrink-0 gap-1.5" asChild>
+          <Link to="/thong-ke-tin">
+            <BarChart3 className="h-4 w-4" />
+            Thống kê
+          </Link>
+        </Button>
       </div>
 
       <Card>

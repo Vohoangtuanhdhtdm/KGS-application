@@ -26,6 +26,7 @@ namespace kgs_api.Data
         public DbSet<ListingInquiry> ListingInquiries => Set<ListingInquiry>();
         public DbSet<SavedSearch> SavedSearches => Set<SavedSearch>();
         public DbSet<ListingReport> ListingReports => Set<ListingReport>();
+        public DbSet<ListingView> ListingViews => Set<ListingView>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

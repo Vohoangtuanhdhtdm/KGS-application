@@ -1,4 +1,6 @@
-﻿using kgs_api.Dtos.Auth;
+﻿using kgs_api.Extensions;
+using Microsoft.AspNetCore.RateLimiting;
+using kgs_api.Dtos.Auth;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -24,6 +26,7 @@ namespace kgs_api.Controllers
 
         /// <summary>Đăng ký tài khoản mới. Tự gửi email xác thực (dev: in link ra console).</summary>
         [HttpPost("register")]
+        [EnableRateLimiting(RateLimitingExtensions.Auth)]
         [AllowAnonymous]
         public async Task<ActionResult<AuthResponse>> Register(
             [FromBody] RegisterRequest request, CancellationToken ct)
@@ -34,6 +37,7 @@ namespace kgs_api.Controllers
 
         /// <summary>Đăng nhập bằng email + mật khẩu.</summary>
         [HttpPost("login")]
+        [EnableRateLimiting(RateLimitingExtensions.Auth)]
         [AllowAnonymous]
         public async Task<ActionResult<AuthResponse>> Login(
             [FromBody] LoginRequest request, CancellationToken ct)
@@ -110,6 +114,7 @@ namespace kgs_api.Controllers
 
         /// <summary>Gửi link đặt lại mật khẩu về email.</summary>
         [HttpPost("forgot-password")]
+        [EnableRateLimiting(RateLimitingExtensions.Auth)]
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword(
             [FromBody] ForgotPasswordRequest request, CancellationToken ct)
