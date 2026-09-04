@@ -11,6 +11,9 @@ import { getErrorMessage } from "@/lib/api/errors";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { AMENITIES, WATER_PRICING, type AmenityKey } from "@/constants/enums";
 import { PublicHeader } from "@/components/public/PublicHeader";
+import { ListingShareActions } from "@/components/public/ListingShareActions";
+import { RelatedListings } from "@/components/public/RelatedListings";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ClientMap } from "@/components/map/ClientMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +30,8 @@ import {
   ChevronRight,
   Heart,
   Send,
+  CalendarDays,
+  Building2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { inquiriesApi, savedListingsApi } from "@/lib/api/engagement";
@@ -36,15 +41,66 @@ import { Label } from "@/components/ui/label";
 import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/tin-dang/$slug")({
-  head: () => ({ meta: [{ title: "Chi tiết tin đăng — Marketplace" }] }),
+  // Nap tin ngay tren may chu de the OG duoc dung SAN trong HTML tra ve.
+  //
+  // Day la diem mau chot cua nut "chia se": Zalo, Messenger va Facebook doc the meta
+  // bang bot, va bot khong chay JavaScript. Neu cho toi luc component fetch xong moi co
+  // tieu de va anh thi moi lien ket duoc chia se deu hien ra mot o trong tron — dung
+  // luc no can thuyet phuc nguoi nhan bam vao nhat.
+  loader: async ({ params }) => {
+    try {
+      return await listingsApi.detail(params.slug);
+    } catch {
+      // KHONG de loi nay lam hong ca trang. Trong moi truong dev, may chu SSR (Node) goi
+      // API qua HTTPS chung chi tu ky va se bi tu choi o tang TLS — trinh duyet thi bam
+      // qua duoc, Node thi khong. Tra null de component tu tai lai o phia client; chi mat
+      // the OG, ma bot thi khong doc trang dev.
+      return null;
+    }
+  },
+
+  head: ({ loaderData: p }) => {
+    if (!p) return { meta: [{ title: "Chi tiết tin đăng — Marketplace" }] };
+
+    const title = `${p.title} — ${p.district}, ${p.city}`;
+    const description =
+      p.description?.trim().slice(0, 200) ||
+      `${formatListingPrice(p.price, p.type, p.rentPaymentCycle)} tại ${p.district}, ${p.city}.`;
+
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      // Thẻ tóm tắt ảnh lớn: tin nhà đất sống nhờ ảnh, một ô xem trước bé xíu thì
+      // không hơn gì một dòng link trần.
+      { name: "twitter:card", content: p.imageUrls.length > 0 ? "summary_large_image" : "summary" },
+    ];
+
+    if (p.imageUrls.length > 0) meta.push({ property: "og:image", content: p.imageUrls[0] });
+
+    return { meta };
+  },
+
   component: PublicListingDetailPage,
 });
 
 function PublicListingDetailPage() {
   const { slug } = Route.useParams();
+  const seed = Route.useLoaderData();
+
   const query = useQuery({
     queryKey: ["public-listing", slug],
     queryFn: () => listingsApi.detail(slug),
+    // Loader chay tren may chu da lay du lieu roi — dung lai lam gia tri ban dau thay vi
+    // goi lan hai. Goi lan hai khong chi thua mot vong mang: endpoint chi tiet tang luot
+    // xem, nen moi lan mo trang se dem thanh hai luot.
+    //
+    // Loader that bai (vd chung chi tu ky trong dev) thi seed la null va query chay binh
+    // thuong — trang van dung, chi khong co the OG.
+    initialData: seed ?? undefined,
+    staleTime: seed ? 60_000 : 0,
     retry: 1,
   });
 
@@ -129,7 +185,10 @@ function PublicListingDetailPage() {
                   Đăng ngày {formatDate(p.publishedAt)}
                 </span>
               </div>
-              <h1 className="text-2xl font-semibold">{p.title}</h1>
+              <div className="flex items-start justify-between gap-3">
+                <h1 className="text-2xl font-semibold">{p.title}</h1>
+                <ListingShareActions slug={p.slug} title={p.title} />
+              </div>
               <div className="text-2xl font-semibold text-primary">
                 {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
               </div>
@@ -209,11 +268,20 @@ function PublicListingDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+            <RelatedListings slug={p.slug} ownerName={p.ownerName} />
           </div>
 
           {/* Card liên hệ — sticky bên phải desktop */}
           <div className="hidden lg:block sticky top-20">
-            <ContactCard ownerName={p.ownerName} ownerPhone={p.ownerPhone} onCopy={copyPhone}>
+            <ContactCard
+              ownerName={p.ownerName}
+              ownerPhone={p.ownerPhone}
+              avatarUrl={p.ownerAvatarUrl}
+              joinedAt={p.ownerJoinedAt}
+              activeListingCount={p.ownerActiveListingCount}
+              onCopy={copyPhone}
+            >
               <EngagementActions listingId={p.id} slug={p.slug} />
             </ContactCard>
           </div>
@@ -242,23 +310,59 @@ function PublicListingDetailPage() {
   );
 }
 
+/** Số tháng/năm kể từ khi người đăng tạo tài khoản, viết cho người đọc chứ không phải ngày. */
+function membershipLabel(iso: string): string {
+  const months = Math.floor((Date.now() - new Date(iso).getTime()) / (30 * 86_400_000));
+  if (months < 1) return "Mới tham gia";
+  if (months < 12) return `Tham gia ${months} tháng`;
+  const years = Math.floor(months / 12);
+  return `Tham gia ${years} năm`;
+}
+
 function ContactCard({
   ownerName,
   ownerPhone,
+  avatarUrl,
+  joinedAt,
+  activeListingCount,
   onCopy,
   children,
 }: {
   ownerName: string;
   ownerPhone: string;
+  avatarUrl: string | null;
+  joinedAt: string;
+  activeListingCount: number;
   onCopy: () => void;
   children?: React.ReactNode;
 }) {
   return (
     <Card>
       <CardContent className="p-5 space-y-3">
-        <div>
-          <div className="text-xs text-muted-foreground">Chủ tài sản</div>
-          <div className="text-lg font-semibold mt-0.5">{ownerName}</div>
+        {/* Hồ sơ người đăng. Người tìm nhà quyết định có nhấc máy hay không dựa trên việc
+            họ tin ai đang ở đầu dây bên kia — một cái tên trần trụi không nói được gì,
+            còn "tham gia 8 tháng, đang có 5 tin" thì nói được, và nó cũng làm tài khoản
+            mở hôm qua để đăng tin ma trở nên dễ nhận ra. */}
+        <div className="flex items-center gap-3">
+          <Avatar className="h-11 w-11">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={ownerName} />}
+            <AvatarFallback>{ownerName.trim().charAt(0).toUpperCase() || "?"}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground">Chủ tài sản</div>
+            <div className="text-base font-semibold truncate">{ownerName}</div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <CalendarDays className="h-3.5 w-3.5" />
+            {membershipLabel(joinedAt)}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Building2 className="h-3.5 w-3.5" />
+            {activeListingCount} tin đang đăng
+          </span>
         </div>
         <Button className="w-full text-base h-11" asChild>
           <a href={`tel:${ownerPhone}`}>

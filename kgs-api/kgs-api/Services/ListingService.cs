@@ -41,6 +41,11 @@ namespace kgs_api.Services
         private readonly ICurrentUserService _currentUser;
         private readonly GeometryFactory _geometryFactory;
 
+        /// <summary>Số tin mỗi dải gợi ý dưới trang chi tiết. Đủ lấp một hàng cuộn ngang
+        /// mà không biến trang chi tiết thành một trang tìm kiếm thứ hai.</summary>
+        private const int SimilarCount = 8;
+        private const int FromOwnerCount = 6;
+
         public ListingService(
             IRepository<Asset> assets,
             IRepository<AssetUnit> units,
@@ -233,43 +238,8 @@ namespace kgs_api.Services
             // trang sẽ lặp hoặc bỏ sót bản ghi.
             ordered = ordered.ThenBy(l => l.Id);
 
-            // Giữ nguyên Point trong projection, tách Y/X sau khi materialize —
-            // ST_Y(geography) không tồn tại nên không tách được trong biểu thức SQL.
-            var rows = await ordered
-                .Skip((page - 1) * pageSize).Take(pageSize)
-                .Select(l => new
-                {
-                    l.Id,
-                    l.Slug,
-                    l.Title,
-                    l.Type,
-                    l.Price,
-                    l.RentPaymentCycle,
-                    l.Asset.Address.City,
-                    l.Asset.Address.District,
-                    l.Asset.Bedrooms,
-                    l.Asset.Bathrooms,
-                    Area = l.AssetUnit != null ? l.AssetUnit.Area : l.Asset.Area,
-                    UnitName = l.AssetUnit != null ? l.AssetUnit.Name : null,
-                    ThumbnailUrl = l.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).FirstOrDefault(),
-                    l.Asset.Location,
-                    DistanceMeters = hasGeoSearch ? (double?)l.Asset.Location!.Distance(origin!) : null,
-                    l.PublishedAt,
-                    TotalMonthlyCost = l.Price
-                        + (l.Terms.ServiceFee ?? 0)
-                        + (l.Terms.ParkingFee ?? 0)
-                        + (l.Terms.InternetFee ?? 0),
-                    l.Terms.DepositMonths,
-                    l.Terms.PetsAllowed,
-                    l.Amenities
-                })
-                .ToListAsync(ct);
-
-            var items = rows.Select(r => new PublicListingSummaryDto(
-                r.Id, r.Slug!, r.Title, r.Type, r.Price, r.RentPaymentCycle,
-                r.City, r.District, r.Bedrooms, r.Bathrooms, r.Area, r.ThumbnailUrl,
-                r.Location?.Y, r.Location?.X, r.DistanceMeters, r.UnitName, r.PublishedAt,
-                r.TotalMonthlyCost, r.DepositMonths, r.PetsAllowed, r.Amenities)).ToList();
+            var items = await ToSummariesAsync(
+                ordered.Skip((page - 1) * pageSize).Take(pageSize), origin, ct);
 
             return new PagedResult<PublicListingSummaryDto>(items, page, pageSize, total);
         }
@@ -292,8 +262,21 @@ namespace kgs_api.Services
 
             var owner = await _assets.Query().AsNoTracking()
                 .Where(a => a.Id == listing.AssetId)
-                .Select(a => new { a.User.Name, a.User.PhoneNumber })
+                .Select(a => new
+                {
+                    a.UserId,
+                    a.User.Name,
+                    a.User.PhoneNumber,
+                    a.User.AvatarUrl,
+                    a.User.CreatedAt
+                })
                 .FirstAsync(ct);
+
+            // Số tin đang hiển thị của người này, đếm qua chủ sở hữu tài sản chứ không qua
+            // người TẠO tin — một tin do nhân viên đăng hộ vẫn là tin của chủ nhà.
+            var ownerActiveCount = await _listings.Query().AsNoTracking()
+                .CountAsync(l => l.Asset.UserId == owner.UserId
+                              && l.Status == ListingStatus.Approved, ct);
 
             var asset = listing.Asset;
 
@@ -309,7 +292,8 @@ namespace kgs_api.Services
                 listing.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).ToList(),
                 listing.ViewCount + 1, listing.PublishedAt,
                 ToTermsDto(listing.Terms), listing.Amenities, TotalMonthlyCost(listing),
-                owner.Name, owner.PhoneNumber ?? "Chưa cập nhật số điện thoại");
+                owner.Name, owner.PhoneNumber ?? "Chưa cập nhật số điện thoại",
+                owner.AvatarUrl, owner.CreatedAt, ownerActiveCount);
         }
 
         // ==================== ĐĂNG TIN TRỰC TIẾP (Giai đoạn 1) ====================
@@ -688,6 +672,113 @@ namespace kgs_api.Services
         /// <summary>Bỏ khoá lạ, khử trùng lặp, giữ thứ tự ổn định. Khoá không nằm trong
         /// AmenityKeys.All bị loại im lặng thay vì ném lỗi — client cũ gửi khoá lạ thì tin
         /// vẫn đăng được, chỉ là tiện nghi đó không được ghi nhận.</summary>
+        public async Task<RelatedListingsDto> GetRelatedAsync(string slug, CancellationToken ct = default)
+        {
+            var current = await _listings.Query().AsNoTracking()
+                .Where(l => l.Slug == slug && l.Status == ListingStatus.Approved)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.Type,
+                    l.Price,
+                    l.Asset.Address.City,
+                    l.Asset.Address.District,
+                    OwnerId = l.Asset.UserId
+                })
+                .FirstOrDefaultAsync(ct)
+                ?? throw new NotFoundException("Không tìm thấy tin đăng.");
+
+            var live = _listings.Query().AsNoTracking()
+                .Where(l => l.Status == ListingStatus.Approved && l.Id != current.Id);
+
+            // ---- Tin tương tự ----
+            // Cùng hình thức (bán/thuê) và cùng quận là hai điều kiện cứng: một căn nhà bán
+            // ở quận khác không phải là lựa chọn thay thế cho phòng thuê người ta đang xem.
+            //
+            // Giá thì nới ±40%: người tìm nhà gần như luôn xem quanh khoảng giá của mình,
+            // nhưng siết quá thì dải này rỗng ở những quận ít tin — mà một dải rỗng còn tệ
+            // hơn một dải hơi lệch giá.
+            var priceLow = current.Price * 0.6m;
+            var priceHigh = current.Price * 1.4m;
+
+            var similarQuery = live
+                .Where(l => l.Type == current.Type
+                         && l.Asset.Address.District == current.District
+                         && l.Asset.Address.City == current.City
+                         && l.Price >= priceLow && l.Price <= priceHigh)
+                // Gần giá nhất trước. Khoá phụ theo Id để hai tin cùng giá không đảo chỗ
+                // giữa các lần tải — cùng lý do như ở trang tìm kiếm.
+                .OrderBy(l => l.Price > current.Price ? l.Price - current.Price : current.Price - l.Price)
+                .ThenBy(l => l.Id)
+                .Take(SimilarCount);
+
+            // ---- Tin khác của cùng người đăng ----
+            var fromOwnerQuery = live
+                .Where(l => l.Asset.UserId == current.OwnerId)
+                .OrderByDescending(l => l.BumpedAt ?? l.PublishedAt ?? l.CreatedAt)
+                .ThenBy(l => l.Id)
+                .Take(FromOwnerCount);
+
+            var similar = await ToSummariesAsync(similarQuery, null, ct);
+            var fromOwner = await ToSummariesAsync(fromOwnerQuery, null, ct);
+
+            // Tin đã nằm ở dải "tương tự" thì không lặp lại ở dải "cùng người đăng" — trùng
+            // hai lần trên cùng màn hình trông như lỗi hiển thị.
+            var shown = similar.Select(x => x.Id).ToHashSet();
+            fromOwner = fromOwner.Where(x => !shown.Contains(x.Id)).ToList();
+
+            return new RelatedListingsDto(similar, fromOwner);
+        }
+
+        /// <summary>Chiếu một truy vấn tin đăng thành thẻ tóm tắt công khai.
+        ///
+        /// Tách ra vì trang tìm kiếm và các dải "tin tương tự" phải hiển thị y hệt nhau —
+        /// cùng cách tính tổng chi phí, cùng cách chọn ảnh đại diện, cùng cách lấy diện tích
+        /// của phòng thay vì của cả căn. Hai bản chiếu song song thì sẽ lệch nhau ở đúng
+        /// những chỗ đó, và không có gì báo cho ta biết.
+        ///
+        /// <paramref name="origin"/> null nghĩa là không tính khoảng cách.</summary>
+        private static async Task<List<PublicListingSummaryDto>> ToSummariesAsync(
+            IQueryable<Listing> q, Point? origin, CancellationToken ct)
+        {
+            // Giữ nguyên Point trong projection, tách Y/X sau khi materialize —
+            // ST_Y(geography) không tồn tại nên không tách được trong biểu thức SQL.
+            var rows = await q
+                .Select(l => new
+                {
+                    l.Id,
+                    l.Slug,
+                    l.Title,
+                    l.Type,
+                    l.Price,
+                    l.RentPaymentCycle,
+                    l.Asset.Address.City,
+                    l.Asset.Address.District,
+                    l.Asset.Bedrooms,
+                    l.Asset.Bathrooms,
+                    Area = l.AssetUnit != null ? l.AssetUnit.Area : l.Asset.Area,
+                    UnitName = l.AssetUnit != null ? l.AssetUnit.Name : null,
+                    ThumbnailUrl = l.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).FirstOrDefault(),
+                    l.Asset.Location,
+                    DistanceMeters = origin != null ? (double?)l.Asset.Location!.Distance(origin) : null,
+                    l.PublishedAt,
+                    TotalMonthlyCost = l.Price
+                        + (l.Terms.ServiceFee ?? 0)
+                        + (l.Terms.ParkingFee ?? 0)
+                        + (l.Terms.InternetFee ?? 0),
+                    l.Terms.DepositMonths,
+                    l.Terms.PetsAllowed,
+                    l.Amenities
+                })
+                .ToListAsync(ct);
+
+            return rows.Select(r => new PublicListingSummaryDto(
+                r.Id, r.Slug!, r.Title, r.Type, r.Price, r.RentPaymentCycle,
+                r.City, r.District, r.Bedrooms, r.Bathrooms, r.Area, r.ThumbnailUrl,
+                r.Location?.Y, r.Location?.X, r.DistanceMeters, r.UnitName, r.PublishedAt,
+                r.TotalMonthlyCost, r.DepositMonths, r.PetsAllowed, r.Amenities)).ToList();
+        }
+
         private static List<string> NormalizeAmenities(IEnumerable<string>? input)
             => ListingSearchFilter.NormalizeAmenities(input);
 
