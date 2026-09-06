@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 
 from .normalize import norm_district, norm_province, norm_ward
+from .timeparse import parse_published
 
 # Đặc trưng phân loại — LightGBM xử lý trực tiếp kiểu category, không cần one-hot.
 CATEGORICAL = ["property_type", "province", "district", "ward", "house_direction"]
@@ -102,7 +103,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # Tháng đăng, tính theo số tháng kể từ mốc cố định. Thị trường trôi theo thời gian; bỏ
     # trục thời gian đi thì mô hình coi giá năm ngoái và giá tháng này là một.
-    published = pd.to_datetime(df.get("published_at"), errors="coerce", utc=True)
+    published = parse_published(df.get("published_at"))
     out["published_month"] = (
         (published.dt.year - 2020) * 12 + published.dt.month
     ).astype("float64")

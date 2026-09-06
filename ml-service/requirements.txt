@@ -4,6 +4,8 @@ pandas==2.2.3
 numpy==2.1.3
 pyarrow==18.1.0
 scikit-learn==1.5.2
+# Ma tran thua cho hoi quy hedonic — sklearn keo scipy vao san, ghim de khoi troi ban.
+scipy==1.18.1
 lightgbm==4.5.0
 joblib==1.4.2
 fastapi==0.115.6

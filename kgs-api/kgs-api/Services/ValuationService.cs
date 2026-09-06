@@ -87,6 +87,57 @@ namespace kgs_api.Services
                 return new ValuationModelInfo(false, null, null, null, null, null);
             }
         }
+        public async Task<PriceIndexDto> GetPriceIndexAsync(
+            string? province, string? district, CancellationToken ct = default)
+        {
+            var query = new List<string>();
+            if (!string.IsNullOrWhiteSpace(province)) query.Add($"province={Uri.EscapeDataString(province)}");
+            if (!string.IsNullOrWhiteSpace(district)) query.Add($"district={Uri.EscapeDataString(district)}");
+            var url = "/price-index" + (query.Count > 0 ? "?" + string.Join("&", query) : "");
+
+            try
+            {
+                var raw = await _http.GetFromJsonAsync<MlPriceIndex>(url, ct);
+                if (raw is null || !raw.Available) return Unavailable();
+
+                return new PriceIndexDto(
+                    Available: true,
+                    Scope: raw.Scope,
+                    Points: Map(raw.Points),
+                    NaivePoints: Map(raw.NaivePoints),
+                    ChangePoints: raw.ChangePoints,
+                    WeeklyVolatility: raw.WeeklyVolatility,
+                    MixShiftMeanPoints: raw.MixShiftMeanPoints,
+                    MixShiftMaxPoints: raw.MixShiftMaxPoints,
+                    Forecast: raw.Forecast is null
+                        ? null
+                        : new PriceIndexForecast(
+                            raw.Forecast.Method, raw.Forecast.NextIndex,
+                            raw.Forecast.ChangePercent, raw.Forecast.BacktestMape,
+                            raw.Forecast.Reliable, raw.Forecast.Note),
+                    BaseWeek: raw.BaseWeek,
+                    BuiltAt: raw.BuiltAt,
+                    Method: raw.Method,
+                    Rows: raw.Rows,
+                    Caveats: raw.Caveats ?? new List<string>());
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Cùng nguyên tắc với định giá: chỉ số giá là thứ có thì tốt. Dịch vụ chết
+                // thì trang chi tiết vẫn hiện đủ nội dung, chỉ thiếu biểu đồ xu hướng.
+                _logger.LogWarning(ex, "Không lấy được chỉ số giá.");
+                return Unavailable();
+            }
+        }
+
+        private static PriceIndexDto Unavailable() => new(
+            false, "toàn quốc", Array.Empty<PriceIndexPoint>(), Array.Empty<PriceIndexPoint>(),
+            null, null, null, null, null, null, null, null, null, Array.Empty<string>());
+
+        private static List<PriceIndexPoint> Map(List<MlIndexPoint>? points)
+            => points is null
+                ? new List<PriceIndexPoint>()
+                : points.Select(p => new PriceIndexPoint(p.WeekStart, p.Index, p.N, p.MoePercent)).ToList();
     }
 
     public sealed class ValuationSettings

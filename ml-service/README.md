@@ -44,6 +44,9 @@ hệt sau nhiều tháng, mà scikit-learn và LightGBM đều từng đổi m�
 
 # 2. Huấn luyện mô hình nền + Gradient Boosting, đo trên cùng tập kiểm tra
 .venv/Scripts/python.exe -m training.train
+
+# 3. Dựng chỉ số giá theo tuần (Luồng C)
+.venv/Scripts/python.exe -m training.build_index
 ```
 
 Kết quả ghi vào `models/`:
@@ -54,6 +57,7 @@ Kết quả ghi vào `models/`:
 | `avm.meta.joblib` | Tập hạng mục + danh sách đặc trưng (bắt buộc phải nạp lại lúc phục vụ) |
 | `avm.report.json` | Độ đo của cả bốn mô hình, mức đóng góp từng đặc trưng |
 | `avm.area_stats.parquet` | Giá trung vị mỗi m² theo quận, kèm cỡ mẫu |
+| `price_index.json` | Chỉ số giá theo tuần: toàn quốc, 20 quận, và đường trung vị thô để đối chiếu |
 
 ## Chạy dịch vụ
 
@@ -66,6 +70,7 @@ Kết quả ghi vào `models/`:
 | `GET /health` | Dịch vụ sống chưa, mô hình nạp được chưa |
 | `GET /model-info` | Độ đo của mô hình đang phục vụ |
 | `POST /valuation` | Định giá một bất động sản |
+| `GET /price-index` | Chỉ số giá theo tuần (`?province=&district=`) |
 | `GET /docs` | Swagger |
 
 Ví dụ:
@@ -109,6 +114,33 @@ là nói dối bằng cách trình bày.
 
 **Khu vực ít dữ liệu bị đánh dấu là kém tin cậy.** Một quận chỉ có vài chục tin trong dữ
 liệu huấn luyện thì con số trả về phải kèm cảnh báo, chứ không im lặng như mọi quận khác.
+
+## Chỉ số giá theo tuần (Luồng C)
+
+Chỉ số **hedonic**, không phải trung vị giá theo tuần. Đây là khác biệt cốt lõi.
+
+Cách hiển nhiên — lấy trung vị giá mỗi m² từng tuần rồi vẽ lên — sai theo kiểu rất khó nhận
+ra, vì đường biểu đồ trông vẫn hợp lý. Vấn đề là **thay đổi cơ cấu**: tuần này ngẫu nhiên có
+nhiều tin ở quận đắt hơn, trung vị nhảy lên; tuần sau nhiều tin ở quận rẻ, nó rơi xuống.
+Không căn nhà nào đổi giá cả. Chỉ số như vậy đo hoạt động đăng tin, không đo thị trường.
+
+Cách đúng là hồi quy log(giá) theo đặc điểm bất động sản **cộng các biến giả tuần**:
+
+    log(P_i) = α + Σ β_k · X_ik + Σ δ_t · D_it + ε_i
+
+Hệ số `δ_t` chính là chỉ số — phần biến động còn lại sau khi đã trừ ảnh hưởng của quận,
+diện tích, loại hình, số phòng. Đây là phương pháp chuẩn của các cơ quan thống kê khi dựng
+chỉ số giá nhà.
+
+**Đo được trên dữ liệu thật:** trung vị thô dao động tuần 4,23 điểm, hedonic chỉ 2,36 —
+**thô nhiễu gấp 1,79 lần**. Hai đường lệch nhau trung bình 2,21 điểm, lớn nhất 4,81 điểm, và
+toàn bộ phần lệch đó là biến động giả do đổi cơ cấu tin đăng. Giao diện có nút bật đường
+trung vị thô lên để người xem thấy tận mắt.
+
+**Về dự báo:** 19 tuần là quá ít để dự báo tử tế. Phần dự báo vẫn được dựng nhưng theo cách
+trung thực: ba phương pháp đơn giản (kể cả mô hình ngây thơ "tuần tới = tuần này"), chọn
+bằng kiểm tra lùi, và nếu sai số vượt ngưỡng thì trả về `reliable: false` để giao diện nói
+thẳng là chưa dự báo được — thay vì trưng một con số trông chắc chắn.
 
 ## Kiểm thử
 

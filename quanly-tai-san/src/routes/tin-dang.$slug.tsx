@@ -13,6 +13,7 @@ import { AMENITIES, WATER_PRICING, type AmenityKey } from "@/constants/enums";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { ListingShareActions } from "@/components/public/ListingShareActions";
 import { RelatedListings } from "@/components/public/RelatedListings";
+import { MarketTrendCard } from "@/components/public/MarketTrendCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ClientMap } from "@/components/map/ClientMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -268,6 +269,8 @@ function PublicListingDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+            <MarketTrendCard city={p.city} district={p.district} />
 
             <RelatedListings slug={p.slug} ownerName={p.ownerName} />
           </div>

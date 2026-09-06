@@ -64,3 +64,47 @@ class ModelInfo(BaseModel):
     ppe10: float | None = None
     ppe20: float | None = None
     best_iteration: int | None = None
+
+# ---- Chỉ số giá theo tuần (nhiệm vụ 3.1 – 3.3) ----
+
+class IndexPoint(BaseModel):
+    week_start: str
+    index: float
+    n: int
+    """Biên sai số xấp xỉ, phần trăm. Tuần ít mẫu thì điểm đó lung lay nhiều hơn."""
+    moe_percent: float | None = None
+
+
+class ForecastOut(BaseModel):
+    method: str
+    next_index: float
+    change_percent: float
+    backtest_mape: float
+    """False nghĩa là dữ liệu chưa đủ để dự báo đáng tin — giao diện phải nói rõ điều đó."""
+    reliable: bool
+    note: str
+
+
+class PriceIndexResponse(BaseModel):
+    available: bool
+    scope: str = Field(description="\"toàn quốc\" hoặc tên quận")
+
+    points: list[IndexPoint] = Field(default_factory=list)
+    """Chỉ số trung vị thô, dựng ra để đối chiếu — KHÔNG dùng làm chỉ số chính."""
+    naive_points: list[IndexPoint] = Field(default_factory=list)
+
+    change_points: float | None = None
+    weekly_volatility: float | None = None
+
+    """Khoảng cách giữa hedonic và trung vị thô — chính là phần biến động do đổi cơ cấu
+    tin đăng chứ không phải do giá thị trường."""
+    mix_shift_mean_points: float | None = None
+    mix_shift_max_points: float | None = None
+
+    forecast: ForecastOut | None = None
+
+    base_week: str | None = None
+    built_at: str | None = None
+    method: str | None = None
+    rows: int | None = None
+    caveats: list[str] = Field(default_factory=list)

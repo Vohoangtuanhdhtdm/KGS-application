@@ -10,5 +10,10 @@ namespace kgs_api.Interfaces
         Task<ValuationResult?> EstimateAsync(ValuationRequest request, CancellationToken ct = default);
 
         Task<ValuationModelInfo> GetModelInfoAsync(CancellationToken ct = default);
+
+        /// <summary>Chỉ số giá theo tuần. Có quận thì trả chuỗi riêng của quận nếu dựng
+        /// được, không thì lùi về chuỗi toàn quốc.</summary>
+        Task<PriceIndexDto> GetPriceIndexAsync(
+            string? province, string? district, CancellationToken ct = default);
     }
 }

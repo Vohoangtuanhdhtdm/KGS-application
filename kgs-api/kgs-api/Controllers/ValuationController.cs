@@ -35,5 +35,13 @@ namespace kgs_api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<ValuationModelInfo>> ModelInfo(CancellationToken ct)
             => Ok(await _valuation.GetModelInfoAsync(ct));
+
+        /// <summary>Chỉ số giá theo tuần. Công khai — người đi tìm nhà cũng cần thấy thị
+        /// trường đang đi lên hay đi xuống, không riêng người đăng tin.</summary>
+        [HttpGet("price-index")]
+        [AllowAnonymous]
+        public async Task<ActionResult<PriceIndexDto>> PriceIndex(
+            [FromQuery] string? province, [FromQuery] string? district, CancellationToken ct)
+            => Ok(await _valuation.GetPriceIndexAsync(province, district, ct));
     }
 }

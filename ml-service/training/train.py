@@ -42,6 +42,7 @@ from app.features import (  # noqa: E402
     to_categorical,
 )
 from app.metrics import Scores, compare_table, evaluate  # noqa: E402
+from app.timeparse import parse_published  # noqa: E402
 from training.baselines import ALL_BASELINES  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,7 +55,7 @@ TEST_FRACTION = 0.15
 
 def time_split(df: pd.DataFrame, frac: float = TEST_FRACTION) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Cắt theo mốc thời gian: phần cũ để học, phần mới nhất để kiểm tra."""
-    ts = pd.to_datetime(df["published_at"], errors="coerce", utc=True)
+    ts = parse_published(df["published_at"])
     df = df.loc[ts.notna()].copy()
     ts = ts.loc[df.index]
 
