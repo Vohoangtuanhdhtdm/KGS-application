@@ -865,7 +865,7 @@ function PublicListingsPage() {
       {showSearchAreaButton && (
         <Button
           size="sm"
-          className="absolute top-3 left-1/2 -translate-x-1/2 shadow-lg z-[500]"
+          className="map-overlay absolute top-3 left-1/2 -translate-x-1/2 shadow-lg"
           onClick={handleSearchThisArea}
         >
           <RotateCcw className="h-3.5 w-3.5 mr-1.5" />

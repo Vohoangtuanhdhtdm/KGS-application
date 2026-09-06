@@ -482,3 +482,51 @@
     animation: asset-card-expand 260ms cubic-bezier(0.34, 1.2, 0.64, 1) both;
   }
 }
+
+/* ============================================================================
+   Thang lớp của bản đồ
+   ============================================================================
+
+   Leaflet tự đặt z-index rất cao cho các lớp bên trong nó: pane 400, marker 600,
+   popup 700, control 800, và thanh top/bottom tới 1000. Trong khi đó toàn bộ thành
+   phần nổi của giao diện — popover, select, dropdown, dialog, sheet, tooltip — đều
+   dùng z-50.
+
+   Hệ quả: MỌI thứ nổi lên đều nằm dưới bản đồ. Lỗi này chỉ lộ ra khi có một popover
+   mở ra phía trên khu vực bản đồ, nên nó nằm im cho tới khi thanh lọc trang tìm kiếm
+   được sắp lại và nút "Bộ lọc" chuyển sang mép phải — ngay trên bản đồ.
+
+   Cách sửa: hạ trần của bản đồ xuống dưới 50, thay vì đẩy sáu primitive giao diện lên
+   trên 1000. Bản đồ là NỘI DUNG, còn popover/dialog là KHUNG ĐIỀU KHIỂN — khung điều
+   khiển phải luôn thắng. Sửa ở đây một lần thì đúng cho mọi bản đồ, mọi popover, kể
+   cả những cái viết sau này.
+
+   Thứ tự tương đối bên trong bản đồ giữ NGUYÊN, chỉ nén lại: tile < overlay < shadow
+   < marker < tooltip/popup < control < thanh điều khiển.
+   ============================================================================ */
+
+/* Độ đặc hiệu phải CAO HƠN leaflet.css, không chỉ khác giá trị.
+   leaflet.css được import bên trong module bản đồ, mà module đó nạp lười (React.lazy) —
+   nên nó chèn vào <head> SAU tệp này. Cùng độ đặc hiệu thì tệp nạp sau thắng, và bản
+   khai báo đơn giản `.leaflet-pane { ... }` ở đây không có tác dụng gì cả. Đã đo được:
+   sau khi thêm khối đó, .leaflet-top vẫn giữ nguyên z-index 1000.
+   Thêm `.leaflet-container` phía trước làm độ đặc hiệu thắng bất kể thứ tự nạp. */
+
+.leaflet-container .leaflet-pane { z-index: 4; }
+.leaflet-container .leaflet-tile-pane { z-index: 2; }
+.leaflet-container .leaflet-overlay-pane { z-index: 4; }
+.leaflet-container .leaflet-shadow-pane { z-index: 5; }
+.leaflet-container .leaflet-marker-pane { z-index: 6; }
+.leaflet-container .leaflet-tooltip-pane { z-index: 7; }
+.leaflet-container .leaflet-popup-pane { z-index: 7; }
+.leaflet-container .leaflet-map-pane canvas { z-index: 1; }
+.leaflet-container .leaflet-map-pane svg { z-index: 2; }
+
+.leaflet-container .leaflet-control { z-index: 8; }
+.leaflet-container .leaflet-top,
+.leaflet-container .leaflet-bottom { z-index: 10; }
+
+/* Lớp phủ của riêng ứng dụng đặt bên trong khung bản đồ (nút "Tìm trong khu vực này",
+   cảnh báo không tải được ảnh nền). Phải trên mọi thứ của Leaflet nhưng vẫn dưới 50 để
+   popover và dialog che được. */
+.map-overlay { z-index: 20; }

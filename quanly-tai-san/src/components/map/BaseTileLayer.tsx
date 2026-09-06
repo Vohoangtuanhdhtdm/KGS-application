@@ -59,7 +59,7 @@ export function BaseTileLayer() {
 
       {exhausted && (
         <div
-          className="pointer-events-none absolute inset-x-0 top-3 z-[1000] flex justify-center px-3"
+          className="map-overlay pointer-events-none absolute inset-x-0 top-3 flex justify-center px-3"
           role="status"
         >
           <div className="pointer-events-auto max-w-md rounded-md border bg-card/95 px-3 py-2 shadow-lg backdrop-blur">
