@@ -14,7 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BedDouble, Building2, MapPin, Megaphone, Ruler, Search } from "lucide-react";
+import {
+  BedDouble,
+  Building2,
+  ClipboardCheck,
+  LineChart,
+  MapPin,
+  Megaphone,
+  Ruler,
+  Search,
+  Wallet,
+} from "lucide-react";
 
 /**
  * TRANG CHỦ MARKETPLACE — mặt tiền của sản phẩm.
@@ -70,12 +80,14 @@ function MarketplaceHome() {
       <section className="border-b bg-muted/30">
         <div className="mx-auto max-w-[1200px] px-4 py-12 lg:py-16 space-y-6">
           <div className="space-y-2 max-w-2xl">
-            <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight text-balance">
-              Tìm nơi ở tiếp theo của bạn
+            <h1 className="text-3xl lg:text-[2.6rem] font-semibold tracking-tight text-balance leading-[1.15]">
+              Biết trước{" "}
+              <span className="text-primary">tổng chi phí mỗi tháng</span>
+              <br className="hidden sm:block" /> trước khi đi xem nhà
             </h1>
-            <p className="text-muted-foreground">
-              Nhà trọ, phòng cho thuê, căn hộ và nhà đất — xem đầy đủ chi phí, nội quy và tiện nghi
-              trước khi đi xem.
+            <p className="text-muted-foreground text-[15px] leading-relaxed">
+              Giá thuê chỉ là một phần. Mỗi tin trên KGS ghi rõ điện, nước, phí dịch vụ, gửi
+              xe, internet — và cả nội quy: nuôi thú cưng, giờ giấc, ở chung chủ hay không.
             </p>
           </div>
 
@@ -112,7 +124,9 @@ function MarketplaceHome() {
 
           {/* Lối tắt theo khoảng giá — thứ người thuê lọc trước tiên. */}
           <div className="flex flex-wrap gap-2 pt-1">
-            <span className="text-sm text-muted-foreground self-center mr-1">Cho thuê:</span>
+            <span className="text-sm text-muted-foreground self-center mr-1">
+              Thuê theo ngân sách:
+            </span>
             {PRICE_BANDS.map((b) => (
               <Button
                 key={b.label}
@@ -132,11 +146,61 @@ function MarketplaceHome() {
         </div>
       </section>
 
+      <ValueProps />
+
       <div className="mx-auto max-w-[1200px] px-4 py-10 space-y-10">
         <LatestListings />
         <PostCta />
       </div>
     </div>
+  );
+}
+
+/**
+ * Ba điều KGS làm khác các sàn tin đăng hiện có.
+ *
+ * Trước đây trang chủ chỉ có ô tìm kiếm rồi tới danh sách tin — đúng hình dạng của mọi sàn
+ * tin đăng, và vì thế không nói được vì sao người ta nên dùng cái này thay vì cái kia. Ba
+ * khối dưới đây không phải khẩu hiệu: mỗi khối tương ứng với một thứ đã thực sự xây trong
+ * Giai đoạn 1 và người dùng kiểm chứng được ngay trên tin đăng.
+ */
+function ValueProps() {
+  const items = [
+    {
+      icon: Wallet,
+      title: "Tổng chi phí, không chỉ giá thuê",
+      body: "Mỗi tin cộng sẵn phí dịch vụ, gửi xe và internet vào giá thuê. Một phòng 7 triệu kèm 500k phí đắt hơn phòng 7,2 triệu trọn gói — con số trên tin đã tính giúp bạn.",
+    },
+    {
+      icon: ClipboardCheck,
+      title: "Nội quy ghi rõ từ đầu",
+      body: "Nuôi thú cưng, giờ giấc tự do, ở chung chủ, được nấu ăn — khai rõ có hoặc không, thay vì để trống rồi bạn phải gọi hỏi từng nơi.",
+    },
+    {
+      icon: LineChart,
+      title: "Giá tham khảo từ dữ liệu thật",
+      body: "Mô hình học máy huấn luyện trên hơn 600.000 tin rao thực tế, kèm chỉ số giá theo tuần của từng quận — để bạn biết mức giá đang xem là hợp lý hay lệch mặt bằng.",
+    },
+  ];
+
+  return (
+    <section className="border-b bg-card">
+      <div className="mx-auto max-w-[1200px] px-4 py-10">
+        <div className="grid gap-6 sm:grid-cols-3">
+          {items.map((it) => (
+            <div key={it.title} className="flex gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <it.icon className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-medium leading-snug">{it.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{it.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

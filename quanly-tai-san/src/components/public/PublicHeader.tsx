@@ -13,7 +13,15 @@ export function PublicHeader() {
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Building className="h-4.5 w-4.5" />
           </div>
-          <span className="text-sm font-semibold">Marketplace Bất Động Sản</span>
+          {/* Tên sản phẩm kèm một dòng nói nó làm gì. "Marketplace Bất Động Sản" là tên
+              của một THỂ LOẠI, không phải của sản phẩm này — nó đúng với mọi sàn tin đăng
+              và vì thế không phân biệt được cái nào với cái nào. */}
+          <span className="flex flex-col leading-none">
+            <span className="text-sm font-semibold">KGS</span>
+            <span className="hidden text-[11px] text-muted-foreground sm:block">
+              Tìm nhà theo tổng chi phí
+            </span>
+          </span>
         </Link>
         {isAuthenticated ? (
           <Button size="sm" variant="outline" asChild>
