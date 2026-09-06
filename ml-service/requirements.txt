@@ -1,0 +1,13 @@
+# Ghim phiên bản chính xác: đồ án phải dựng lại được kết quả y hệt sau nhiều tháng,
+# mà scikit-learn và LightGBM đều từng đổi mặc định giữa các bản minor.
+pandas==2.2.3
+numpy==2.1.3
+pyarrow==18.1.0
+scikit-learn==1.5.2
+lightgbm==4.5.0
+joblib==1.4.2
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+requests==2.32.3
+pytest==8.3.4

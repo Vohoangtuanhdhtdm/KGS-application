@@ -14,6 +14,7 @@ import { ASSET_TYPE, PAYMENT_CYCLE, enumOptions, type PaymentCycleCode } from "@
 import { ListingTermsFields } from "@/components/listings/ListingTermsFields";
 import { VietnamAddressPicker } from "@/components/assets/VietnamAddressPicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { PriceSuggestion } from "@/components/listings/PriceSuggestion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -290,6 +291,27 @@ function CreateListingPage() {
               </Field>
             )}
           </div>
+
+          {/* Chỉ tin BÁN. Mô hình huấn luyện trên tin rao bán — dùng nó cho giá thuê sẽ cho
+              ra con số sai hàng nghìn lần, và một gợi ý sai kiểu đó tệ hơn không gợi ý. */}
+          {type === 1 && (
+            <PriceSuggestion
+              currentPrice={price}
+              input={
+                Number(area) > 0 && city.trim() && district.trim()
+                  ? {
+                      area: Number(area),
+                      city: city.trim(),
+                      district: district.trim(),
+                      ward: ward.trim() || null,
+                      bedrooms: bedrooms ? Number(bedrooms) : null,
+                      bathrooms: bathrooms ? Number(bathrooms) : null,
+                      floors: floors ? Number(floors) : null,
+                    }
+                  : null
+              }
+            />
+          )}
 
           <Field
             label="Mô tả"

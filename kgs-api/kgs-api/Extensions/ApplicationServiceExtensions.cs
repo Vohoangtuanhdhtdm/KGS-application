@@ -6,6 +6,7 @@ using kgs_api.Infrastructure.Persistence.Interceptors;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
 using kgs_api.Services;
+using Microsoft.Extensions.Options;
 using kgs_api.Storage;
 using kgs_api.Utility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -80,6 +81,17 @@ namespace kgs_api.Extensions
             services.AddScoped<IListingReportService, ListingReportService>();
             services.AddScoped<IListingViewTracker, ListingViewTracker>();
             services.AddScoped<IListingAnalyticsService, ListingAnalyticsService>();
+
+            // Dịch vụ định giá chạy ngoài tiến trình này. Dùng HttpClient có tên để thời
+            // gian chờ được đặt ở MỘT chỗ — quên đặt thì mặc định là 100 giây, và một ô gợi
+            // ý giá treo 100 giây sẽ giữ luôn cả biểu mẫu đăng tin.
+            services.Configure<ValuationSettings>(config.GetSection("Valuation"));
+            services.AddHttpClient<IValuationService, ValuationService>((sp, http) =>
+            {
+                var cfg = sp.GetRequiredService<IOptions<ValuationSettings>>().Value;
+                http.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
+                http.Timeout = TimeSpan.FromSeconds(Math.Clamp(cfg.TimeoutSeconds, 1, 60));
+            });
           
 
 
