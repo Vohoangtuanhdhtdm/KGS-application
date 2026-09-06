@@ -352,6 +352,7 @@ function PublicListingsPage() {
   const [tabletView, setTabletView] = useState<"list" | "map">("list");
   const [mobileSnap, setMobileSnap] = useState<number | string | null>(0.5);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [desktopFilterOpen, setDesktopFilterOpen] = useState(false);
 
   // ---- Thanh kéo chỉnh tỷ lệ List/Map ở desktop — chỉ desktop mới có, tablet/mobile
   // giữ nguyên bố cục toggle/bottom-sheet đã làm. Luôn khởi tạo 40% (khớp SSR, tránh
@@ -554,8 +555,17 @@ function PublicListingsPage() {
   );
 
   // ---- Nội dung filter chips (dùng chung desktop/tablet/trong Sheet mobile) ----
-  const filterChips = (
-    <>
+  // Bộ lọc tách làm HAI nhóm, và đây là thay đổi bố cục chính của trang.
+  //
+  // Trước đây cả tám thứ — bán/thuê, khoảng giá, phòng ngủ, tiện ích, quanh vị trí, theo
+  // nhu cầu, ô địa chỉ, ô từ khoá — nằm chung một hàng ngang. Tám điều khiển cùng cấp bậc
+  // thị giác thì không cái nào nổi lên, và người dùng phải đọc hết mới biết nên bấm cái
+  // nào trước.
+  //
+  // Nhóm CHÍNH là ba thứ gần như ai cũng dùng ngay: mua hay thuê, ở đâu, tìm gì. Phần còn
+  // lại lùi vào một nút 'Bộ lọc' có đếm số — vẫn cách đúng một cú bấm, nhưng không tranh
+  // chỗ với ba thứ kia nữa.
+  const typeToggle = (
       <div className="inline-flex rounded-md border p-0.5">
         <Button
           size="sm"
@@ -578,7 +588,10 @@ function PublicListingsPage() {
           Cho thuê
         </Button>
       </div>
+  );
 
+  const secondaryFilters = (
+    <>
       <Popover>
         <PopoverTrigger asChild>
           <Button size="sm" variant="outline" className="h-8">
@@ -687,6 +700,14 @@ function PublicListingsPage() {
         <Target className="h-3.5 w-3.5 mr-1.5" />
         Tìm theo nhu cầu
       </Button>
+    </>
+  );
+
+  // Giữ lại cho bảng lọc trên điện thoại — ở đó mọi thứ vốn đã nằm trong một sheet riêng.
+  const filterChips = (
+    <>
+      {typeToggle}
+      {secondaryFilters}
     </>
   );
 
@@ -883,9 +904,29 @@ function PublicListingsPage() {
               </Button>
             </div>
           )}
-          {filterChips}
-          {addressSearchBox("w-52")}
-          {keywordSearchBox("flex-1 min-w-[180px] max-w-sm ml-auto")}
+          {typeToggle}
+          {addressSearchBox("w-56")}
+          {keywordSearchBox("flex-1 min-w-[200px] max-w-md")}
+
+          <Popover open={desktopFilterOpen} onOpenChange={setDesktopFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="outline" className="h-8 ml-auto shrink-0">
+                <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+                Bộ lọc
+                {activeFilterCount > 0 && (
+                  <span className="ml-1.5 rounded-full bg-primary px-1.5 text-[10px] font-medium leading-4 text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto max-w-[520px]">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Lọc thêm
+              </p>
+              <div className="flex flex-wrap gap-2">{secondaryFilters}</div>
+            </PopoverContent>
+          </Popover>
         </div>
       )}
 

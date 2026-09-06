@@ -11,6 +11,7 @@ import { getErrorMessage } from "@/lib/api/errors";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { AMENITIES, WATER_PRICING, type AmenityKey } from "@/constants/enums";
 import { PublicHeader } from "@/components/public/PublicHeader";
+import { BackButton } from "@/components/public/BackButton";
 import { ListingShareActions } from "@/components/public/ListingShareActions";
 import { RelatedListings } from "@/components/public/RelatedListings";
 import { MarketTrendCard } from "@/components/public/MarketTrendCard";
@@ -168,12 +169,7 @@ function PublicListingDetailPage() {
     <div className="min-h-screen bg-muted/20 pb-24 lg:pb-6">
       <PublicHeader />
       <div className="mx-auto max-w-[1200px] p-4 lg:p-6 space-y-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/tin-dang">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Về danh sách
-          </Link>
-        </Button>
+        <BackButton />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
           <div className="lg:col-span-2 space-y-4">

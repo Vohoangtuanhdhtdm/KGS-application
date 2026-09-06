@@ -8,7 +8,6 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Popup,
   Circle,
@@ -16,6 +15,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import { Link } from "@tanstack/react-router";
+import { BaseTileLayer } from "./BaseTileLayer";
 import { useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "@/lib/format";
 import { formatListingPrice } from "@/lib/api/listings";
@@ -24,8 +24,6 @@ import type { LatLng } from "@/hooks/useGeolocationOnDemand";
 import type { PaymentCycleCode } from "@/constants/enums";
 import { ImageIcon } from "lucide-react";
 
-const OSM_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 // Bán = navy (màu primary chủ đạo của app), Cho thuê = xanh (màu success) —
 // dùng đúng token ngữ nghĩa hệ thống, không tạo bảng màu riêng cho Marketplace.
@@ -84,18 +82,47 @@ const SEARCH_PIN_ICON = L.divIcon({
   iconAnchor: [15, 40],
 });
 
+/** Toạ độ dùng được: có thật, hữu hạn, và nằm trong dải hợp lệ của Trái Đất. */
+export function isValidLatLng(lat: unknown, lng: unknown): boolean {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180
+  );
+}
+
 function FitBounds({ points }: { points: PropertyMapPoint[] }) {
   const map = useMap();
+
+  // Lọc toạ độ hỏng TRƯỚC khi đưa cho Leaflet.
+  //
+  // L.latLngBounds gặp NaN sẽ ném "Invalid LatLng object: (NaN, NaN)". Lỗi đó ném từ trong
+  // useEffect nên React không nuốt được — nó nổi lên error boundary và làm SẬP CẢ TRANG
+  // tìm kiếm, không riêng bản đồ. Một toạ độ hỏng của một tin đăng không được phép hạ cả
+  // trang, nên chặn ngay tại đây thay vì tin rằng dữ liệu luôn sạch.
+  const usable = points.filter((p) => isValidLatLng(p.lat, p.lng));
+  const key = usable.map((p) => p.id).join(",");
+
   useEffect(() => {
-    if (points.length === 0) return;
-    if (points.length === 1) {
-      map.flyTo([points[0].lat, points[0].lng], 14, { duration: 0.5 });
+    if (usable.length === 0) return;
+    if (usable.length === 1) {
+      map.flyTo([usable[0].lat, usable[0].lng], 14, { duration: 0.5 });
       return;
     }
-    const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng]));
-    map.flyToBounds(bounds, { padding: [40, 40], duration: 0.5, maxZoom: 15 });
+    try {
+      const bounds = L.latLngBounds(usable.map((p) => [p.lat, p.lng]));
+      if (!bounds.isValid()) return;
+      map.flyToBounds(bounds, { padding: [40, 40], duration: 0.5, maxZoom: 15 });
+    } catch {
+      // Đường phòng vệ cuối. Không căn được khung nhìn thì bản đồ vẫn hiện ở vị trí mặc
+      // định — chấp nhận được. Ném lỗi ra ngoài thì không.
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points.map((p) => p.id).join(","), map]);
+  }, [key, map]);
+
   return null;
 }
 
@@ -251,7 +278,7 @@ export default function PropertyMap({
         style={{ height: "100%", width: "100%" }}
         scrollWheelZoom
       >
-        <TileLayer url={OSM_URL} attribution={OSM_ATTRIB} />
+        <BaseTileLayer />
         <FitBounds points={points} />
         {searchCenter && <FlyToSearchCenter target={searchCenter} />}
         <MapController
@@ -297,7 +324,9 @@ export default function PropertyMap({
           />
         )}
 
-        {points.map((p) => (
+        {/* Cùng lý do với FitBounds: một Marker mang toạ độ NaN cũng ném lỗi và hạ cả trang.
+            Bỏ qua điểm hỏng thay vì tin dữ liệu luôn sạch. */}
+        {points.filter((p) => isValidLatLng(p.lat, p.lng)).map((p) => (
           <Marker
             key={p.id}
             position={[p.lat, p.lng]}

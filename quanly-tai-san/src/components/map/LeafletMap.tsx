@@ -1,7 +1,8 @@
 // Client-only Leaflet wrapper. Load only via React.lazy.
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { BaseTileLayer } from "./BaseTileLayer";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 
@@ -17,8 +18,6 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const OSM_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 export interface MarkerData {
   id: string;
@@ -87,7 +86,7 @@ export default function LeafletMap({
         style={{ height: "100%", width: "100%" }}
         scrollWheelZoom
       >
-        <TileLayer url={OSM_URL} attribution={OSM_ATTRIB} />
+        <BaseTileLayer />
         <FlyTo lat={center[0]} lng={center[1]} zoom={zoom} />
         {onPick && <ClickPicker onPick={onPick} />}
         {pickerMarker && (
