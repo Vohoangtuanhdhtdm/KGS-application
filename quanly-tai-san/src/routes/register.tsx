@@ -10,8 +10,17 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoogleLoginSection } from "@/components/auth/GoogleLoginSection";
 
+/**
+ * Nơi người dùng đáp xuống sau khi đăng nhập/đăng ký mà không có ?redirect.
+ *
+ * Trước đây là "/quan-ly/ban-do" — bản đồ tài sản, tức khu quản lý thuộc Giai đoạn 4 đang
+ * bị ẩn khỏi giao diện. Người vừa tạo tài khoản để đi tìm nhà mở màn hình đầu tiên ra và
+ * gặp một sản phẩm khác hẳn thứ họ vừa đăng ký, lại là sản phẩm mà mọi lối ra đã bị gỡ.
+ */
+const AFTER_AUTH_PATH = "/";
+
 export const Route = createFileRoute("/register")({
-  head: () => ({ meta: [{ title: "Đăng ký — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Đăng ký — KGS" }] }),
   component: RegisterPage,
 });
 
@@ -59,7 +68,7 @@ function RegisterPage() {
         phoneNumber: form.phoneNumber.trim() || undefined,
       });
       toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
-      navigate({ to: "/quan-ly/ban-do", replace: true });
+      navigate({ to: AFTER_AUTH_PATH, replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : "Đăng ký thất bại.");
     } finally {
@@ -160,7 +169,7 @@ function RegisterPage() {
               </Link>
             </div>
           </form>
-          <GoogleLoginSection onSuccess={() => navigate({ to: "/quan-ly/ban-do", replace: true })} />
+          <GoogleLoginSection onSuccess={() => navigate({ to: AFTER_AUTH_PATH, replace: true })} />
         </CardContent>
       </Card>
     </div>

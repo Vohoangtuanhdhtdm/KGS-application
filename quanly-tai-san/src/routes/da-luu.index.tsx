@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BedDouble, Heart, MapPin, Ruler, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/da-luu/")({
-  head: () => ({ meta: [{ title: "Tin đã lưu — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Tin đã lưu — KGS" }] }),
   component: SavedListingsPage,
 });
 

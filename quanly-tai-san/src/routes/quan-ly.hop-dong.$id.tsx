@@ -37,7 +37,7 @@ import {
 import { ArrowLeft, RefreshCw, XCircle, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/quan-ly/hop-dong/$id")({
-  head: () => ({ meta: [{ title: "Chi tiết hợp đồng — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Chi tiết hợp đồng — KGS" }] }),
   component: ContractDetailPage,
 });
 

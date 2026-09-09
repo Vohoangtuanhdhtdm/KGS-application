@@ -101,16 +101,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Nền tảng tìm kiếm và kết nối bất động sản: nhà trọ, phòng cho thuê, căn hộ và nhà đất. Xem đầy đủ chi phí, nội quy và tiện nghi trước khi đi xem.",
       },
-      {
-        property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3fd4e92d-33d7-498f-b0e7-7fb7e7acd410/id-preview-51adc2ec--59343277-9417-41ca-9535-172b07627c64.lovable.app-1784196920416.png",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3fd4e92d-33d7-498f-b0e7-7fb7e7acd410/id-preview-51adc2ec--59343277-9417-41ca-9535-172b07627c64.lovable.app-1784196920416.png",
-      },
+      // Không khai báo og:image mặc định.
+      //
+      // Chỗ này từng trỏ tới một ảnh chụp màn hình bản xem thử do công cụ dựng khung sinh
+      // ra, nằm trên bucket của bên thứ ba. Ảnh đó không còn phản ánh sản phẩm, và mọi lần
+      // chia sẻ trang chủ đều hiện nó. Trang chi tiết tin đăng tự đặt og:image bằng ảnh
+      // thật của tin (xem tin-dang.$slug.tsx); các trang khác thà không có ảnh xem trước
+      // còn hơn có một ảnh sai.
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -160,6 +157,15 @@ function RootComponent() {
 /** Route mà bản đồ phải chiếm trọn viewport — rail thu gọn, không header, không banner. */
 const MAP_PATH = "/quan-ly/ban-do";
 
+/** Điều hướng desktop cho các trang nội bộ (đã đăng nhập, ngoài marketplace công khai). */
+const SHELL_NAV = [
+  { to: "/tin-dang", label: "Tìm nhà" },
+  { to: "/dang-tin", label: "Đăng tin" },
+  { to: "/tin-cua-toi", label: "Tin của tôi" },
+  { to: "/da-luu", label: "Đã lưu" },
+  { to: "/yeu-cau", label: "Yêu cầu" },
+] as const;
+
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { isAuthenticated } = useAuth();
@@ -182,8 +188,38 @@ function AppShell() {
           header mảnh. Điều hướng chung nằm ở BottomTabBar nổi đáy. */}
       {!isMapPage && (
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card/80 px-4 backdrop-blur">
-          <div className="flex-1 text-sm text-muted-foreground">KGS — Nền tảng bất động sản</div>
-          <UserMenu />
+          {/* Tên sản phẩm là LỐI VỀ trang chủ, không phải một dòng chữ trang trí. Trước đây
+              nó là <div>: người dùng bấm theo phản xạ và không có gì xảy ra, mà từ các
+              trang nội bộ cũng không còn đường nào quay lại marketplace. */}
+          <Link to="/" className="text-sm font-semibold hover:underline">
+            KGS
+          </Link>
+          <span className="hidden text-sm text-muted-foreground sm:inline">
+            Nền tảng bất động sản
+          </span>
+          {/* Desktop không còn thanh nổi dưới đáy, nên điều hướng chính chuyển lên đây. */}
+          <nav className="ml-4 hidden items-center gap-1 md:flex" aria-label="Điều hướng">
+            {SHELL_NAV.map((n) => {
+              const active = pathname.startsWith(n.to);
+              return (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  aria-current={active ? "page" : undefined}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    active
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                  }`}
+                >
+                  {n.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="ml-auto flex items-center gap-2">
+            <UserMenu />
+          </div>
         </header>
       )}
       {!isMapPage && <EmailNotConfirmedBanner />}

@@ -112,7 +112,8 @@ export interface PublicListingDetailDto {
   amenities: string[];
   totalMonthlyCost: number;
   ownerName: string;
-  ownerPhone: string;
+  /** null khi người đăng chưa có số — đừng dựng `tel:` từ giá trị này khi nó rỗng. */
+  ownerPhone: string | null;
   ownerAvatarUrl: string | null;
   ownerJoinedAt: string;
   ownerActiveListingCount: number;

@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/profile")({
-  head: () => ({ meta: [{ title: "Hồ sơ cá nhân — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Hồ sơ cá nhân — KGS" }] }),
   component: ProfilePage,
 });
 

@@ -38,7 +38,7 @@ import {
  * Bản đồ vẫn còn nguyên, chỉ thôi làm khung xương chính — nay là một lối vào từ đây.
  */
 export const Route = createFileRoute("/quan-ly/")({
-  head: () => ({ meta: [{ title: "Bàn vận hành — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Bàn vận hành — KGS" }] }),
   component: OperationsDesk,
 });
 

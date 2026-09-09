@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TileLayer } from "react-leaflet";
 import { WifiOff } from "lucide-react";
 import { TILE_PROVIDERS } from "@/lib/mapTiles";
@@ -20,12 +20,37 @@ import { TILE_PROVIDERS } from "@/lib/mapTiles";
 /** Dưới ngưỡng này có thể chỉ là vài tile lẻ hỏng — chuyện bình thường, chưa đáng đổi nguồn. */
 const FAIL_THRESHOLD = 6;
 
+/**
+ * Chờ tối đa bấy nhiêu mili-giây cho tile ĐẦU TIÊN của một nguồn.
+ *
+ * Đếm lỗi chỉ bắt được kiểu hỏng có tiếng: máy chủ trả 404, tên miền không phân giải
+ * được, kết nối bị từ chối — mọi trường hợp đó Leaflet đều phát `tileerror`. Nhưng kiểu
+ * hỏng hay gặp nhất khi bị chặn ở tầng DNS hoặc tường lửa lại là kiểu KHÔNG có tiếng:
+ * yêu cầu treo, không lỗi, không xong. Khi ấy `tileerror` không bao giờ nổ, bộ đếm đứng
+ * yên ở 0, và người dùng ngồi nhìn một khung trắng vĩnh viễn — đúng cái tình trạng mà cả
+ * tệp này sinh ra để tránh.
+ */
+const FIRST_TILE_TIMEOUT_MS = 8_000;
+
 export function BaseTileLayer() {
   const [providerIndex, setProviderIndex] = useState(0);
   const failCount = useRef(0);
+  const loadedOnce = useRef(false);
 
   const exhausted = providerIndex >= TILE_PROVIDERS.length;
   const provider = TILE_PROVIDERS[Math.min(providerIndex, TILE_PROVIDERS.length - 1)];
+
+  // Mỗi lần đổi nguồn là một lần chờ mới.
+  useEffect(() => {
+    if (exhausted) return;
+    loadedOnce.current = false;
+    const timer = window.setTimeout(() => {
+      if (loadedOnce.current) return;
+      failCount.current = 0;
+      setProviderIndex((i) => i + 1);
+    }, FIRST_TILE_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [providerIndex, exhausted]);
 
   const handleError = () => {
     failCount.current += 1;
@@ -51,6 +76,7 @@ export function BaseTileLayer() {
           eventHandlers={{
             tileerror: handleError,
             tileload: () => {
+              loadedOnce.current = true;
               failCount.current = 0;
             },
           }}

@@ -58,7 +58,7 @@ import {
 import { Plus, Trash2, Bell, CircleCheck } from "lucide-react";
 
 export const Route = createFileRoute("/quan-ly/nhac-lich/")({
-  head: () => ({ meta: [{ title: "Nhắc lịch — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Nhắc lịch — KGS" }] }),
   component: RemindersPage,
 });
 

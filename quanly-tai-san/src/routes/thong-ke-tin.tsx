@@ -29,8 +29,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 
+/** Số tin dựng mỗi đợt trong bảng "Theo từng tin". */
+const LISTING_PAGE_SIZE = 15;
+
 export const Route = createFileRoute("/thong-ke-tin")({
-  head: () => ({ meta: [{ title: "Thống kê tin đăng — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Thống kê tin đăng — KGS" }] }),
   component: () => (
     <ProtectedRoute>
       <ListingAnalyticsPage />
@@ -105,6 +108,10 @@ function StatTile({
 
 function ListingAnalyticsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Người đăng nhiều tin có thể có hàng chục dòng ở đây. Dựng hết một lượt vừa tốn công
+  // dựng vừa buộc họ cuộn qua phần lớn thứ không cần — mà danh sách đã xếp theo lượt xem
+  // giảm dần, nên những tin đáng nhìn nhất đã nằm ở đầu.
+  const [listingLimit, setListingLimit] = useState(LISTING_PAGE_SIZE);
 
   const summary = useQuery({
     queryKey: ["analytics-summary"],
@@ -217,12 +224,18 @@ function ListingAnalyticsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
           <CardTitle className="text-base">Theo từng tin</CardTitle>
+          {/* Ba con số bên dưới trước đây chỉ có biểu tượng, mà biểu tượng thì lại
+              aria-hidden — người dùng phải đoán, còn trình đọc màn hình đọc ra "54 0 0".
+              Một dòng chú giải rẻ hơn nhiều so với ba nhãn lặp lại ở từng dòng. */}
+          <p className="text-xs text-muted-foreground">
+            Lượt xem · Yêu cầu xem nhà · Lượt lưu
+          </p>
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
-            {s.listings.map((row) => (
+            {s.listings.slice(0, listingLimit).map((row) => (
               <button
                 key={row.listingId}
                 type="button"
@@ -237,17 +250,20 @@ function ListingAnalyticsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{row.title}</p>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1" title="Lượt xem 30 ngày">
                         <Eye className="h-3 w-3" />
                         {row.views30Days}
+                        <span className="sr-only">lượt xem</span>
                       </span>
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1" title="Yêu cầu xem nhà">
                         <MessageSquare className="h-3 w-3" />
                         {row.inquiryCount}
+                        <span className="sr-only">yêu cầu xem nhà</span>
                       </span>
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1" title="Lượt lưu tin">
                         <Heart className="h-3 w-3" />
                         {row.savedCount}
+                        <span className="sr-only">lượt lưu</span>
                       </span>
                     </div>
                   </div>
@@ -261,6 +277,17 @@ function ListingAnalyticsPage() {
               </button>
             ))}
           </div>
+          {s.listings.length > listingLimit && (
+            <div className="border-t p-3 text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setListingLimit((n) => n + LISTING_PAGE_SIZE)}
+              >
+                Xem thêm ({s.listings.length - listingLimit} tin)
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

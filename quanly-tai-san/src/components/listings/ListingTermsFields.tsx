@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { cloneElement, isValidElement, useId, useState, type ReactElement } from "react";
 import { AMENITY_LIST, WATER_PRICING, type AmenityKey } from "@/constants/enums";
 import type { ListingTermsDto } from "@/lib/api/listings";
 import { Input } from "@/components/ui/input";
@@ -243,11 +243,20 @@ export function ListingTermsFields({
   );
 }
 
+/** Nhãn nối được với ô nhập bằng id sinh tự động — xem chú thích cùng tên ở dang-tin.tsx. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = useId();
+  const control =
+    isValidElement(children) && !(children.props as { id?: string }).id
+      ? cloneElement(children as ReactElement<{ id?: string }>, { id })
+      : children;
+
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      {children}
+      <Label className="text-xs text-muted-foreground" htmlFor={isValidElement(children) ? id : undefined}>
+        {label}
+      </Label>
+      {control}
     </div>
   );
 }
@@ -276,8 +285,11 @@ function TriState({
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <div className="inline-flex rounded-md border overflow-hidden">
+      {/* Đây là một NHÓM NÚT, không phải ô nhập — không có gì để htmlFor trỏ tới. Dùng
+          role="group" + aria-label để trình đọc màn hình vẫn biết ba nút này thuộc về
+          câu hỏi nào. */}
+      <span className="block text-xs text-muted-foreground">{label}</span>
+      <div className="inline-flex rounded-md border overflow-hidden" role="group" aria-label={label}>
         {opts.map(([text, v]) => (
           <button
             key={text}

@@ -296,7 +296,7 @@ namespace kgs_api.Services
                 // hiện trên trang khớp với thứ vừa ghi xuống.
                 listing.ViewCount + (isNewView ? 1 : 0), listing.PublishedAt,
                 ToTermsDto(listing.Terms), listing.Amenities, TotalMonthlyCost(listing),
-                owner.Name, owner.PhoneNumber ?? "Chưa cập nhật số điện thoại",
+                owner.Name, owner.PhoneNumber,
                 owner.AvatarUrl, owner.CreatedAt, ownerActiveCount);
         }
 

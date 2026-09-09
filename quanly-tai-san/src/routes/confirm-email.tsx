@@ -10,7 +10,7 @@ const searchSchema = z.object({ userId: z.string().optional(), token: z.string()
 
 export const Route = createFileRoute("/confirm-email")({
   validateSearch: (s) => searchSchema.parse(s),
-  head: () => ({ meta: [{ title: "Xác thực email — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Xác thực email — KGS" }] }),
   component: ConfirmEmailPage,
 });
 

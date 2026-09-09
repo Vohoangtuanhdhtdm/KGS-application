@@ -46,7 +46,7 @@ import { ClientMap } from "@/components/map/ClientMap";
 export const Route = createFileRoute("/quan-ly/tai-san/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } =>
     typeof s.tab === "string" ? { tab: s.tab } : {},
-  head: () => ({ meta: [{ title: "Chi tiết tài sản — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Chi tiết tài sản — KGS" }] }),
   component: AssetDetail,
 });
 

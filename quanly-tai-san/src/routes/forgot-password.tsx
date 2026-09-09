@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "Quên mật khẩu — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Quên mật khẩu — KGS" }] }),
   component: ForgotPasswordPage,
 });
 

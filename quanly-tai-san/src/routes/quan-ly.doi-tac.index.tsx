@@ -53,7 +53,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Phone, Mail, Pencil, Trash2, Users, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/quan-ly/doi-tac/")({
-  head: () => ({ meta: [{ title: "Sổ đối tác — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Sổ đối tác — KGS" }] }),
   component: ContactsPage,
 });
 

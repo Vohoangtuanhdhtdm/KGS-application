@@ -98,7 +98,10 @@ export function BottomTabBar() {
       <nav
         role="tablist"
         aria-label="Điều hướng chính"
-        className="bottom-tabbar fixed bottom-5 left-1/2 z-[900] flex -translate-x-1/2 items-center gap-1 px-2 py-2"
+        // md:hidden — trên desktop điều hướng nằm ở header. Một thanh nổi giữa đáy màn
+        // hình 1440px vừa che nội dung vừa buộc con trỏ đi hết chiều cao màn hình cho mỗi
+        // lần chuyển trang, trong khi dải header phía trên đang bỏ trống.
+        className="bottom-tabbar fixed bottom-5 left-1/2 z-[900] flex -translate-x-1/2 items-center gap-1 px-2 py-2 md:hidden"
       >
         {LEFT_TABS.map(renderTab)}
 

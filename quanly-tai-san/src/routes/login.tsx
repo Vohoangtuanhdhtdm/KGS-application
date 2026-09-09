@@ -11,11 +11,20 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoogleLoginSection } from "@/components/auth/GoogleLoginSection";
 
+/**
+ * Nơi người dùng đáp xuống sau khi đăng nhập/đăng ký mà không có ?redirect.
+ *
+ * Trước đây là "/quan-ly/ban-do" — bản đồ tài sản, tức khu quản lý thuộc Giai đoạn 4 đang
+ * bị ẩn khỏi giao diện. Người vừa tạo tài khoản để đi tìm nhà mở màn hình đầu tiên ra và
+ * gặp một sản phẩm khác hẳn thứ họ vừa đăng ký, lại là sản phẩm mà mọi lối ra đã bị gỡ.
+ */
+const AFTER_AUTH_PATH = "/";
+
 const searchSchema = z.object({ redirect: z.string().optional() });
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s) => searchSchema.parse(s),
-  head: () => ({ meta: [{ title: "Đăng nhập — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Đăng nhập — KGS" }] }),
   component: LoginPage,
 });
 
@@ -30,7 +39,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      navigate({ to: (redirect as string) || "/quan-ly/ban-do", replace: true });
+      navigate({ to: (redirect as string) || AFTER_AUTH_PATH, replace: true });
     }
   }, [authLoading, isAuthenticated, redirect, navigate]);
 
@@ -45,7 +54,7 @@ function LoginPage() {
     try {
       await login(email, password);
       toast.success("Đăng nhập thành công");
-      navigate({ to: (redirect as string) || "/quan-ly/ban-do", replace: true });
+      navigate({ to: (redirect as string) || AFTER_AUTH_PATH, replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.detail : "Đăng nhập thất bại.");
     } finally {
@@ -63,7 +72,12 @@ function LoginPage() {
             </div>
             <CardTitle>Đăng nhập</CardTitle>
           </div>
-          <p className="text-sm text-muted-foreground">Truy cập hệ thống Quản Lý Tài Sản.</p>
+          {/* Người dùng tới đây từ marketplace. Nói với họ rằng đây là "hệ thống Quản Lý
+              Tài Sản" là đổi tên sản phẩm ngay giữa luồng, đúng vào lúc họ đang cân nhắc
+              có giao email và mật khẩu hay không. */}
+          <p className="text-sm text-muted-foreground">
+            Đăng nhập để lưu tin, gửi yêu cầu xem nhà và đăng tin của bạn.
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
@@ -107,7 +121,7 @@ function LoginPage() {
             </div>
           </form>
           <GoogleLoginSection
-            onSuccess={() => navigate({ to: (redirect as string) || "/quan-ly/ban-do", replace: true })}
+            onSuccess={() => navigate({ to: (redirect as string) || AFTER_AUTH_PATH, replace: true })}
           />
         </CardContent>
       </Card>
