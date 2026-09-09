@@ -53,7 +53,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/quan-ly/hop-dong/moi")({
-  head: () => ({ meta: [{ title: "Tạo hợp đồng mới — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Tạo hợp đồng mới — KGS" }] }),
   validateSearch: searchSchema,
   component: NewContract,
 });

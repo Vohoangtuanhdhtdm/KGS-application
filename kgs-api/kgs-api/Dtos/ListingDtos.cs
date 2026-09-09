@@ -195,7 +195,11 @@ namespace kgs_api.Dtos
         // bên kia. Một cái tên trần trụi không nói được gì; "tham gia 8 tháng trước, đang có
         // 5 tin" thì nói được — và nó cũng làm tài khoản mở hôm qua để đăng tin ma trở nên
         // dễ nhận ra.
-        string OwnerName, string OwnerPhone,   // hiện trực tiếp theo quyết định đã chốt
+        string OwnerName,
+        // null = người đăng chưa có số điện thoại. Phải là null, KHÔNG phải một câu như
+        // "Chưa cập nhật số điện thoại": giao diện dựng href="tel:{giá trị}" từ trường này,
+        // nên một câu tiếng Việt ở đây sinh ra nút "Gọi" bấm vào không gọi được ai.
+        string? OwnerPhone,
         string? OwnerAvatarUrl,
         DateTime OwnerJoinedAt,
         int OwnerActiveListingCount);

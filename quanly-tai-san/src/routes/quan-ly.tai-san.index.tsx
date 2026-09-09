@@ -44,7 +44,7 @@ import { ClientMap } from "@/components/map/ClientMap";
 const DEFAULT_CENTER: [number, number] = [10.7769, 106.7009];
 
 export const Route = createFileRoute("/quan-ly/tai-san/")({
-  head: () => ({ meta: [{ title: "Danh sách tài sản — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Danh sách tài sản — KGS" }] }),
   component: AssetList,
 });
 

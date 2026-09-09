@@ -14,7 +14,7 @@ const searchSchema = z.object({ userId: z.string().optional(), token: z.string()
 
 export const Route = createFileRoute("/reset-password")({
   validateSearch: (s) => searchSchema.parse(s),
-  head: () => ({ meta: [{ title: "Đặt lại mật khẩu — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Đặt lại mật khẩu — KGS" }] }),
   component: ResetPasswordPage,
 });
 

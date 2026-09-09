@@ -62,7 +62,7 @@ export const Route = createFileRoute("/tin-dang/$slug")({
   },
 
   head: ({ loaderData: p }) => {
-    if (!p) return { meta: [{ title: "Chi tiết tin đăng — Marketplace" }] };
+    if (!p) return { meta: [{ title: "Chi tiết tin đăng — KGS" }] };
 
     const title = `${p.title} — ${p.district}, ${p.city}`;
     const description =
@@ -145,6 +145,7 @@ function PublicListingDetailPage() {
   const address = [p.addressDetail, p.ward, p.district, p.city].filter(Boolean).join(", ");
 
   const copyPhone = async () => {
+    if (!p.ownerPhone) return;
     try {
       await navigator.clipboard.writeText(p.ownerPhone);
       toast.success("Đã sao chép số điện thoại");
@@ -294,15 +295,24 @@ function PublicListingDetailPage() {
             <div className="text-xs text-muted-foreground">Liên hệ</div>
             <div className="text-sm font-medium truncate">{p.ownerName}</div>
           </div>
-          <Button variant="outline" size="icon" onClick={copyPhone} aria-label="Sao chép số">
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Button asChild>
-            <a href={`tel:${p.ownerPhone}`}>
-              <Phone className="h-4 w-4 mr-1.5" />
-              Gọi {p.ownerPhone}
-            </a>
-          </Button>
+          {p.ownerPhone ? (
+            <>
+              <Button variant="outline" size="icon" onClick={copyPhone} aria-label="Sao chép số">
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button asChild>
+                <a href={`tel:${p.ownerPhone}`}>
+                  <Phone className="h-4 w-4 mr-1.5" />
+                  Gọi {p.ownerPhone}
+                </a>
+              </Button>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground text-right">
+              Chưa có số điện thoại —<br />
+              gửi yêu cầu xem nhà ở trên
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -328,7 +338,7 @@ function ContactCard({
   children,
 }: {
   ownerName: string;
-  ownerPhone: string;
+  ownerPhone: string | null;
   avatarUrl: string | null;
   joinedAt: string;
   activeListingCount: number;
@@ -363,16 +373,28 @@ function ContactCard({
             {activeListingCount} tin đang đăng
           </span>
         </div>
-        <Button className="w-full text-base h-11" asChild>
-          <a href={`tel:${ownerPhone}`}>
-            <Phone className="h-4.5 w-4.5 mr-2" />
-            Gọi {ownerPhone}
-          </a>
-        </Button>
-        <Button variant="outline" className="w-full" onClick={onCopy}>
-          <Copy className="h-4 w-4 mr-2" />
-          Sao chép số điện thoại
-        </Button>
+        {/* Không có số thì KHÔNG dựng nút "Gọi". Một nút gọi bấm vào không quay được số
+            còn tệ hơn là không có nút: người tìm nhà bấm, máy không phản ứng, và họ kết
+            luận sản phẩm hỏng thay vì hiểu rằng người đăng chưa để lại số. */}
+        {ownerPhone ? (
+          <>
+            <Button className="w-full text-base h-11" asChild>
+              <a href={`tel:${ownerPhone}`}>
+                <Phone className="h-4.5 w-4.5 mr-2" />
+                Gọi {ownerPhone}
+              </a>
+            </Button>
+            <Button variant="outline" className="w-full" onClick={onCopy}>
+              <Copy className="h-4 w-4 mr-2" />
+              Sao chép số điện thoại
+            </Button>
+          </>
+        ) : (
+          <p className="rounded-md border border-dashed px-3 py-2.5 text-sm text-muted-foreground">
+            Người đăng chưa để lại số điện thoại. Hãy gửi yêu cầu xem nhà bên dưới — họ sẽ
+            nhận được thông tin liên hệ của bạn.
+          </p>
+        )}
         {children}
       </CardContent>
     </Card>

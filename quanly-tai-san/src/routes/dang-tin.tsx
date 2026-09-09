@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -535,6 +535,14 @@ function CreateListingPage() {
   );
 }
 
+/**
+ * Nhãn + ô nhập.
+ *
+ * Nhãn phải NỐI được với ô nhập, không chỉ nằm cạnh nó. Trước đây <Label> không có
+ * htmlFor và ô nhập không có id, nên bấm vào nhãn không đưa được con trỏ vào ô, và trình
+ * đọc màn hình đọc ra một ô "không tên". Ở đây sinh một id, gắn cho ô nhập bằng
+ * cloneElement rồi trỏ nhãn vào đó — chỗ dùng không phải thay đổi gì.
+ */
 function Field({
   label,
   hint,
@@ -544,11 +552,28 @@ function Field({
   hint?: string;
   children: React.ReactNode;
 }) {
+  const id = useId();
+  const hintId = hint ? `${id}-hint` : undefined;
+
+  // Chỉ gắn được id khi con là MỘT phần tử React. Nếu không phải, giữ nguyên hành vi cũ
+  // thay vì hỏng — nhãn vẫn hiện, chỉ là không nối được.
+  const control =
+    isValidElement(children) && !(children.props as { id?: string }).id
+      ? cloneElement(children as ReactElement<{ id?: string; "aria-describedby"?: string }>, {
+          id,
+          "aria-describedby": hintId,
+        })
+      : children;
+
   return (
     <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      <Label htmlFor={isValidElement(children) ? id : undefined}>{label}</Label>
+      {control}
+      {hint && (
+        <p id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

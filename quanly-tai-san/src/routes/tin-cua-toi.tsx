@@ -1,4 +1,6 @@
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -26,6 +28,7 @@ import {
   MoreHorizontal,
   Pencil,
   RotateCcw,
+  Search,
   Trash2,
   XCircle,
 } from "lucide-react";
@@ -36,8 +39,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+/** Số dòng dựng mỗi đợt. Đủ để lấp một màn hình mà không phải dựng cả trăm dòng một lúc. */
+const PAGE_SIZE = 20;
+
+/** Các trạng thái làm tab lọc, theo thứ tự việc-cần-làm chứ không theo thứ tự mã số. */
+const STATUS_TABS: { value: number | "all"; label: string }[] = [
+  { value: "all", label: "Tất cả" },
+  { value: 1, label: LISTING_STATUS[1] },
+  { value: 2, label: LISTING_STATUS[2] },
+  { value: 3, label: LISTING_STATUS[3] },
+  { value: 5, label: LISTING_STATUS[5] },
+  { value: 4, label: LISTING_STATUS[4] },
+];
+
 export const Route = createFileRoute("/tin-cua-toi")({
-  head: () => ({ meta: [{ title: "Tin đăng của tôi — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Tin đăng của tôi — KGS" }] }),
   component: MyListingsPage,
 });
 
@@ -118,7 +134,44 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
     retry: 1,
   });
 
-  const rows = query.data ?? [];
+  // `?? []` sinh một mảng MỚI mỗi lần render, nên nếu để trần thì hai useMemo bên dưới
+  // tính lại mọi lần dù dữ liệu không đổi. Bọc lại để tham chiếu ổn định.
+  const all = useMemo(() => query.data ?? [], [query.data]);
+
+  /**
+   * Lọc theo trạng thái + tìm theo tiêu đề, và chỉ dựng dần từng đợt.
+   *
+   * Một người đăng nhiều tin — trong dữ liệu thử nghiệm là 68 — thì bảng không lọc trở
+   * thành một bức tường: câu hỏi thật của họ luôn là "tin nào đang chờ duyệt", "tin nào
+   * bị từ chối", chứ không phải "cho tôi xem tất cả". Trạng thái là trục phân loại đúng
+   * vì nó quyết định việc cần làm tiếp theo.
+   */
+  const [statusFilter, setStatusFilter] = useState<number | "all">("all");
+  const [keyword, setKeyword] = useState("");
+  const [limit, setLimit] = useState(PAGE_SIZE);
+
+  const counts = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const l of all) m.set(l.status, (m.get(l.status) ?? 0) + 1);
+    return m;
+  }, [all]);
+
+  const rows = useMemo(() => {
+    const kw = keyword.trim().toLowerCase();
+    return all.filter(
+      (l) =>
+        (statusFilter === "all" || l.status === statusFilter) &&
+        (kw === "" || l.title.toLowerCase().includes(kw)),
+    );
+  }, [all, statusFilter, keyword]);
+
+  // Đổi bộ lọc thì quay về đợt đầu — giữ nguyên limit cũ sẽ hiện một danh sách dài bất
+  // thường ngay sau khi người dùng vừa thu hẹp phạm vi, tức là ngược với ý định của họ.
+  useEffect(() => {
+    setLimit(PAGE_SIZE);
+  }, [statusFilter, keyword]);
+
+  const visible = rows.slice(0, limit);
 
   const openListing = (l: OwnerListingDto) => {
     // Chỉ tin đã duyệt mới có trang công khai; tin khác không điều hướng
@@ -142,6 +195,38 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
         </Button>
       </div>
 
+      {all.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex flex-wrap gap-1 rounded-md border p-0.5">
+            {STATUS_TABS.map((t) => {
+              const n = t.value === "all" ? all.length : (counts.get(t.value as number) ?? 0);
+              return (
+                <Button
+                  key={String(t.value)}
+                  size="sm"
+                  variant={statusFilter === t.value ? "default" : "ghost"}
+                  className="h-8 rounded-sm"
+                  onClick={() => setStatusFilter(t.value)}
+                >
+                  {t.label}
+                  <span className="ml-1.5 text-xs opacity-70 tabular-nums">{n}</span>
+                </Button>
+              );
+            })}
+          </div>
+          <div className="relative min-w-[200px] flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Tìm trong tin của bạn"
+              aria-label="Tìm trong tin đăng của bạn"
+              className="h-8 pl-8"
+            />
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           {query.isLoading ? (
@@ -154,12 +239,28 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
             <div className="py-10 text-center text-sm text-destructive">
               {getErrorMessage(query.error, "Không tải được danh sách tin đăng")}
             </div>
-          ) : rows.length === 0 ? (
+          ) : all.length === 0 ? (
             <div className="py-14 text-center text-sm text-muted-foreground space-y-3">
               <Megaphone className="h-10 w-10 mx-auto text-muted-foreground/40" />
               <p>Bạn chưa đăng tin nào.</p>
               <Button asChild>
                 <Link to="/dang-tin">Đăng tin đầu tiên</Link>
+              </Button>
+            </div>
+          ) : rows.length === 0 ? (
+            // Trống vì bộ lọc, không phải vì chưa có tin — hai chuyện khác nhau và cần
+            // hai câu trả lời khác nhau, kèm lối thoát.
+            <div className="py-14 text-center text-sm text-muted-foreground space-y-3">
+              <p>Không có tin nào khớp bộ lọc hiện tại.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setKeyword("");
+                }}
+              >
+                Xoá bộ lọc
               </Button>
             </div>
           ) : (
@@ -178,7 +279,7 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((l) => {
+                  {visible.map((l) => {
                     const approved = l.status === 2;
                     const row = (
                       <TableRow
@@ -234,6 +335,13 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                 </TableBody>
               </Table>
             </TooltipProvider>
+          )}
+          {rows.length > visible.length && (
+            <div className="border-t p-3 text-center">
+              <Button variant="outline" size="sm" onClick={() => setLimit((n) => n + PAGE_SIZE)}>
+                Xem thêm ({rows.length - visible.length} tin)
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

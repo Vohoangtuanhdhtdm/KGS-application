@@ -38,7 +38,7 @@ import {
 } from "@/components/assets/AssetSpecsFields";
 
 export const Route = createFileRoute("/quan-ly/tai-san/$id_/sua")({
-  head: () => ({ meta: [{ title: "Sửa tài sản — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Sửa tài sản — KGS" }] }),
   component: EditAsset,
 });
 

@@ -66,7 +66,7 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/tin-dang/")({
-  head: () => ({ meta: [{ title: "Tin đăng bất động sản — Marketplace" }] }),
+  head: () => ({ meta: [{ title: "Tin đăng bất động sản — KGS" }] }),
   component: PublicListingsPage,
 });
 
@@ -878,6 +878,12 @@ function PublicListingsPage() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <PublicHeader />
+
+      {/* Trang này là bố cục ứng dụng chiếm trọn màn hình nên không có chỗ cho một tiêu đề
+          nhìn thấy được. Nhưng trang vẫn cần đúng một h1: trình đọc màn hình dùng nó để
+          trả lời "tôi đang ở đâu", và công cụ tìm kiếm dùng nó để hiểu trang nói về gì.
+          Ẩn về mặt thị giác, không ẩn về mặt ngữ nghĩa. */}
+      <h1 className="sr-only">Tìm kiếm nhà trọ, phòng cho thuê và bất động sản</h1>
 
       {/* ---- Desktop & Tablet: filter chips sticky ngay dưới header ---- */}
       {viewportKind !== "mobile" && (

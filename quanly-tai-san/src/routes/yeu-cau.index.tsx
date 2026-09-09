@@ -16,9 +16,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarClock, Inbox, Mail, Phone, Send, UserPlus } from "lucide-react";
+import { ENABLE_ASSET_MANAGEMENT } from "@/lib/features";
 
 export const Route = createFileRoute("/yeu-cau/")({
-  head: () => ({ meta: [{ title: "Yêu cầu xem nhà — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Yêu cầu xem nhà — KGS" }] }),
   component: InquiriesPage,
 });
 
@@ -224,7 +225,10 @@ function InquiryCard({
               </Button>
             </>
           )}
-          {converted && (
+          {/* Lối vào khu quản lý tài sản (Giai đoạn 4). Khu đó đang bị ẩn khỏi giao diện ở
+              Giai đoạn 1, nên lối vào này cũng phải ẩn theo — nếu không, người dùng bấm
+              vào và rơi thẳng vào một sản phẩm khác mà mọi lối ra đều đã bị gỡ. */}
+          {converted && ENABLE_ASSET_MANAGEMENT && (
             <Link
               to="/quan-ly/hop-dong/moi"
               search={{ counterpartyId: q.convertedContactPartyId! }}
@@ -233,6 +237,12 @@ function InquiryCard({
               <UserPlus className="h-4 w-4" />
               Tạo hợp đồng với khách này
             </Link>
+          )}
+          {converted && !ENABLE_ASSET_MANAGEMENT && (
+            <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+              <UserPlus className="h-4 w-4" />
+              Đã chuyển thành khách thuê
+            </span>
           )}
         </div>
 

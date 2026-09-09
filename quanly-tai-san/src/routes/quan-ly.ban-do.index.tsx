@@ -22,7 +22,7 @@ export const Route = createFileRoute("/quan-ly/ban-do/")({
   // giữ nguyên vị trí/zoom; Back của trình duyệt bỏ param này nên tự đóng sheet.
   validateSearch: (s: Record<string, unknown>): { sheet?: string } =>
     typeof s.sheet === "string" && SHEET_KEYS.includes(s.sheet) ? { sheet: s.sheet } : {},
-  head: () => ({ meta: [{ title: "Bản đồ tài sản — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Bản đồ tài sản — KGS" }] }),
   component: AssetMapDashboard,
 });
 

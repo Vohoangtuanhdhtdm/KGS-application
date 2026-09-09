@@ -26,7 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, AlertTriangle, FileText, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/quan-ly/hop-dong/")({
-  head: () => ({ meta: [{ title: "Quản lý hợp đồng — Quản Lý Tài Sản" }] }),
+  head: () => ({ meta: [{ title: "Quản lý hợp đồng — KGS" }] }),
   component: ContractListPage,
 });
 
