@@ -255,6 +255,13 @@ export const LISTING_SORT = {
 } as const;
 export type ListingSortCode = keyof typeof LISTING_SORT;
 
+export interface ListingAreaDto {
+  city: string;
+  district: string;
+  /** Số tin đang hiển thị ở khu vực này. */
+  count: number;
+}
+
 export interface PublicListingFilters {
   type?: ListingTypeCode | "";
   city?: string;
@@ -343,6 +350,9 @@ export const listingsApi = {
       `/listings/search${toQuery({ ...f, page: f.page ?? 1, pageSize: f.pageSize ?? 12 })}`,
       { skipAuth: true },
     ),
+  /** Các khu vực đang có tin, để ô tìm khu vực gợi ý. Danh sách nhỏ, tải một lần rồi lọc tại chỗ. */
+  areas: (type?: ListingTypeCode) =>
+    api<ListingAreaDto[]>(`/listings/areas${toQuery({ type })}`, { skipAuth: true }),
   detail: (slug: string) => api<PublicListingDetailDto>(`/listings/${slug}`, { skipAuth: true }),
   related: (slug: string) =>
     api<RelatedListingsDto>(`/listings/${slug}/related`, { skipAuth: true }),

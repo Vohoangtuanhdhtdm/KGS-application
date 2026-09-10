@@ -31,7 +31,6 @@ export interface DemandSearchResult {
   priceMax: number | null;
   bedroomsMin: number | null;
   location:
-    | { kind: "address"; query: string }
     | { kind: "district"; city: string; district: string }
     | { kind: "myLocation"; radiusKm: number }
     | null;
@@ -57,7 +56,7 @@ const RENT_PRICE_CHIPS: PriceChip[] = [
   { label: "Trên 20 triệu", min: 20_000_000, max: null },
 ];
 
-type LocationMode = "" | "address" | "district" | "myLocation";
+type LocationMode = "" | "district" | "myLocation";
 
 interface DemandSearchSheetProps {
   open: boolean;
@@ -84,7 +83,6 @@ export function DemandSearchSheet({
   const [activeChipIndex, setActiveChipIndex] = useState<number | null>(null);
   const [bedroomsMin, setBedroomsMin] = useState<number | null>(null);
   const [locationMode, setLocationMode] = useState<LocationMode>("");
-  const [addressInput, setAddressInput] = useState("");
   const [provinceCode, setProvinceCode] = useState("");
   const [districtCode, setDistrictCode] = useState("");
   const [radiusKmInput, setRadiusKmInput] = useState("5");
@@ -115,10 +113,7 @@ export function DemandSearchSheet({
   const handleSubmit = () => {
     let location: DemandSearchResult["location"] = null;
 
-    if (locationMode === "address") {
-      const query = addressInput.trim();
-      if (query) location = { kind: "address", query };
-    } else if (locationMode === "district") {
+    if (locationMode === "district") {
       const cityName = provinces.find((p) => p.code === provinceCode)?.name;
       const districtName = districts.find((d) => d.code === districtCode)?.name;
       if (cityName && districtName)
@@ -261,21 +256,10 @@ export function DemandSearchSheet({
               onValueChange={(v) => setLocationMode(v as LocationMode)}
               className="gap-3"
             >
-              <div className="flex items-start gap-2">
-                <RadioGroupItem value="address" id="demand-loc-address" className="mt-0.5" />
-                <div className="flex-1 space-y-1.5">
-                  <Label htmlFor="demand-loc-address" className="font-normal cursor-pointer">
-                    Nhập địa chỉ/khu vực
-                  </Label>
-                  {locationMode === "address" && (
-                    <Input
-                      placeholder="VD: Quận 7, TP.HCM"
-                      value={addressInput}
-                      onChange={(e) => setAddressInput(e.target.value)}
-                    />
-                  )}
-                </div>
-              </div>
+              {/* Lựa chọn "Nhập địa chỉ/khu vực" đã gỡ: nó gõ tự do rồi nhờ Nominatim
+                  (OpenStreetMap) đổi ra toạ độ. Chọn thẳng Quận/Huyện từ danh sách hành
+                  chính có sẵn trong máy vừa nhanh hơn, vừa không phụ thuộc dịch vụ ngoài,
+                  vừa trả về đúng tên đang lưu trong cơ sở dữ liệu. */}
 
               <div className="flex items-start gap-2">
                 <RadioGroupItem value="district" id="demand-loc-district" className="mt-0.5" />

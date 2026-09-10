@@ -204,6 +204,13 @@ namespace kgs_api.Dtos
         DateTime OwnerJoinedAt,
         int OwnerActiveListingCount);
 
+    /// <summary>Một khu vực đang có tin đăng, dùng cho ô gợi ý tìm khu vực.
+    ///
+    /// <paramref name="Count"/> có mặt để xếp khu vực nhiều tin lên trước và để hiện ngay
+    /// cho người dùng biết chọn vào đó thì có bao nhiêu tin — thứ mà một danh mục hành
+    /// chính thuần tuý không nói được.</summary>
+    public sealed record ListingAreaDto(string City, string District, int Count);
+
     /// <summary>Hai dải tin gợi ý dưới trang chi tiết, gộp trong một lần gọi.
     ///
     /// Tách thành hai endpoint thì trang chi tiết phải chờ hai vòng mạng cho phần nằm dưới
