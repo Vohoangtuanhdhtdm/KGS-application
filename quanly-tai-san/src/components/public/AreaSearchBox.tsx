@@ -210,7 +210,7 @@ export function AreaSearchBox({
         aria-autocomplete="list"
         aria-label="Tìm theo tỉnh/thành hoặc quận/huyện"
         placeholder="Tỉnh/thành hoặc quận/huyện"
-        className="pl-9 pr-8 h-8"
+        className="pl-9 pr-8 h-9"
         value={dangGo ? q : nhanDangChon}
         onChange={(e) => {
           setDangGo(true);
