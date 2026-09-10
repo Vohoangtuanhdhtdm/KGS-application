@@ -47,44 +47,77 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-price: var(--price);
+  --color-price-foreground: var(--price-foreground);
+  --color-price-soft: var(--price-soft);
+
+  /* Be Vietnam Pro thay Inter: bộ chữ thiết kế riêng cho tiếng Việt. Ở cỡ tiêu đề lớn,
+     Inter dựng dấu bằng cách chồng lên thân chữ nên "ườ", "ẫ", "ặ" bị chật; Be Vietnam Pro
+     vẽ sẵn từng tổ hợp dấu. Sản phẩm này toàn tiếng Việt nên đó không phải chi tiết nhỏ. */
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  /* Số liệu (giá, diện tích, lượt xem) dùng chữ đều chiều rộng để cột số thẳng hàng. */
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
 
 :root {
-  --radius: 0.5rem;
-  /* Neutrals */
-  --background: oklch(0.985 0.003 250);
-  --foreground: oklch(0.2 0.03 250);
+  --radius: 0.625rem;
+
+  /* ---------------------------------------------------------------------------
+     Bảng màu — hướng "sạch, hiện đại, ảnh dẫn dắt".
+     Mọi giá trị đã kiểm tương phản WCAG AA cho các cặp chữ/nền thật sự dùng tới.
+
+     Dải trung tính lệch ẤM (hue ~91) thay vì lệch xanh (hue 250) như trước. Lý do:
+     sản phẩm này trưng ảnh nội thất, mà nền lạnh kéo tông da và gỗ trong ảnh ngả xám.
+     Nền giấy ấm để ảnh giữ đúng màu của nó.
+
+     Ba màu nhấn, mỗi màu MỘT việc — không màu nào dùng để trang trí:
+       primary (navy)  = hành động
+       price   (lục)   = giá và chi phí, thứ sản phẩm này bán sự minh bạch
+       warning (hổ phách) = cần chú ý
+     --------------------------------------------------------------------------- */
+
+  /* Trung tính ấm */
+  --background: oklch(0.985 0.004 91.4);
+  --foreground: oklch(0.209 0.010 268.2);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.03 250);
+  --card-foreground: oklch(0.209 0.010 268.2);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.03 250);
-  /* Navy primary */
-  --primary: oklch(0.32 0.07 250);
-  --primary-foreground: oklch(0.985 0.003 250);
-  --secondary: oklch(0.955 0.008 250);
-  --secondary-foreground: oklch(0.28 0.05 250);
-  --muted: oklch(0.955 0.008 250);
-  --muted-foreground: oklch(0.52 0.02 250);
-  --accent: oklch(0.94 0.02 220);
-  --accent-foreground: oklch(0.28 0.05 250);
-  /* Semantic */
-  --destructive: oklch(0.58 0.22 27);
-  --destructive-foreground: oklch(0.99 0.003 250);
-  --success: oklch(0.55 0.14 155);
-  --success-foreground: oklch(0.99 0.003 250);
-  --warning: oklch(0.72 0.16 70);
-  --warning-foreground: oklch(0.22 0.05 60);
-  --info: oklch(0.62 0.13 235);
-  --info-foreground: oklch(0.99 0.003 250);
-  --border: oklch(0.9 0.012 250);
-  --input: oklch(0.9 0.012 250);
-  --ring: oklch(0.32 0.07 250);
-  --chart-1: oklch(0.45 0.13 250);
-  --chart-2: oklch(0.55 0.14 155);
-  --chart-3: oklch(0.72 0.16 70);
-  --chart-4: oklch(0.58 0.22 27);
-  --chart-5: oklch(0.62 0.13 235);
+  --popover-foreground: oklch(0.209 0.010 268.2);
+  --secondary: oklch(0.961 0.005 95.1);
+  --secondary-foreground: oklch(0.209 0.010 268.2);
+  --muted: oklch(0.961 0.005 95.1);
+  --muted-foreground: oklch(0.460 0.012 267.3);
+  --accent: oklch(0.961 0.005 95.1);
+  --accent-foreground: oklch(0.209 0.010 268.2);
+  --border: oklch(0.913 0.008 91.5);
+  --input: oklch(0.913 0.008 91.5);
+
+  /* Navy — màu của sản phẩm, giữ nguyên */
+  --primary: oklch(0.302 0.103 272.1);
+  --primary-foreground: oklch(0.985 0.004 91.4);
+  --ring: oklch(0.302 0.103 272.1);
+
+  /* Giá và chi phí */
+  --price: oklch(0.487 0.092 171.5);
+  --price-foreground: oklch(0.985 0.004 91.4);
+  --price-soft: oklch(0.944 0.016 177.1);
+
+  /* Ngữ nghĩa */
+  --destructive: oklch(0.501 0.178 28.7);
+  --destructive-foreground: oklch(0.985 0.004 91.4);
+  --success: oklch(0.487 0.092 171.5);
+  --success-foreground: oklch(0.985 0.004 91.4);
+  --warning: oklch(0.531 0.115 69.7);
+  --warning-foreground: oklch(0.985 0.004 91.4);
+  --info: oklch(0.302 0.103 272.1);
+  --info-foreground: oklch(0.985 0.004 91.4);
+
+  --chart-1: oklch(0.302 0.103 272.1);
+  --chart-2: oklch(0.487 0.092 171.5);
+  --chart-3: oklch(0.531 0.115 69.7);
+  --chart-4: oklch(0.501 0.178 28.7);
+  --chart-5: oklch(0.643 0.011 267.3);
+
   /* Sidebar */
   --sidebar: oklch(0.24 0.045 250);
   --sidebar-foreground: oklch(0.92 0.01 250);
@@ -94,47 +127,76 @@
   --sidebar-accent-foreground: oklch(0.99 0.003 250);
   --sidebar-border: oklch(0.32 0.05 250);
   --sidebar-ring: oklch(0.62 0.13 235);
+
+  /* ---------------------------------------------------------------------------
+     Đổ bóng. Hướng này dựa vào ảnh và khoảng trống để phân lớp, không dựa vào bóng —
+     nên thang bóng ngắn và nhẹ. Trước đây mọi thẻ đều mang cùng một bóng, khiến không
+     thứ gì nổi lên vì tất cả cùng nổi.
+     --------------------------------------------------------------------------- */
+  --shadow-e1: 0 1px 2px oklch(0.209 0.010 268.2 / 0.05);
+  --shadow-e2: 0 2px 8px -2px oklch(0.209 0.010 268.2 / 0.08);
+  --shadow-e3: 0 12px 32px -12px oklch(0.209 0.010 268.2 / 0.18);
+
+  /* Chuyển động — một thang duy nhất để mọi tương tác cảm giác cùng một sản phẩm. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
 }
 
 .dark {
-  --background: oklch(0.16 0.03 250);
-  --foreground: oklch(0.96 0.005 250);
-  --card: oklch(0.22 0.035 250);
-  --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.22 0.035 250);
-  --popover-foreground: oklch(0.96 0.005 250);
-  --primary: oklch(0.75 0.1 235);
-  --primary-foreground: oklch(0.18 0.04 250);
-  --secondary: oklch(0.28 0.04 250);
-  --secondary-foreground: oklch(0.96 0.005 250);
-  --muted: oklch(0.28 0.04 250);
-  --muted-foreground: oklch(0.72 0.02 250);
-  --accent: oklch(0.3 0.05 250);
-  --accent-foreground: oklch(0.96 0.005 250);
-  --destructive: oklch(0.65 0.2 27);
-  --destructive-foreground: oklch(0.99 0.003 250);
-  --success: oklch(0.65 0.14 155);
-  --success-foreground: oklch(0.99 0.003 250);
-  --warning: oklch(0.78 0.16 70);
-  --warning-foreground: oklch(0.2 0.04 60);
-  --info: oklch(0.7 0.13 235);
-  --info-foreground: oklch(0.18 0.04 250);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.75 0.1 235);
-  --chart-1: oklch(0.7 0.14 250);
-  --chart-2: oklch(0.7 0.14 155);
-  --chart-3: oklch(0.8 0.16 70);
-  --chart-4: oklch(0.68 0.2 27);
-  --chart-5: oklch(0.72 0.13 235);
-  --sidebar: oklch(0.2 0.04 250);
-  --sidebar-foreground: oklch(0.94 0.01 250);
-  --sidebar-primary: oklch(0.72 0.13 235);
-  --sidebar-primary-foreground: oklch(0.99 0.003 250);
-  --sidebar-accent: oklch(0.28 0.05 250);
-  --sidebar-accent-foreground: oklch(0.99 0.003 250);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.13 235);
+  /* Bản tối dựng lại theo đúng ba vai trò màu của bản sáng, không phải đảo ngược máy móc.
+     Nền tối vẫn giữ chút ấm để ảnh nội thất không bị ngả xanh. */
+  --background: oklch(0.191 0.006 271.1);
+  --foreground: oklch(0.940 0.005 95.1);
+  --card: oklch(0.222 0.008 264.4);
+  --card-foreground: oklch(0.940 0.005 95.1);
+  --popover: oklch(0.222 0.008 264.4);
+  --popover-foreground: oklch(0.940 0.005 95.1);
+  --secondary: oklch(0.256 0.010 268.3);
+  --secondary-foreground: oklch(0.940 0.005 95.1);
+  --muted: oklch(0.256 0.010 268.3);
+  --muted-foreground: oklch(0.731 0.011 267.3);
+  --accent: oklch(0.256 0.010 268.3);
+  --accent-foreground: oklch(0.940 0.005 95.1);
+  --border: oklch(0.297 0.012 264.4);
+  --input: oklch(0.297 0.012 264.4);
+
+  /* Navy nâng sáng để đọc được trên nền tối — vẫn là navy, không đổi sang xanh dương khác. */
+  --primary: oklch(0.787 0.087 274.1);
+  --primary-foreground: oklch(0.191 0.006 271.1);
+  --ring: oklch(0.787 0.087 274.1);
+
+  --price: oklch(0.779 0.115 172.9);
+  --price-foreground: oklch(0.191 0.006 271.1);
+  --price-soft: oklch(0.258 0.035 163.9);
+
+  --destructive: oklch(0.710 0.153 26.9);
+  --destructive-foreground: oklch(0.191 0.006 271.1);
+  --success: oklch(0.779 0.115 172.9);
+  --success-foreground: oklch(0.191 0.006 271.1);
+  --warning: oklch(0.776 0.117 77.0);
+  --warning-foreground: oklch(0.191 0.006 271.1);
+  --info: oklch(0.787 0.087 274.1);
+  --info-foreground: oklch(0.191 0.006 271.1);
+
+  --chart-1: oklch(0.787 0.087 274.1);
+  --chart-2: oklch(0.779 0.115 172.9);
+  --chart-3: oklch(0.776 0.117 77.0);
+  --chart-4: oklch(0.710 0.153 26.9);
+  --chart-5: oklch(0.576 0.011 267.3);
+
+  --sidebar: oklch(0.191 0.006 271.1);
+  --sidebar-foreground: oklch(0.940 0.005 95.1);
+  --sidebar-primary: oklch(0.787 0.087 274.1);
+  --sidebar-primary-foreground: oklch(0.191 0.006 271.1);
+  --sidebar-accent: oklch(0.256 0.010 268.3);
+  --sidebar-accent-foreground: oklch(0.940 0.005 95.1);
+  --sidebar-border: oklch(0.297 0.012 264.4);
+  --sidebar-ring: oklch(0.787 0.087 274.1);
+
+  --shadow-e1: 0 1px 2px oklch(0 0 0 / 0.4);
+  --shadow-e2: 0 2px 8px -2px oklch(0 0 0 / 0.5);
+  --shadow-e3: 0 12px 32px -12px oklch(0 0 0 / 0.7);
 }
 
 @layer base {
@@ -147,11 +209,38 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+  /* Thang tracking theo cỡ chữ.
+     Một giá trị letter-spacing duy nhất cho mọi cấp tiêu đề là sai về mặt thị giác: chữ
+     càng lớn thì khoảng cách giữa các ký tự càng trông rộng ra, nên cỡ lớn phải siết vào
+     nhiều hơn. Trước đây h1 và h4 dùng chung -0.01em, khiến h1 trông rời rạc. */
+  h1 {
+    letter-spacing: -0.032em;
+    line-height: 1.1;
+  }
+  h2 {
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+  }
+  h3 {
+    letter-spacing: -0.014em;
+  }
+  h4 {
+    letter-spacing: -0.008em;
+  }
   h1,
   h2,
   h3,
   h4 {
-    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  /* Số liệu thẳng hàng. Giá, diện tích, lượt xem nằm chồng nhau theo cột ở khắp sản phẩm;
+     chữ số có bề rộng thay đổi làm các cột đó răng cưa. */
+  th,
+  td,
+  time,
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 

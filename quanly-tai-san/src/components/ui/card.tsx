@@ -2,11 +2,19 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Thẻ.
+ *
+ * Bỏ `shadow` mặc định. Trước đây MỌI thẻ trong sản phẩm đều mang cùng một bóng — khối
+ * tính năng ở trang chủ, thẻ tin đăng, thẻ liên hệ, khung biểu đồ — nên mắt không có manh
+ * mối nào để biết nhìn đâu trước. Viền một nét đủ để tách thẻ khỏi nền; chỗ nào thật sự
+ * cần nổi lên thì tự thêm `shadow-[--shadow-e2]` tại chỗ đó, và vì hiếm nên nó có tác dụng.
+ */
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+      className={cn("rounded-xl border bg-card text-card-foreground", className)}
       {...props}
     />
   ),

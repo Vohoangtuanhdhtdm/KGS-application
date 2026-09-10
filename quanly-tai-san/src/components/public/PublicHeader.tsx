@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Building, Heart, LogIn, Plus, Search, User } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/layout/UserMenu";
 
 /**
  * Header riêng cho trang marketplace công khai — không có user menu nội bộ.
@@ -65,12 +66,18 @@ export function PublicHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           {isAuthenticated ? (
-            <Button size="sm" asChild>
-              <Link to="/dang-tin">
-                <Plus className="h-4 w-4 mr-1.5" />
-                Đăng tin
-              </Link>
-            </Button>
+            <>
+              <Button size="sm" asChild>
+                <Link to="/dang-tin">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Đăng tin
+                </Link>
+              </Button>
+              {/* Menu tài khoản. Thiếu nó thì trang công khai trên desktop không có lối
+                  nào tới hồ sơ, đăng xuất hay khu quản trị — vì thanh nổi dưới đáy (nơi
+                  chứa sheet Tài khoản) đã bị ẩn từ md trở lên. */}
+              <UserMenu />
+            </>
           ) : (
             <Button size="sm" asChild>
               <Link to="/login">

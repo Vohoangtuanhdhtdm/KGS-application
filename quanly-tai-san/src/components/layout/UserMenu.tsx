@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, User, KeyRound, ShieldCheck } from "lucide-react";
+import { Flag, KeyRound, LogOut, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import {
   DropdownMenu,
@@ -68,6 +68,31 @@ export function UserMenu({ compact = false }: { compact?: boolean } = {}) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+
+        {/* Khu quản trị.
+            Trước đây menu này chỉ gắn một huy hiệu "Admin" rồi thôi — nói với người dùng
+            rằng họ có quyền, nhưng không cho họ đường nào để dùng quyền đó. Hai màn hình
+            duyệt tin và xử lý báo vi phạm chỉ vào được qua sheet Tài khoản ở thanh nổi
+            dưới đáy, mà thanh đó đã bị ẩn từ md trở lên — nên trên desktop khu quản trị
+            hoàn toàn không có lối vào. */}
+        {isAdmin && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/listings">
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Duyệt tin đăng
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/reports">
+                <Flag className="mr-2 h-4 w-4" />
+                Báo vi phạm
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
         <DropdownMenuItem asChild>
           <Link to="/profile">
             <User className="mr-2 h-4 w-4" />
