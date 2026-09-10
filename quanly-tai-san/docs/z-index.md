@@ -42,6 +42,13 @@ này so sánh được trực tiếp với nhau.
 | 920  | Sheet tính năng            | `FeatureSheet.tsx`                       |
 | 950  | Sheet "Thêm"               | `MoreSheet.tsx`                          |
 | 1000 | Dialog chi tiết tài sản    | `AssetDetailDialog.tsx`                  |
+| 1100 | Lớp nổi Radix (Select, Popover, DropdownMenu, Tooltip) | `[data-radix-popper-content-wrapper]` — `styles.css` |
+
+Vì sao lớp Radix nằm trên cùng ở 1100: nó không phải một màn hình mà là **lớp phụ của một
+điều khiển** — danh sách xổ ra từ một ô `<Select>`, nội dung của một `<Popover>`. Nó luôn
+phải nổi trên chính cái đang chứa nó, kể cả khi cái đó là dialog cao nhất trong thang.
+shadcn đặt sẵn cho nhóm này `z-index: 50`, thấp hơn mọi số ở trên, nên mở một `<Select>`
+bên trong bất kỳ modal nào cũng bị lớp phủ nuốt.
 
 Vì sao có khoảng trống lớn giữa 20 và 840: nhóm 840–850 phải nằm trên bản đồ nhưng **dưới**
 thanh nổi và thanh tab, để lúc thẻ xem nhanh đang mở người dùng vẫn tìm kiếm/chuyển tab
