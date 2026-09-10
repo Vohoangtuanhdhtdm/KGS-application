@@ -60,5 +60,8 @@ namespace kgs_api.Interfaces
 
         /// <summary>Các khu vực đang có tin hiển thị, kèm số tin, để gợi ý ô tìm khu vực.</summary>
         Task<IReadOnlyList<ListingAreaDto>> GetAreasAsync(ListingType? type, CancellationToken ct = default);
+
+        /// <summary>Lịch sử kiểm duyệt tin của chính chủ tin (không lộ danh tính người duyệt).</summary>
+        Task<IReadOnlyList<ModerationEventDto>> GetModerationHistoryAsync(Guid listingId, CancellationToken ct = default);
     }
 }

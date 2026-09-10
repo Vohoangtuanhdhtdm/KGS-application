@@ -10,7 +10,15 @@ import {
   type ListingTermsDto,
 } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
-import { ASSET_TYPE, PAYMENT_CYCLE, enumOptions, type PaymentCycleCode } from "@/constants/enums";
+import {
+  ASSET_TYPE,
+  MODERATION_ACTION,
+  MODERATION_REASON,
+  PAYMENT_CYCLE,
+  enumOptions,
+  type PaymentCycleCode,
+} from "@/constants/enums";
+import { formatDateTime } from "@/lib/format";
 import { ListingTermsFields } from "@/components/listings/ListingTermsFields";
 import { VietnamAddressPicker } from "@/components/assets/VietnamAddressPicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
@@ -337,17 +345,38 @@ function CreateListingPage() {
         </div>
       </div>
 
-      {/* Tin bị từ chối: lý do phải hiện ngay đầu trang, cạnh chỗ sửa. Đặt nó ở màn
-          hình khác đồng nghĩa với việc người dùng sửa mà không nhớ mình sai gì. */}
-      {status === 3 && moderationNote && (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 flex gap-3">
-          <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium">Tin đã bị từ chối</p>
-            <p className="text-sm text-muted-foreground">{moderationNote}</p>
+      {/* Kết quả kiểm duyệt: phải hiện ngay đầu trang, cạnh chỗ sửa. Đặt nó ở màn hình
+          khác đồng nghĩa với việc người dùng sửa mà không nhớ mình sai gì. */}
+      {(status === 3 || status === 6) && (
+        <div
+          className={`rounded-lg border p-4 flex gap-3 ${
+            status === 6
+              ? "border-warning/40 bg-warning/10"
+              : "border-destructive/40 bg-destructive/5"
+          }`}
+        >
+          <AlertCircle
+            className={`h-5 w-5 shrink-0 mt-0.5 ${
+              status === 6 ? "text-warning-foreground" : "text-destructive"
+            }`}
+          />
+          <div className="space-y-1 min-w-0">
+            <p className="text-sm font-medium">
+              {status === 6 ? "Tin cần chỉnh sửa trước khi đăng" : "Tin đã bị từ chối"}
+            </p>
+            {moderationNote && (
+              <p className="text-sm text-muted-foreground">{moderationNote}</p>
+            )}
+            {status === 6 && (
+              <p className="text-sm text-muted-foreground">
+                Tin không bị xoá. Sửa xong bấm Gửi duyệt lại ở cuối trang.
+              </p>
+            )}
           </div>
         </div>
       )}
+
+      {draftId && <LichSuKiemDuyet listingId={draftId} />}
 
       {/* ---------- Loại tin ---------- */}
       <Card id="muc-noi-dung" className="scroll-mt-28">
@@ -681,5 +710,61 @@ function Field({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * Lịch sử kiểm duyệt của tin, hiện cho CHỦ TIN.
+ *
+ * Trước đây chủ tin chỉ thấy đúng một dòng — `ModerationNote` của lần gần nhất, vì trường
+ * đó bị ghi đè mỗi vòng. Tin đi qua ba vòng thì họ không nhớ nổi lần một mình sai chỗ nào,
+ * và cũng không có cách nào kiểm chứng rằng mình đã sửa đủ.
+ *
+ * KHÔNG hiện tên người duyệt — chủ tin cần biết tin của mình đã qua những gì và phải sửa
+ * gì, không cần biết ai đã bấm nút.
+ */
+function LichSuKiemDuyet({ listingId }: { listingId: string }) {
+  const query = useQuery({
+    queryKey: ["moderation-history", listingId],
+    queryFn: () => listingsApi.moderationHistory(listingId),
+    retry: 1,
+  });
+
+  const rows = query.data ?? [];
+  // Tin chưa qua vòng nào thì không dựng khối rỗng — nó chỉ thêm nhiễu cho người đăng lần đầu.
+  if (rows.length === 0) return null;
+
+  return (
+    <details className="rounded-lg border bg-card px-4 py-3">
+      <summary className="cursor-pointer select-none text-sm font-medium">
+        Lịch sử kiểm duyệt ({rows.length} lượt)
+      </summary>
+      <ol className="mt-3 space-y-3">
+        {rows.map((e, i) => (
+          <li key={`${e.round}-${i}`} className="flex gap-3 text-sm">
+            <span className="font-mono text-xs text-muted-foreground pt-0.5 shrink-0">
+              #{e.round}
+            </span>
+            <div className="min-w-0 space-y-1">
+              <p className="font-medium">{MODERATION_ACTION[e.action] ?? e.action}</p>
+              {e.reasons.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {e.reasons.map((r) => (
+                    <span
+                      key={r}
+                      className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-xs"
+                    >
+                      {MODERATION_REASON[r] ?? r}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {e.note && <p className="text-muted-foreground">{e.note}</p>}
+              <p className="text-xs text-muted-foreground/80">{formatDateTime(e.createdAt)}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </details>
   );
 }

@@ -209,6 +209,17 @@ namespace kgs_api.Dtos
     /// <paramref name="Count"/> có mặt để xếp khu vực nhiều tin lên trước và để hiện ngay
     /// cho người dùng biết chọn vào đó thì có bao nhiêu tin — thứ mà một danh mục hành
     /// chính thuần tuý không nói được.</summary>
+    /// <summary>Một dòng trong lịch sử kiểm duyệt của tin.
+    ///
+    /// KHÔNG có tên kiểm duyệt viên: chủ tin cần biết tin của mình đã qua những gì và phải
+    /// sửa gì, không cần biết ai đã bấm nút. Xem chú thích ở ListingModerationEvent.</summary>
+    public sealed record ModerationEventDto(
+        ModerationAction Action,
+        IReadOnlyList<ModerationReason> Reasons,
+        string? Note,
+        int Round,
+        DateTime CreatedAt);
+
     public sealed record ListingAreaDto(string City, string District, int Count);
 
     /// <summary>Hai dải tin gợi ý dưới trang chi tiết, gộp trong một lần gọi.

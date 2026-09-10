@@ -133,6 +133,12 @@ namespace kgs_api.Controllers
             return NoContent();
         }
 
+        /// <summary>Lịch sử kiểm duyệt tin của chính mình — mọi vòng, mọi lý do.</summary>
+        [HttpGet("{listingId:guid}/moderation-history")]
+        public async Task<ActionResult<IReadOnlyList<ModerationEventDto>>> ModerationHistory(
+            Guid listingId, CancellationToken ct)
+            => Ok(await _listings.GetModerationHistoryAsync(listingId, ct));
+
         [HttpPost("{listingId:guid}/submit")]
         [Authorize]
         public async Task<ActionResult<OwnerListingDto>> Submit(Guid listingId, CancellationToken ct)
