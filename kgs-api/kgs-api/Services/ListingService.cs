@@ -35,6 +35,7 @@ namespace kgs_api.Services
         private readonly IRepository<AssetUnit> _units;
         private readonly IRepository<Listing> _listings;
         private readonly IRepository<ListingImage> _images;
+        private readonly IRepository<ListingModerationEvent> _moderationEvents;
         private readonly IRepository<AssetMedia> _media;
         private readonly IFileStorageService _files;
         private readonly IUnitOfWork _uow;
@@ -57,12 +58,13 @@ namespace kgs_api.Services
             IUnitOfWork uow,
             ICurrentUserService currentUser,
             GeometryFactory geometryFactory,
-            IListingViewTracker views)
+            IListingViewTracker views,
+            IRepository<ListingModerationEvent> moderationEvents)
         {
             _assets = assets; _units = units; _listings = listings; _images = images;
             _media = media; _files = files;
             _uow = uow; _currentUser = currentUser; _geometryFactory = geometryFactory;
-            _views = views;
+            _views = views; _moderationEvents = moderationEvents;
         }
 
         // ==================== ĐĂNG TIN ====================
@@ -468,8 +470,15 @@ namespace kgs_api.Services
 
             // Cho phep ca Rejected: sua xong roi gui lai chinh la luong "dang lai" — bat
             // nguoi dung tao tin moi tu dau se lam mat luot xem va lich su cua tin cu.
-            if (listing.Status is not (ListingStatus.Draft or ListingStatus.Rejected))
-                throw new ConflictException("Chỉ gửi duyệt được bản nháp hoặc tin đã bị từ chối.");
+            //
+            // ChangesRequested cũng phải nằm ở đây. Thiếu nó thì trạng thái "cần chỉnh sửa"
+            // trở thành ngõ cụt: kiểm duyệt viên trả tin về, chủ tin sửa xong, rồi không có
+            // cách nào gửi lại — tệ hơn hẳn so với việc không có trạng thái đó ngay từ đầu.
+            if (listing.Status is not (ListingStatus.Draft
+                                       or ListingStatus.Rejected
+                                       or ListingStatus.ChangesRequested))
+                throw new ConflictException(
+                    "Chỉ gửi duyệt được bản nháp, tin cần chỉnh sửa, hoặc tin đã bị từ chối.");
 
             // Bản nháp cố tình cho phép thiếu. Ràng buộc tối thiểu chỉ áp ở đây, lúc gửi đi.
             var imageCount = await _images.Query().CountAsync(i => i.ListingId == listingId, ct);
@@ -492,9 +501,41 @@ namespace kgs_api.Services
 
             listing.Status = ListingStatus.Pending;
             listing.ModerationNote = null;
+
+            // Ghi cả lượt GỬI vào lịch sử, không chỉ các lượt kiểm duyệt.
+            // Thiếu nó thì lịch sử đọc ra vô lý: "yêu cầu chỉnh sửa" rồi thẳng tới "đã duyệt",
+            // không có dòng nào cho biết chủ tin đã sửa và gửi lại lúc nào.
+            var soVongTruoc = await _moderationEvents.Query()
+                .CountAsync(e => e.ListingId == listing.Id, ct);
+            await _moderationEvents.AddAsync(new ListingModerationEvent
+            {
+                ListingId = listing.Id,
+                Action = ModerationAction.Submitted,
+                Round = soVongTruoc + 1,
+                // Người thực hiện chính là chủ tin — không lưu lại lần nữa.
+                ModeratorUserId = null,
+            }, ct);
+
             await _uow.SaveChangesAsync(ct);
 
             return await GetOwnedDtoAsync(listingId, ct);
+        }
+
+        /// <summary>Lịch sử kiểm duyệt tin của CHÍNH chủ tin.
+        ///
+        /// Không trả về danh tính người duyệt — chủ tin cần biết tin của mình đã qua những
+        /// gì và phải sửa gì, không cần biết ai đã bấm nút.</summary>
+        public async Task<IReadOnlyList<ModerationEventDto>> GetModerationHistoryAsync(
+            Guid listingId, CancellationToken ct = default)
+        {
+            // Đi qua GetOwnedListingAsync để chặn việc đọc lịch sử tin của người khác.
+            await GetOwnedListingAsync(listingId, ct);
+
+            return await _moderationEvents.Query().AsNoTracking()
+                .Where(e => e.ListingId == listingId)
+                .OrderByDescending(e => e.CreatedAt)
+                .Select(e => new ModerationEventDto(e.Action, e.Reasons, e.Note, e.Round, e.CreatedAt))
+                .ToListAsync(ct);
         }
 
         // ==================== VÒNG ĐỜI TIN ĐĂNG (nhiệm vụ 1.4) ====================

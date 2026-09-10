@@ -8,7 +8,64 @@
         // Draft = 5 chu khong phai 0: dat o cuoi de khong dung cham gia tri da nam trong
         // du lieu. Ban nhap KHONG nam trong partial unique index UX_Listings_OneLivePerSlot
         // (loc Status IN 1,2) nen mot cho co the co nhieu ban nhap cung luc.
-        public enum ListingStatus { Pending = 1, Approved = 2, Rejected = 3, Closed = 4, Draft = 5 }
+        /// <summary>Vòng đời tin đăng.
+        ///
+        /// ChangesRequested là trạng thái thêm sau: trước đây kiểm duyệt viên chỉ có Duyệt
+        /// hoặc Từ chối, nên mọi thiếu sót nhỏ — thiếu ảnh, mô tả sơ sài, gõ nhầm giá — đều
+        /// phải xử bằng một hành động mang tính chung thẩm. Chủ tin nhận "bị từ chối" cho
+        /// một việc chỉ cần sửa mười giây, và cảm giác đó đủ để họ bỏ đi.
+        ///
+        /// Khác biệt ngữ nghĩa: Rejected = tin KHÔNG NÊN tồn tại ở dạng này (sai sự thật,
+        /// vi phạm). ChangesRequested = tin về cơ bản hợp lệ, còn thiếu chi tiết.
+        ///
+        /// Cả hai đều quay lại Pending khi chủ tin gửi lại.</summary>
+        public enum ListingStatus
+        {
+            Pending = 1,
+            Approved = 2,
+            Rejected = 3,
+            Closed = 4,
+            Draft = 5,
+            ChangesRequested = 6,
+        }
+
+        /// <summary>Lý do kiểm duyệt viên trả tin về, dạng có cấu trúc.
+        ///
+        /// Trước đây lý do là một chuỗi tự do. Ba hệ quả: không thống kê được (không biết
+        /// người đăng hay sai ở đâu nhất để mà sửa biểu mẫu), không nhất quán giữa các
+        /// kiểm duyệt viên, và chủ tin nhận về những câu viết vội mỗi lần một kiểu.
+        ///
+        /// Dự án đã có tiền lệ đúng ở ListingReportReason — đây là bản tương ứng cho phía
+        /// kiểm duyệt. Vẫn giữ ô ghi chú tự do đi kèm, vì danh sách cố định không bao giờ
+        /// phủ hết mọi trường hợp.</summary>
+        public enum ModerationReason
+        {
+            /// <summary>Không có ảnh, hoặc ảnh không phải của bất động sản đang rao.</summary>
+            MissingOrBadPhotos = 1,
+            /// <summary>Mô tả quá sơ sài, không nêu được không gian và khu vực.</summary>
+            ThinDescription = 2,
+            /// <summary>Giá lệch xa mặt bằng, hoặc thiếu các khoản chi phí bắt buộc khai.</summary>
+            PriceOrCostIssue = 3,
+            /// <summary>Địa chỉ thiếu hoặc không khớp khu vực đã chọn.</summary>
+            AddressIssue = 4,
+            /// <summary>Thiếu điều kiện thuê: cọc, điện nước, nội quy.</summary>
+            MissingTerms = 5,
+            /// <summary>Trùng với tin đang có của chính người đăng.</summary>
+            Duplicate = 6,
+            /// <summary>Nội dung sai sự thật, có dấu hiệu lừa đảo, hoặc vi phạm quy định.</summary>
+            ProhibitedContent = 7,
+            /// <summary>Lý do khác — bắt buộc kèm ghi chú.</summary>
+            Other = 99,
+        }
+
+        /// <summary>Hành động của kiểm duyệt viên, ghi vào lịch sử.</summary>
+        public enum ModerationAction
+        {
+            Submitted = 1,
+            Approved = 2,
+            ChangesRequested = 3,
+            Rejected = 4,
+        }
 
         public enum AssetDomainType { PrivateHouse = 1, Apartment = 2, Land = 3, Villa = 4, Shophouse = 5, Office = 6, Other = 99 }
 

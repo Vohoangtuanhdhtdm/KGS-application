@@ -7,6 +7,7 @@ import type {
   WaterPricingCode,
 } from "@/constants/enums";
 import { PAYMENT_CYCLE } from "@/constants/enums";
+import type { ModerationActionCode, ModerationReasonCode } from "@/constants/enums";
 import { formatCurrency } from "@/lib/format";
 
 // ---- Types ----
@@ -255,6 +256,14 @@ export const LISTING_SORT = {
 } as const;
 export type ListingSortCode = keyof typeof LISTING_SORT;
 
+export interface ModerationEventDto {
+  action: ModerationActionCode;
+  reasons: ModerationReasonCode[];
+  note: string | null;
+  round: number;
+  createdAt: string;
+}
+
 export interface ListingAreaDto {
   city: string;
   district: string;
@@ -351,6 +360,9 @@ export const listingsApi = {
       { skipAuth: true },
     ),
   /** Các khu vực đang có tin, để ô tìm khu vực gợi ý. Danh sách nhỏ, tải một lần rồi lọc tại chỗ. */
+  /** Lịch sử kiểm duyệt tin của chính mình — mọi vòng, mọi lý do, không có tên người duyệt. */
+  moderationHistory: (listingId: string) =>
+    api<ModerationEventDto[]>(`/listings/${listingId}/moderation-history`),
   areas: (type?: ListingTypeCode) =>
     api<ListingAreaDto[]>(`/listings/areas${toQuery({ type })}`, { skipAuth: true }),
   detail: (slug: string) => api<PublicListingDetailDto>(`/listings/${slug}`, { skipAuth: true }),

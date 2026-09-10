@@ -1,6 +1,7 @@
 import { api, toQuery } from "./http";
 import type { ListingReportDto, ReportStatusCode } from "./listings";
 import type { ListingTypeCode, ListingStatusCode } from "@/constants/enums";
+import type { ModerationActionCode, ModerationReasonCode } from "@/constants/enums";
 
 export interface AdminPendingListing {
   id: string;
@@ -88,6 +89,15 @@ export interface AdminPendingFilters {
   pageSize?: number;
 }
 
+export interface ModerationEventDto {
+  action: ModerationActionCode;
+  reasons: ModerationReasonCode[];
+  note: string | null;
+  /** Vòng thứ mấy, tính từ 1. */
+  round: number;
+  createdAt: string;
+}
+
 export const adminApi = {
   pending: (f: AdminPendingFilters = {}) =>
     api<AdminPendingPage>(
@@ -100,6 +110,16 @@ export const adminApi = {
       body: { listingIds, approve, reason: reason ?? null },
     }),
   stats: () => api<AdminListingStats>("/admin/listings/stats"),
+  /** Trả tin về cho chủ tin sửa — bậc trung gian giữa duyệt và từ chối. */
+  requestChanges: (listingId: string, reasons: ModerationReasonCode[], note?: string | null) =>
+    api<void>(`/admin/listings/${listingId}/request-changes`, {
+      method: "POST",
+      body: { reasons, note: note ?? null },
+    }),
+
+  moderationHistory: (listingId: string) =>
+    api<ModerationEventDto[]>(`/admin/listings/${listingId}/moderation-history`),
+
   approve: (listingId: string, note?: string | null) =>
     api<void>(`/admin/listings/${listingId}/approve`, {
       method: "POST",

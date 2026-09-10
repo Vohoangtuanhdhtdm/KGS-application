@@ -176,7 +176,35 @@ export const LISTING_STATUS = {
   3: "Bị từ chối",
   4: "Đã đóng",
   5: "Bản nháp",
+  6: "Cần chỉnh sửa",
 } as const;
+
+/**
+ * Lý do kiểm duyệt viên trả tin về, khớp enum ModerationReason ở backend.
+ *
+ * Dạng có cấu trúc thay cho chuỗi tự do: thống kê được người đăng hay sai ở đâu nhất (để
+ * còn sửa chính biểu mẫu đăng tin), và chủ tin nhận về cùng một cách diễn đạt dù ai duyệt.
+ */
+export const MODERATION_REASON = {
+  1: "Ảnh thiếu hoặc không đúng",
+  2: "Mô tả quá sơ sài",
+  3: "Giá hoặc chi phí chưa hợp lý",
+  4: "Địa chỉ thiếu hoặc sai khu vực",
+  5: "Thiếu điều kiện thuê",
+  6: "Trùng tin đã có",
+  7: "Nội dung vi phạm",
+  99: "Lý do khác",
+} as const;
+export type ModerationReasonCode = keyof typeof MODERATION_REASON;
+
+/** Hành động trong lịch sử kiểm duyệt, khớp enum ModerationAction ở backend. */
+export const MODERATION_ACTION = {
+  1: "Chủ tin gửi duyệt",
+  2: "Đã duyệt",
+  3: "Yêu cầu chỉnh sửa",
+  4: "Bị từ chối",
+} as const;
+export type ModerationActionCode = keyof typeof MODERATION_ACTION;
 export type ListingStatusCode = keyof typeof LISTING_STATUS;
 
 export const LISTING_STATUS_CLASS: Record<ListingStatusCode, string> = {
@@ -185,6 +213,9 @@ export const LISTING_STATUS_CLASS: Record<ListingStatusCode, string> = {
   3: "bg-destructive/15 text-destructive border-destructive/30",
   4: "bg-secondary text-secondary-foreground border-border",
   5: "bg-warning/20 text-warning-foreground border-warning/40",
+  // Cần chỉnh sửa dùng tông hổ phách như "cần chú ý" — KHÔNG dùng tông đỏ của Bị từ chối.
+  // Đó là điểm khác biệt của cả tính năng: một lời nhắc việc, không phải một phán quyết.
+  6: "bg-warning/20 text-warning-foreground border-warning/40",
 };
 
 // ---- Thông tin mô tả chi tiết của tài sản (dùng lại khi đăng tin công khai) ----

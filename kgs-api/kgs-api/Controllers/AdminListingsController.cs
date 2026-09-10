@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using static kgs_api.Common.Common;
 using static kgs_api.Domain.Enums;
+using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Dtos;
 
 namespace kgs_api.Controllers
 {
@@ -22,14 +24,16 @@ namespace kgs_api.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly INotificationSender _notifier;
+        private readonly ICurrentUserService _currentUser;
         private readonly ILogger<AdminListingsController> _logger;
 
         public AdminListingsController(
             ApplicationDbContext db,
             INotificationSender notifier,
+            ICurrentUserService currentUser,
             ILogger<AdminListingsController> logger)
         {
-            _db = db; _notifier = notifier; _logger = logger;
+            _db = db; _notifier = notifier; _currentUser = currentUser; _logger = logger;
         }
 
         /// <summary>Hàng đợi chờ duyệt, lọc được theo loại tin, khu vực và người đăng.</summary>
@@ -155,6 +159,7 @@ namespace kgs_api.Controllers
                 throw new ConflictException($"Tin đăng đang ở trạng thái {listing.Status}, không thể duyệt.");
 
             ApplyApprove(listing, request.Note);
+            await GhiLuuVetAsync(listing, ModerationAction.Approved, null, request.Note, ct);
             await _db.SaveChangesAsync(ct);
             await NotifyAsync(listing, approved: true, reason: null, ct);
 
@@ -177,10 +182,65 @@ namespace kgs_api.Controllers
             listing.Status = ListingStatus.Rejected;
             listing.ModerationNote = request.Reason;
 
+            await GhiLuuVetAsync(listing, ModerationAction.Rejected, request.Reasons, request.Reason, ct);
             await _db.SaveChangesAsync(ct);
             await NotifyAsync(listing, approved: false, reason: request.Reason, ct);
 
             return Ok(new { message = "Đã từ chối tin đăng.", listingId, reason = request.Reason });
+        }
+
+        /// <summary>Trả tin về cho chủ tin sửa.
+        ///
+        /// Bậc trung gian giữa duyệt và từ chối. Trước đây kiểm duyệt viên chỉ có hai lối
+        /// ra, nên một tin thiếu ảnh — việc chủ tin sửa trong mười giây — vẫn phải nhận
+        /// "bị từ chối". Từ chối là phán quyết về tin; yêu cầu chỉnh sửa là một lời nhắc
+        /// việc. Trộn hai thứ đó vào một nút làm hỏng cả hai.</summary>
+        [HttpPost("{listingId:guid}/request-changes")]
+        public async Task<IActionResult> RequestChanges(
+            Guid listingId, [FromBody] RequestChangesRequest request, CancellationToken ct)
+        {
+            var listing = await _db.Listings
+                .Include(l => l.Asset)
+                .FirstOrDefaultAsync(l => l.Id == listingId, ct)
+                ?? throw new NotFoundException("Không tìm thấy tin đăng.");
+
+            if (listing.Status != ListingStatus.Pending)
+                throw new ConflictException(
+                    $"Tin đăng đang ở trạng thái {listing.Status}, không thể yêu cầu chỉnh sửa.");
+
+            if (request.Reasons.Contains(ModerationReason.Other) && string.IsNullOrWhiteSpace(request.Note))
+                throw new ValidationFailedException("Chọn lý do \"Khác\" thì phải ghi rõ cần sửa gì.");
+
+            listing.Status = ListingStatus.ChangesRequested;
+            // Vẫn ghi vào ModerationNote để các màn hình cũ đọc trường này không bị trống —
+            // nhưng nguồn sự thật của lịch sử là bảng ListingModerationEvents.
+            listing.ModerationNote = request.Note;
+
+            await GhiLuuVetAsync(listing, ModerationAction.ChangesRequested, request.Reasons, request.Note, ct);
+            await _db.SaveChangesAsync(ct);
+            await NotifyChangesRequestedAsync(listing, request.Reasons, request.Note, ct);
+
+            return Ok(new
+            {
+                message = "Đã gửi yêu cầu chỉnh sửa cho chủ tin.",
+                listingId,
+                status = listing.Status.ToString(),
+            });
+        }
+
+        /// <summary>Lịch sử kiểm duyệt của một tin — dùng cho màn hình quản trị.</summary>
+        [HttpGet("{listingId:guid}/moderation-history")]
+        public async Task<ActionResult<IReadOnlyList<ModerationEventDto>>> ModerationHistory(
+            Guid listingId, CancellationToken ct)
+        {
+            var rows = await _db.ListingModerationEvents
+                .AsNoTracking()
+                .Where(e => e.ListingId == listingId)
+                .OrderByDescending(e => e.CreatedAt)
+                .Select(e => new ModerationEventDto(e.Action, e.Reasons, e.Note, e.Round, e.CreatedAt))
+                .ToListAsync(ct);
+
+            return Ok(rows);
         }
 
         /// <summary>Duyệt hoặc từ chối nhiều tin cùng lúc.
@@ -255,6 +315,32 @@ namespace kgs_api.Controllers
 
         // ==================== Helpers ====================
 
+        /// <summary>Ghi một dòng vào lịch sử kiểm duyệt.
+        ///
+        /// Gọi ở MỌI đường ra của kiểm duyệt — duyệt, yêu cầu sửa, từ chối, kể cả trong xử
+        /// lý hàng loạt. Bỏ sót một đường là lịch sử có lỗ, mà một lịch sử có lỗ thì không
+        /// dùng được vào việc gì: chủ tin nhìn vào không hiểu vì sao trạng thái nhảy.</summary>
+        private async Task GhiLuuVetAsync(
+            Listing listing,
+            ModerationAction action,
+            IReadOnlyList<ModerationReason>? reasons,
+            string? note,
+            CancellationToken ct)
+        {
+            var soVongTruoc = await _db.ListingModerationEvents
+                .CountAsync(e => e.ListingId == listing.Id, ct);
+
+            _db.ListingModerationEvents.Add(new ListingModerationEvent
+            {
+                ListingId = listing.Id,
+                Action = action,
+                Reasons = reasons?.ToList() ?? new List<ModerationReason>(),
+                Note = note,
+                ModeratorUserId = _currentUser.UserId,
+                Round = soVongTruoc + 1,
+            });
+        }
+
         private static void ApplyApprove(Listing listing, string? note)
         {
             listing.Status = ListingStatus.Approved;
@@ -270,6 +356,47 @@ namespace kgs_api.Controllers
         ///
         /// Lỗi gửi mail KHÔNG được làm hỏng quyết định đã ghi vào CSDL: quyết định là thật,
         /// email chỉ là thông báo.</summary>
+        /// <summary>Báo cho chủ tin biết cần sửa gì.
+        ///
+        /// Viết ra TỪNG nhóm lý do thay vì một câu chung: mục đích của hành động này là để
+        /// họ sửa được ngay, mà "tin của bạn cần chỉnh sửa" thì không sửa được gì cả.</summary>
+        private async Task NotifyChangesRequestedAsync(
+            Listing listing,
+            IReadOnlyList<ModerationReason> reasons,
+            string? note,
+            CancellationToken ct)
+        {
+            try
+            {
+                var danhSach = string.Join("; ", reasons.Select(MoTaLyDo));
+                var body = $"Cần chỉnh sửa: {danhSach}."
+                         + (string.IsNullOrWhiteSpace(note) ? "" : $" Ghi chú của người duyệt: {note}.")
+                         + " Sửa xong bạn gửi duyệt lại, tin không bị xoá.";
+
+                await _notifier.SendAsync(
+                    listing.Asset.UserId, $"Tin đăng cần chỉnh sửa: {listing.Title}", body, ct);
+            }
+            catch (Exception ex)
+            {
+                // Không để lỗi gửi thông báo làm hỏng thao tác kiểm duyệt đã ghi xong.
+                _logger.LogWarning(ex, "Không gửi được thông báo yêu cầu chỉnh sửa cho tin {ListingId}", listing.Id);
+            }
+        }
+
+        /// <summary>Mô tả lý do bằng tiếng Việt cho email. Giữ ở đây thay vì ở client vì
+        /// email do máy chủ dựng.</summary>
+        private static string MoTaLyDo(ModerationReason r) => r switch
+        {
+            ModerationReason.MissingOrBadPhotos => "ảnh thiếu hoặc không phải của bất động sản đang rao",
+            ModerationReason.ThinDescription => "mô tả quá sơ sài",
+            ModerationReason.PriceOrCostIssue => "giá hoặc chi phí chưa hợp lý",
+            ModerationReason.AddressIssue => "địa chỉ thiếu hoặc không khớp khu vực",
+            ModerationReason.MissingTerms => "thiếu điều kiện thuê (cọc, điện nước, nội quy)",
+            ModerationReason.Duplicate => "trùng với tin đang có của bạn",
+            ModerationReason.ProhibitedContent => "nội dung vi phạm quy định",
+            _ => "lý do khác",
+        };
+
         private async Task NotifyAsync(Listing listing, bool approved, string? reason, CancellationToken ct)
         {
             try

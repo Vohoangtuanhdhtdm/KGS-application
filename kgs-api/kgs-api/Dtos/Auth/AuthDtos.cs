@@ -113,7 +113,20 @@ namespace kgs_api.Dtos.Auth
     public sealed record RejectListingRequest(
         [Required(ErrorMessage = "Phải nêu lý do từ chối")]
         [MaxLength(500)]
-        string Reason);
+        string Reason,
+        /// <summary>Các nhóm lý do có cấu trúc. Rỗng vẫn chấp nhận để không phá các lời
+        /// gọi cũ, nhưng giao diện quản trị luôn gửi kèm.</summary>
+        IReadOnlyList<ModerationReason>? Reasons = null);
+
+    /// <summary>Trả tin về cho chủ tin sửa — nhẹ hơn từ chối.
+    ///
+    /// Bắt buộc có ít nhất một nhóm lý do: mục đích của hành động này là nói RÕ phải sửa
+    /// gì, nên một yêu cầu chỉnh sửa không nêu được điều đó thì vô nghĩa.</summary>
+    public sealed record RequestChangesRequest(
+        [Required, MinLength(1, ErrorMessage = "Phải chọn ít nhất một nhóm lý do")]
+        IReadOnlyList<ModerationReason> Reasons,
+        [MaxLength(1000)] string? Note = null);
+
 
     public sealed record PendingListingDto(
         Guid Id,

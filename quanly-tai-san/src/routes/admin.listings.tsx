@@ -9,8 +9,10 @@ import {
   AMENITIES,
   LISTING_STATUS,
   LISTING_TYPE,
+  MODERATION_REASON,
   type AmenityKey,
   type ListingStatusCode,
+  type ModerationReasonCode,
 } from "@/constants/enums";
 import { AdminRoute } from "@/components/auth/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +45,7 @@ import {
   Inbox,
   Mail,
   MapPin,
+  PenLine,
   Phone,
   Search,
   ShieldCheck,
@@ -65,6 +68,7 @@ const STAT_TONE: Record<ListingStatusCode, string> = {
   3: "text-destructive",
   4: "text-foreground",
   5: "text-muted-foreground",
+  6: "text-warning-foreground",
 };
 
 /**
@@ -165,6 +169,40 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
       else next.add(id);
       return next;
     });
+
+  /* Hộp "Yêu cầu chỉnh sửa".
+     Lý do chọn từ danh sách chuẩn thay vì gõ tự do — xem chú thích ở enum ModerationReason
+     phía backend. Ghi chú tự do vẫn giữ, vì danh sách cố định không phủ hết mọi trường hợp. */
+  const [changesOpen, setChangesOpen] = useState(false);
+  const [changeReasons, setChangeReasons] = useState<Set<ModerationReasonCode>>(new Set());
+  const [changeNote, setChangeNote] = useState("");
+
+  const requestChanges = useMutation({
+    mutationFn: () =>
+      adminApi.requestChanges(selectedId!, [...changeReasons], changeNote.trim() || null),
+    onSuccess: () => {
+      refresh();
+      setSelectedId(null);
+      setChangesOpen(false);
+      setChangeReasons(new Set());
+      setChangeNote("");
+      toast.success("Đã gửi yêu cầu chỉnh sửa cho chủ tin");
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không gửi được yêu cầu")),
+  });
+
+  const toggleReason = (r: ModerationReasonCode) =>
+    setChangeReasons((prev) => {
+      const next = new Set(prev);
+      if (next.has(r)) next.delete(r);
+      else next.add(r);
+      return next;
+    });
+
+  // "Khác" mà không ghi rõ thì yêu cầu chỉnh sửa không nói được điều gì — đúng lúc mục đích
+  // của nó là nói rõ phải sửa gì. Backend cũng chặn, đây chỉ là chặn sớm cho đỡ mất công.
+  const thieuGhiChu = changeReasons.has(99) && !changeNote.trim();
+  const guiDuocYeuCau = changeReasons.size > 0 && !thieuGhiChu;
 
   const openReject = (bulk: boolean) => {
     setRejectBulk(bulk);
@@ -319,11 +357,80 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
           listingId={selectedId}
           busy={moderate.isPending}
           onApprove={() => selectedId && moderate.mutate({ ids: [selectedId], approve: true })}
+          onRequestChanges={() => setChangesOpen(true)}
           onReject={() => openReject(false)}
         />
       </div>
 
       {/* Hộp nhập lý do từ chối */}
+      {/* Hộp yêu cầu chỉnh sửa */}
+      <Dialog open={changesOpen} onOpenChange={setChangesOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Yêu cầu chủ tin chỉnh sửa</DialogTitle>
+            <DialogDescription>
+              Tin không bị xoá và không mang tiếng bị từ chối. Chủ tin sửa xong sẽ gửi duyệt
+              lại, và thấy đúng những mục bạn chọn dưới đây.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <Label className="text-xs text-muted-foreground">Cần sửa những gì</Label>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {(Object.keys(MODERATION_REASON) as unknown as ModerationReasonCode[]).map((k) => {
+                const code = Number(k) as ModerationReasonCode;
+                const chon = changeReasons.has(code);
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => toggleReason(code)}
+                    aria-pressed={chon}
+                    className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                      chon
+                        ? "border-primary bg-primary/5 font-medium"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    {MODERATION_REASON[code]}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Ghi chú {changeReasons.has(99) ? "(bắt buộc khi chọn Lý do khác)" : "(không bắt buộc)"}
+              </Label>
+              <Textarea
+                rows={3}
+                value={changeNote}
+                onChange={(e) => setChangeNote(e.target.value)}
+                placeholder="Nói cụ thể để chủ tin sửa được ngay, ví dụ: thiếu ảnh phòng tắm và chưa khai giá điện."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangesOpen(false)}>
+              Huỷ
+            </Button>
+            <Button
+              disabled={!guiDuocYeuCau || requestChanges.isPending}
+              onClick={() => requestChanges.mutate()}
+            >
+              Gửi yêu cầu
+            </Button>
+          </DialogFooter>
+          {changeReasons.size === 0 && (
+            <p className="text-xs text-muted-foreground">Chọn ít nhất một mục cần sửa.</p>
+          )}
+          {thieuGhiChu && (
+            <p className="text-xs text-destructive">Chọn "Lý do khác" thì phải ghi rõ cần sửa gì.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -393,6 +500,7 @@ const LISTING_STATUS_KEY: Record<ListingStatusCode, string> = {
   3: "Rejected",
   4: "Closed",
   5: "Draft",
+  6: "ChangesRequested",
 };
 
 function QueueRow({
@@ -450,11 +558,13 @@ function PreviewPanel({
   listingId,
   busy,
   onApprove,
+  onRequestChanges,
   onReject,
 }: {
   listingId: string | null;
   busy: boolean;
   onApprove: () => void;
+  onRequestChanges: () => void;
   onReject: () => void;
 }) {
   const query = useQuery({
@@ -601,7 +711,13 @@ function PreviewPanel({
             <Check className="h-4 w-4 mr-1.5" />
             Duyệt tin
           </Button>
-          <Button variant="outline" disabled={busy} onClick={onReject}>
+          {/* Bậc trung gian. Đặt GIỮA hai nút cũ và dùng dáng outline chứ không phải
+              destructive: nó không phải một phán quyết, mà là một lời nhắc việc. */}
+          <Button variant="outline" disabled={busy} onClick={onRequestChanges}>
+            <PenLine className="h-4 w-4 mr-1.5" />
+            Yêu cầu chỉnh sửa
+          </Button>
+          <Button variant="ghost" disabled={busy} onClick={onReject} className="text-destructive hover:text-destructive">
             <X className="h-4 w-4 mr-1.5" />
             Từ chối
           </Button>
