@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, ImagePlus, Loader2, Save, Send, X } from "lucide-react";
+import { AlertCircle, CheckCircle2, Circle, ImagePlus, Loader2, Save, Send, X } from "lucide-react";
 
 /**
  * ĐĂNG TIN — một biểu mẫu duy nhất.
@@ -233,6 +233,53 @@ function CreateListingPage() {
    * không hề nhắc tới yêu cầu về ảnh. Danh sách này liệt kê ĐÚNG những thứ còn thiếu, và
    * đặt ngay cạnh nút.
    */
+  /* Bốn mục của biểu mẫu, kèm việc mục đó đã đủ chưa. "Chi phí & điều kiện" không bắt buộc
+     — đánh dấu nó là thiếu sót sẽ nói sai với người dùng rằng họ chưa được gửi duyệt. */
+  const tienDo = [
+    {
+      id: "muc-noi-dung",
+      nhan: "Nội dung tin",
+      batBuoc: true,
+      xong: title.trim().length >= 10 && description.trim().length >= 30 && (price ?? 0) > 0,
+    },
+    {
+      id: "muc-bat-dong-san",
+      nhan: "Thông tin bất động sản",
+      batBuoc: true,
+      xong: !!city && !!district && !!ward,
+    },
+    {
+      id: "muc-chi-phi",
+      nhan: "Chi phí & điều kiện",
+      batBuoc: false,
+      xong: true,
+    },
+    {
+      id: "muc-hinh-anh",
+      nhan: "Hình ảnh",
+      batBuoc: true,
+      xong: images.length > 0,
+    },
+  ];
+
+  /**
+   * Nhảy tới một mục của biểu mẫu.
+   *
+   * Tính toạ độ rồi gọi window.scrollTo, thay vì scrollIntoView. Lý do đo được trên trình
+   * duyệt: cả `scrollIntoView({behavior:"smooth"})` LẪN `scroll-behavior: smooth` trong CSS
+   * đều là no-op ở một số ngữ cảnh nhúng — bấm nút thì scrollY giữ nguyên 0 và không có gì
+   * xảy ra. Một nút điều hướng im lặng không làm gì là kiểu hỏng tệ nhất, nên ở đây chọn
+   * cách luôn chạy và chấp nhận mất hiệu ứng mượt.
+   *
+   * Trừ đi 96px cho header dính (56) cộng thanh tiến độ (~40) — không trừ thì tiêu đề mục
+   * nằm ngay dưới hai thanh đó và bị che mất.
+   */
+  const nhayToiMuc = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 96 });
+  };
+
   const thieuDeGuiDuyet: string[] = [];
   if (title.trim().length < 10) thieuDeGuiDuyet.push("tiêu đề từ 10 ký tự");
   if (description.trim().length < 30) thieuDeGuiDuyet.push("mô tả từ 30 ký tự");
@@ -254,6 +301,42 @@ function CreateListingPage() {
         </p>
       </div>
 
+      {/* Thanh tiến độ.
+          Biểu mẫu này dài hơn hai màn hình, và trước đây không có gì cho biết còn bao nhiêu
+          nữa, mục nào đã xong, hay mục nào đang thiếu — người dùng chỉ có thể cuộn và đoán.
+
+          Chọn thanh tiến độ dính thay vì chia thành wizard nhiều bước: wizard buộc phải đổi
+          cấu trúc state và tách validate theo từng bước, mà luồng lưu nháp / gửi duyệt hiện
+          tại đang chạy đúng. Thanh này cho đúng thứ wizard cho — biết mình đang ở đâu và còn
+          thiếu gì — mà không đụng vào phần đang chạy. */}
+      <div className="sticky top-14 z-20 -mx-6 border-y bg-background/95 px-6 py-2.5 backdrop-blur">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          {tienDo.map((m, i) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => nhayToiMuc(m.id)}
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-accent"
+            >
+              {m.xong ? (
+                <CheckCircle2 className="h-4 w-4 text-price" />
+              ) : (
+                <Circle className="h-4 w-4 text-muted-foreground/50" />
+              )}
+              <span className={m.xong ? "text-foreground" : "text-muted-foreground"}>
+                {m.nhan}
+              </span>
+              {!m.batBuoc && <span className="text-xs text-muted-foreground">(tuỳ chọn)</span>}
+              {i < tienDo.length - 1 && (
+                <span aria-hidden="true" className="ml-1 text-muted-foreground/40">
+                  ›
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Tin bị từ chối: lý do phải hiện ngay đầu trang, cạnh chỗ sửa. Đặt nó ở màn
           hình khác đồng nghĩa với việc người dùng sửa mà không nhớ mình sai gì. */}
       {status === 3 && moderationNote && (
@@ -267,7 +350,7 @@ function CreateListingPage() {
       )}
 
       {/* ---------- Loại tin ---------- */}
-      <Card>
+      <Card id="muc-noi-dung" className="scroll-mt-28">
         <CardContent className="p-5 space-y-4">
           <Field label="Bạn muốn đăng tin">
             <Tabs value={String(type)} onValueChange={(v) => setType(Number(v) as 1 | 2)}>
@@ -345,7 +428,7 @@ function CreateListingPage() {
       </Card>
 
       {/* ---------- Bất động sản ---------- */}
-      <Card>
+      <Card id="muc-bat-dong-san" className="scroll-mt-28">
         <CardContent className="p-5 space-y-4">
           <h2 className="font-medium">Thông tin bất động sản</h2>
 
@@ -412,7 +495,7 @@ function CreateListingPage() {
       </Card>
 
       {/* ---------- Điều kiện thuê ---------- */}
-      <Card>
+      <Card id="muc-chi-phi" className="scroll-mt-28">
         <CardContent className="p-5 space-y-4">
           <h2 className="font-medium">Chi phí &amp; điều kiện</h2>
           <ListingTermsFields
@@ -426,7 +509,7 @@ function CreateListingPage() {
       </Card>
 
       {/* ---------- Ảnh ---------- */}
-      <Card>
+      <Card id="muc-hinh-anh" className="scroll-mt-28">
         <CardContent className="p-5 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h2 className="font-medium">Hình ảnh</h2>

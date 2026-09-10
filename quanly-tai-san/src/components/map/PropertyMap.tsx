@@ -52,6 +52,11 @@ export interface PropertyMapPoint {
 function pillIcon(point: PropertyMapPoint, hovered: boolean): L.DivIcon {
   const border = TYPE_BORDER[point.type];
   const padding = hovered ? "5px 11px" : "4px 10px";
+  /* "white" và "#111827" ở đây là màu cứng CÓ CHỦ Ý, đừng đổi sang token.
+     Viên thuốc giá nằm trên ẢNH BẢN ĐỒ, mà ảnh bản đồ luôn sáng bất kể người dùng đang
+     dùng giao diện sáng hay tối. Đổi sang --color-card / --color-foreground thì ở giao
+     diện tối nó thành viên thuốc tối chữ sáng đặt trên nền bản đồ sáng — không đọc được.
+     Viền thì ngược lại: nó mang ý nghĩa loại tin nên vẫn lấy từ token (xem TYPE_BORDER). */
   const bg = hovered ? border : "white";
   const color = hovered ? "white" : "#111827";
   const shadow = hovered ? "0 4px 10px rgba(0,0,0,0.25)" : "0 1px 3px rgba(0,0,0,0.15)";

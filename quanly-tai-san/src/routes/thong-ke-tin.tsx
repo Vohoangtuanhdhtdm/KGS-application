@@ -41,7 +41,10 @@ export const Route = createFileRoute("/thong-ke-tin")({
   ),
 });
 
-const VIEW_COLOR = "#2563eb";
+/* Màu lấy từ token, không viết cứng. "#2563eb" là một xanh dương không có trong bảng màu
+   của sản phẩm, và vì cố định nên ở giao diện tối nó không đổi theo nền. Lượt xem là chỉ
+   số hoạt động chứ không phải tiền, nên dùng màu primary chứ không dùng màu giá. */
+const VIEW_COLOR = "var(--color-primary)";
 
 /** "04/09" — trục ngày 30 mốc, ghi đủ năm thì chữ chồng lên nhau. */
 function shortDay(iso: string) {
@@ -62,10 +65,38 @@ function ViewChart({ data }: { data: DailyViewPoint[] }) {
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-        {/* interval={4} — 30 mốc ngày mà ghi hết thì nhãn chồng lên nhau không đọc được */}
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={4} />
-        <YAxis tick={{ fontSize: 11 }} allowDecimals={false} width={40} />
+        {/* preserveStartEnd + minTickGap thay cho interval={4} cố định: số nhãn tự giãn theo
+            bề rộng thật và luôn giữ mốc đầu/cuối. Với interval cố định, khung hẹp vẫn cố vẽ
+            đủ nhãn nên chúng chồng lên nhau — đúng thứ chú thích cũ nói là muốn tránh. */}
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+          tickLine={false}
+          axisLine={{ stroke: "var(--color-border)" }}
+          interval="preserveStartEnd"
+          minTickGap={26}
+        />
+        <YAxis
+          tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+          width={36}
+        />
+        {/* Tooltip mặc định của Recharts là hộp trắng viền xám cứng — ở giao diện tối thành
+            một mảng trắng chói giữa nền tối. */}
         <Tooltip
+          cursor={{ stroke: "var(--color-border)", strokeWidth: 1 }}
+          contentStyle={{
+            background: "var(--color-popover)",
+            border: "1px solid var(--color-border)",
+            borderRadius: 8,
+            fontSize: 12,
+            color: "var(--color-popover-foreground)",
+            boxShadow: "var(--shadow-e2)",
+          }}
+          labelStyle={{ color: "var(--color-muted-foreground)", fontSize: 11 }}
+          itemStyle={{ color: "var(--color-popover-foreground)" }}
           formatter={(v: number) => [`${v} lượt xem`, ""]}
           labelFormatter={(l) => `Ngày ${l}`}
         />
