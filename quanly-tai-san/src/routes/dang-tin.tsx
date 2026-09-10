@@ -224,6 +224,23 @@ function CreateListingPage() {
 
   const busy = saveDraft.isPending || upload.isPending || submit.isPending;
 
+  /**
+   * Còn thiếu gì để gửi duyệt được.
+   *
+   * Nút "Gửi duyệt" trước đây bị vô hiệu hoá mà không nói vì sao, ở cuối một biểu mẫu dài
+   * hơn hai màn hình. Người dùng điền xong, cuộn xuống, thấy nút xám và không có cách nào
+   * biết mình thiếu gì — dòng gợi ý duy nhất thì nằm trong một thẻ khác ở tít trên, lại
+   * không hề nhắc tới yêu cầu về ảnh. Danh sách này liệt kê ĐÚNG những thứ còn thiếu, và
+   * đặt ngay cạnh nút.
+   */
+  const thieuDeGuiDuyet: string[] = [];
+  if (title.trim().length < 10) thieuDeGuiDuyet.push("tiêu đề từ 10 ký tự");
+  if (description.trim().length < 30) thieuDeGuiDuyet.push("mô tả từ 30 ký tự");
+  if ((price ?? 0) <= 0) thieuDeGuiDuyet.push("giá");
+  if (!city || !district || !ward) thieuDeGuiDuyet.push("tỉnh/thành, quận/huyện và phường/xã");
+  if (!draftId) thieuDeGuiDuyet.push("lưu nháp một lần");
+  if (images.length === 0) thieuDeGuiDuyet.push("ít nhất 1 ảnh");
+
   return (
     <div className="mx-auto max-w-[820px] p-6 space-y-6">
       <div>
@@ -435,7 +452,7 @@ function CreateListingPage() {
               </Button>
               {!contentReady && (
                 <p className="text-xs text-muted-foreground">
-                  Cần tiêu đề, mô tả, giá và khu vực trước đã.
+                  Còn thiếu: {thieuDeGuiDuyet.filter((t) => t !== "lưu nháp một lần" && t !== "ít nhất 1 ảnh").join(", ")}.
                 </p>
               )}
             </div>
@@ -520,6 +537,12 @@ function CreateListingPage() {
           )}
           {status === 3 ? "Gửi duyệt lại" : "Gửi duyệt"}
         </Button>
+
+        {thieuDeGuiDuyet.length > 0 && (
+          <p className="basis-full text-xs text-muted-foreground">
+            Chưa gửi duyệt được — còn thiếu: {thieuDeGuiDuyet.join(", ")}.
+          </p>
+        )}
 
         {draftId && (
           <Button variant="ghost" onClick={() => navigate({ to: "/tin-cua-toi" })} disabled={busy}>

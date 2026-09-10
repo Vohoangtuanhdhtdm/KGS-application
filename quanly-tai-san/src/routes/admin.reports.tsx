@@ -185,13 +185,23 @@ function ReportCard({
             )}
           </div>
 
-          {r.listingSlug && (
+          {/* Trang công khai CHỈ tồn tại với tin đang hiển thị (status 2). Trước đây nút
+              "Xem tin" hiện ra với mọi tin có slug, nên báo cáo về một tin đã đóng hoặc bị
+              từ chối dẫn kiểm duyệt viên tới trang 404 — đúng lúc họ cần nhìn nội dung để
+              quyết định. Tin đã không còn công khai thì bản thân điều đó là thông tin cần
+              nói ra, vì nó thường làm báo cáo trở nên không còn phải xử lý gấp. */}
+          {r.listingSlug && r.listingStatus === 2 ? (
             <Button variant="outline" size="sm" className="shrink-0 gap-1.5" asChild>
               <Link to="/tin-dang/$slug" params={{ slug: r.listingSlug }} target="_blank">
                 <ExternalLink className="h-3.5 w-3.5" />
                 Xem tin
               </Link>
             </Button>
+          ) : (
+            <p className="w-40 shrink-0 text-right text-xs text-muted-foreground">
+              Tin không còn hiển thị công khai ({LISTING_STATUS[r.listingStatus].toLowerCase()})
+              nên không mở xem được.
+            </p>
           )}
         </div>
 

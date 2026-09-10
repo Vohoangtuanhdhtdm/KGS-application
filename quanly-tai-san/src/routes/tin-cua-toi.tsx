@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { listingsApi, formatListingPrice, type OwnerListingDto } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
+import { api } from "@/lib/auth/api";
+import type { AuthUser } from "@/lib/auth/types";
 import { formatDate } from "@/lib/format";
 import { LISTING_TYPE, LISTING_STATUS, LISTING_STATUS_CLASS } from "@/constants/enums";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +30,7 @@ import {
   MoreHorizontal,
   Pencil,
   RotateCcw,
+  PhoneOff,
   Search,
   Trash2,
   XCircle,
@@ -139,6 +142,26 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
   const all = useMemo(() => query.data ?? [], [query.data]);
 
   /**
+   * Cảnh báo "tin của bạn không ai gọi được".
+   *
+   * Nút "Gọi" trên trang chi tiết dựng từ số điện thoại trong hồ sơ người đăng. Nếu hồ sơ
+   * chưa có số thì tin vẫn được duyệt, vẫn hiển thị, vẫn có lượt xem — chỉ là không còn
+   * cách nào liên hệ trực tiếp, và người đăng KHÔNG hề được báo. Họ ngồi nhìn lượt xem
+   * tăng mà không hiểu vì sao chẳng ai gọi. Đây là chỗ duy nhất trong luồng của họ nói
+   * ra chuyện đó.
+   */
+  const meQuery = useQuery({
+    queryKey: ["account-me"],
+    queryFn: () => api<AuthUser>("/account/me"),
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+  const thieuSoDienThoai =
+    meQuery.data != null &&
+    !meQuery.data.phoneNumber?.trim() &&
+    all.some((l) => l.status === 2);
+
+  /**
    * Lọc theo trạng thái + tìm theo tiêu đề, và chỉ dựng dần từng đợt.
    *
    * Một người đăng nhiều tin — trong dữ liệu thử nghiệm là 68 — thì bảng không lọc trở
@@ -194,6 +217,22 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
           </Link>
         </Button>
       </div>
+
+      {thieuSoDienThoai && (
+        <div className="flex flex-wrap items-start gap-3 rounded-md border border-warning/40 bg-warning/10 px-4 py-3">
+          <PhoneOff className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-sm font-medium">Tin của bạn đang hiển thị nhưng không ai gọi được</p>
+            <p className="text-sm text-muted-foreground">
+              Hồ sơ của bạn chưa có số điện thoại, nên trang tin không hiện nút gọi. Người
+              tìm nhà chỉ còn cách gửi yêu cầu xem nhà và chờ bạn trả lời.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0" asChild>
+            <Link to="/profile">Thêm số điện thoại</Link>
+          </Button>
+        </div>
+      )}
 
       {all.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
@@ -265,6 +304,56 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
             </div>
           ) : (
             <TooltipProvider>
+              {/* Bản dành cho màn hình hẹp.
+                  Bảng tám cột trên điện thoại buộc người dùng cuộn ngang để đọc hết một
+                  dòng, mà cuộn ngang lại giấu đi chính cột trạng thái và cột thao tác —
+                  hai thứ họ mở trang này để xem. Trên màn hẹp mỗi tin là một thẻ đọc dọc. */}
+              <ul className="divide-y md:hidden">
+                {visible.map((l) => (
+                  <li key={l.id} className="p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openListing(l)}
+                        disabled={l.status !== 2}
+                        className="min-w-0 flex-1 text-left text-sm font-medium leading-snug disabled:cursor-default"
+                      >
+                        {l.title}
+                      </button>
+                      <RowActions
+                        listing={l}
+                        busy={busy}
+                        onEdit={() => navigate({ to: "/dang-tin", search: { id: l.id } })}
+                        onBump={() => bump.mutate(l.id)}
+                        onClose={() => close.mutate(l.id)}
+                        onReopen={() => reopen.mutate(l.id)}
+                        onDelete={() => removeDraft.mutate(l.id)}
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <Badge variant="outline" className={LISTING_STATUS_CLASS[l.status]}>
+                        {LISTING_STATUS[l.status]}
+                      </Badge>
+                      <span className="font-medium">
+                        {formatListingPrice(l.price, l.type, l.rentPaymentCycle)}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="h-3.5 w-3.5" />
+                        {l.viewCount}
+                        <span className="sr-only">lượt xem</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(l.createdAt)}
+                      </span>
+                    </div>
+                    <Completeness percent={l.completenessPercent} />
+                  </li>
+                ))}
+              </ul>
+
+              {/* Bọc trong div để ẩn cả khung cuộn ngang mà <Table> tự dựng, không chỉ
+                  riêng thẻ <table>. */}
+              <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -334,6 +423,7 @@ export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}
                   })}
                 </TableBody>
               </Table>
+              </div>
             </TooltipProvider>
           )}
           {rows.length > visible.length && (

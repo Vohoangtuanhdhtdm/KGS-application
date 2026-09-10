@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -105,6 +105,23 @@ function PublicListingDetailPage() {
     staleTime: seed ? 60_000 : 0,
     retry: 1,
   });
+
+  /**
+   * Khi loader trên máy chủ không lấy được tin, `head` trả về tiêu đề chung "Chi tiết tin
+   * đăng" và nó ĐỨNG NGUYÊN như vậy kể cả sau khi phía client tải xong — thẻ trình duyệt,
+   * lịch sử và dấu trang đều ghi cùng một dòng cho mọi tin. Ở đây cập nhật lại tiêu đề
+   * theo dữ liệu thật ngay khi có.
+   *
+   * Chỉ chạm vào document.title khi loader KHÔNG có dữ liệu; nếu loader chạy được thì
+   * HeadContent đã đặt đúng rồi, và ghi đè thêm một lần nữa chỉ tạo cơ hội lệch nhau.
+   */
+  const resolvedTitle = query.data
+    ? `${query.data.title} — ${query.data.district}, ${query.data.city}`
+    : null;
+  useEffect(() => {
+    if (seed || !resolvedTitle) return;
+    document.title = resolvedTitle;
+  }, [seed, resolvedTitle]);
 
   if (query.isLoading) {
     return (
