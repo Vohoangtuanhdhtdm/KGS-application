@@ -676,6 +676,28 @@ namespace kgs_api.Services
         /// <summary>Bỏ khoá lạ, khử trùng lặp, giữ thứ tự ổn định. Khoá không nằm trong
         /// AmenityKeys.All bị loại im lặng thay vì ném lỗi — client cũ gửi khoá lạ thì tin
         /// vẫn đăng được, chỉ là tiện nghi đó không được ghi nhận.</summary>
+        public async Task<IReadOnlyList<ListingAreaDto>> GetAreasAsync(
+            ListingType? type, CancellationToken ct = default)
+        {
+            // Gộp ngay trong cơ sở dữ liệu. Danh sách này nhỏ (số quận có tin, không phải số
+            // tin) nên trả về trọn gói và để phía giao diện tự lọc khi người dùng gõ — tra
+            // cứu tại chỗ luôn nhanh hơn một vòng mạng cho mỗi ký tự.
+            var rows = await _listings.Query().AsNoTracking()
+                .Where(l => l.Status == ListingStatus.Approved)
+                // Lọc theo loại tin ngay tại đây: trang tìm kiếm luôn đang xem một loại, nên
+                // con số hiện cạnh mỗi khu vực phải là số tin người dùng SẼ thấy khi bấm vào.
+                // Đếm gộp cả thuê lẫn bán thì gợi ý ghi "11 tin" rồi mở ra chỉ có 4.
+                .Where(l => type == null || l.Type == type)
+                .GroupBy(l => new { l.Asset.Address.City, l.Asset.Address.District })
+                .Select(g => new ListingAreaDto(g.Key.City, g.Key.District, g.Count()))
+                .ToListAsync(ct);
+
+            return rows
+                .OrderByDescending(r => r.Count)
+                .ThenBy(r => r.District, StringComparer.CurrentCulture)
+                .ToList();
+        }
+
         public async Task<RelatedListingsDto> GetRelatedAsync(string slug, CancellationToken ct = default)
         {
             var current = await _listings.Query().AsNoTracking()

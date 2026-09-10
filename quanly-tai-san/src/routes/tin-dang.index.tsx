@@ -30,7 +30,7 @@ import type { SavedSearchCriteria } from "@/lib/api/savedSearches";
 import { DemandSearchSheet, type DemandSearchResult } from "@/components/public/DemandSearchSheet";
 import { useGeolocationOnDemand, type LatLng } from "@/hooks/useGeolocationOnDemand";
 import { useViewportKind } from "@/hooks/useViewportKind";
-import { geocodeAddress } from "@/lib/geocode";
+import { AreaSearchBox } from "@/components/public/AreaSearchBox";
 import { formatCurrency } from "@/lib/format";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Card } from "@/components/ui/card";
@@ -56,7 +56,6 @@ import {
   ChevronDown,
   List,
   Map as MapIcon,
-  LocateFixed,
   RotateCcw,
   Loader2,
   AlertTriangle,
@@ -169,31 +168,6 @@ function PublicListingsPage() {
     setShowSearchAreaButton(false);
   };
 
-  // ---- Ô tìm khu vực (geocoding) — debounce 500ms ----
-  const [addressQuery, setAddressQuery] = useState("");
-  const [geocoding, setGeocoding] = useState(false);
-  useEffect(() => {
-    const q = addressQuery.trim();
-    if (q.length < 3) return;
-    const t = setTimeout(async () => {
-      setGeocoding(true);
-      try {
-        const result = await geocodeAddress(q);
-        if (result) {
-          setSearchCenter({ lat: result.lat, lng: result.lng });
-          setRadiusMeters(DEFAULT_RADIUS_METERS);
-          setUsingMyLocation(false);
-          setShowSearchAreaButton(false);
-        }
-      } catch {
-        // Nominatim lỗi mạng/rate-limit — bỏ qua im lặng, không chặn UI
-      } finally {
-        setGeocoding(false);
-      }
-    }, 500);
-    return () => clearTimeout(t);
-  }, [addressQuery]);
-
   useEffect(() => {
     const t = setTimeout(() => {
       setKeyword(keywordInput.trim());
@@ -224,9 +198,7 @@ function PublicListingsPage() {
     setPriceMin(result.priceMin);
     setPriceMax(result.priceMax);
     setBedroomsMin(result.bedroomsMin);
-    if (result.location?.kind === "address") {
-      setAddressQuery(result.location.query);
-    } else if (result.location?.kind === "district") {
+    if (result.location?.kind === "district") {
       setCity(result.location.city);
       setDistrict(result.location.district);
     } else if (result.location?.kind === "myLocation") {
@@ -650,39 +622,12 @@ function PublicListingsPage() {
         </PopoverContent>
       </Popover>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button size="sm" variant="outline" className="h-8">
-            <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
-            Thêm bộ lọc
-            {activeFilterCount > 0 && (
-              <span className="ml-1 text-primary">({activeFilterCount})</span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-72 space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Thành phố</Label>
-            <Input
-              value={city}
-              onChange={(e) => {
-                setCity(e.target.value);
-              }}
-              placeholder="VD: TP. Hồ Chí Minh"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Quận/Huyện</Label>
-            <Input
-              value={district}
-              onChange={(e) => {
-                setDistrict(e.target.value);
-              }}
-              placeholder="VD: Quận 7"
-            />
-          </div>
-        </PopoverContent>
-      </Popover>
+      {/* Popover "Thêm bộ lọc" đã gỡ.
+          Nó chỉ chứa hai ô GÕ TAY cho thành phố và quận/huyện — người dùng phải gõ đúng
+          từng dấu và đúng tiền tố ("TP. Hồ Chí Minh", "Quận 7") thì bộ lọc mới khớp. Ô tìm
+          khu vực ngoài thanh công cụ nay chọn thẳng từ danh sách hành chính nên luôn trả về
+          đúng tên đang lưu trong cơ sở dữ liệu, và nó nằm ngay chỗ người dùng nhìn vào đầu
+          tiên thay vì bị chôn trong một popover lồng trong popover. */}
 
       <LocationSearchPopover
         open={radiusPopoverOpen}
@@ -712,21 +657,20 @@ function PublicListingsPage() {
   );
 
   const addressSearchBox = (className?: string) => (
-    <div className={`relative ${className ?? ""}`}>
-      <LocateFixed className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      <Input
-        placeholder="Tìm theo địa chỉ, quận, thành phố..."
-        className="pl-9 pr-8 h-8"
-        value={addressQuery}
-        onChange={(e) => setAddressQuery(e.target.value)}
-      />
-      {geocoding && (
-        <Loader2
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground"
-          aria-label="Đang tìm địa chỉ..."
-        />
-      )}
-    </div>
+    <AreaSearchBox
+      className={className}
+      city={city}
+      district={district}
+      type={type}
+      onPick={({ city: c, district: d }) => {
+        setCity(c);
+        setDistrict(d);
+      }}
+      onClear={() => {
+        setCity("");
+        setDistrict("");
+      }}
+    />
   );
 
   const keywordSearchBox = (className?: string) => (

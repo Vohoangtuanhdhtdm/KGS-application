@@ -5,6 +5,7 @@ using kgs_api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using static kgs_api.Common.Common;
+using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Controllers
 {
@@ -39,6 +40,19 @@ namespace kgs_api.Controllers
             [FromQuery] RetrievalMode mode = RetrievalMode.Hybrid,
             CancellationToken ct = default)
             => Ok(await _retrieval.SearchAsync(query, mode, ct));
+
+        /// <summary>Danh sách khu vực ĐANG CÓ tin đăng, để ô tìm khu vực gợi ý.
+        ///
+        /// Vì sao lấy từ chính tin đăng thay vì từ danh mục hành chính. Danh mục
+        /// (vietnam-provinces) ghi "Thành phố Hồ Chí Minh", còn dữ liệu tin đăng ghi
+        /// "TP. Hồ Chí Minh" — mà bộ lọc so khớp chuỗi CHÍNH XÁC, nên gợi ý lấy từ danh mục
+        /// sẽ luôn cho ra 0 kết quả. Lấy từ dữ liệu thật thì tên khớp tuyệt đối theo định
+        /// nghĩa, và thêm một cái lợi nữa: không bao giờ gợi ý một khu vực rỗng.</summary>
+        [HttpGet("areas")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IReadOnlyList<ListingAreaDto>>> Areas(
+            [FromQuery] ListingType? type, CancellationToken ct)
+            => Ok(await _listings.GetAreasAsync(type, ct));
 
         [HttpGet("{slug}")]
         [AllowAnonymous]

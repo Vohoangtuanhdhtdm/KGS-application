@@ -1,5 +1,6 @@
 ﻿using kgs_api.Dtos;
 using static kgs_api.Common.Common;
+using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Interfaces
 {
@@ -56,5 +57,8 @@ namespace kgs_api.Interfaces
         /// <summary>Hai dải gợi ý dưới trang chi tiết: tin tương tự và tin khác của cùng
         /// người đăng. Gộp một lần gọi vì cả hai đều suy ra từ chính tin đang xem.</summary>
         Task<RelatedListingsDto> GetRelatedAsync(string slug, CancellationToken ct = default);
+
+        /// <summary>Các khu vực đang có tin hiển thị, kèm số tin, để gợi ý ô tìm khu vực.</summary>
+        Task<IReadOnlyList<ListingAreaDto>> GetAreasAsync(ListingType? type, CancellationToken ct = default);
     }
 }
