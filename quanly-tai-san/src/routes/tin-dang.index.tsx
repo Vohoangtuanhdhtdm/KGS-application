@@ -74,7 +74,6 @@ export const Route = createFileRoute("/tin-dang/")({
 const DEFAULT_CENTER: [number, number] = [10.7769, 106.7009]; // TP.HCM
 const DEFAULT_RADIUS_METERS = 5000;
 const LIST_WIDTH_STORAGE_KEY = "tin-dang:list-width-percent";
-const DEMAND_BANNER_DISMISSED_KEY = "tin-dang:demand-banner-dismissed";
 
 /** "8,5 trieu" — chip loc phai doc luot duoc, khong phai dem so 0. */
 const fmtShort = (v: number) => formatCurrency(v, { compact: true });
@@ -227,20 +226,7 @@ function PublicListingsPage() {
     return () => clearTimeout(t);
   }, [keywordInput]);
 
-  // ---- Banner mời "Tìm theo nhu cầu" — luôn bắt đầu ẩn (khớp SSR, tránh hydration
-  // mismatch), chỉ hiện sau khi mount nếu localStorage chưa đánh dấu đã đóng. ----
-  const [showDemandBanner, setShowDemandBanner] = useState(false);
   const [demandSheetOpen, setDemandSheetOpen] = useState(false);
-
-  useEffect(() => {
-    const dismissed = window.localStorage.getItem(DEMAND_BANNER_DISMISSED_KEY) === "1";
-    if (!dismissed) setShowDemandBanner(true);
-  }, []);
-
-  const dismissDemandBanner = () => {
-    setShowDemandBanner(false);
-    window.localStorage.setItem(DEMAND_BANNER_DISMISSED_KEY, "1");
-  };
 
   // Áp toàn bộ lựa chọn từ form "Tìm theo nhu cầu" vào bộ lọc hiện có — tái sử dụng
   // đúng state/logic sẵn có (ô địa chỉ, city/district, luồng xin quyền vị trí), không
@@ -548,10 +534,19 @@ function PublicListingsPage() {
 
   const resultsBar = (
     <div className="flex items-center justify-between gap-2">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground tabular-nums">
         {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
       </p>
       <div className="flex items-center gap-1">
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 px-2 text-sm"
+        onClick={() => setDemandSheetOpen(true)}
+      >
+        <Target className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+        Tìm theo nhu cầu
+      </Button>
       <SavedSearchesPopover
         currentFilters={filters}
         suggestedName={suggestedSearchName}
@@ -589,12 +584,16 @@ function PublicListingsPage() {
   // Nhóm CHÍNH là ba thứ gần như ai cũng dùng ngay: mua hay thuê, ở đâu, tìm gì. Phần còn
   // lại lùi vào một nút 'Bộ lọc' có đếm số — vẫn cách đúng một cú bấm, nhưng không tranh
   // chỗ với ba thứ kia nữa.
+  /* Bán / Cho thuê là quyết định ĐẦU TIÊN và lớn nhất trên trang này — nó đổi ý nghĩa của
+     mọi con số phía sau (tiền tỷ so với tiền triệu mỗi tháng). Trước đây nó cao 32px, cùng
+     cỡ và cùng sức nặng với nút "Bộ lọc" và ô tìm kiếm, nên không có gì cho biết đây là
+     lựa chọn cấp cao hơn. */
   const typeToggle = (
-      <div className="inline-flex rounded-md border p-0.5">
+      <div className="inline-flex rounded-md border bg-muted/60 p-0.5">
         <Button
           size="sm"
           variant={type === 1 ? "default" : "ghost"}
-          className="h-8 rounded-sm"
+          className="h-9 rounded-sm px-4"
           onClick={() => {
             setType(1);
           }}
@@ -604,7 +603,7 @@ function PublicListingsPage() {
         <Button
           size="sm"
           variant={type === 2 ? "default" : "ghost"}
-          className="h-8 rounded-sm"
+          className="h-9 rounded-sm px-4"
           onClick={() => {
             setType(2);
           }}
@@ -693,10 +692,8 @@ function PublicListingsPage() {
         onClear={clearMyLocationSearch}
       />
 
-      <Button size="sm" variant="outline" className="h-8" onClick={() => setDemandSheetOpen(true)}>
-        <Target className="h-3.5 w-3.5 mr-1.5" />
-        Tìm theo nhu cầu
-      </Button>
+      {/* Nút "Tìm theo nhu cầu" đã chuyển lên thanh kết quả — nó là một CÁCH TÌM, không phải
+          một bộ lọc, nên chôn nó trong popover Bộ lọc thì gần như không ai thấy. */}
     </>
   );
 
@@ -730,7 +727,7 @@ function PublicListingsPage() {
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
         placeholder="Tìm theo tiêu đề, mô tả..."
-        className="pl-9 h-8"
+        className="pl-9 h-9"
         value={keywordInput}
         onChange={(e) => setKeywordInput(e.target.value)}
       />
@@ -739,33 +736,15 @@ function PublicListingsPage() {
 
   // ---- Banner mời "Tìm theo nhu cầu" — không chặn nội dung, nằm ngay trong luồng
   // cuộn phía trên danh sách, người dùng vẫn dùng được trang duyệt tin bình thường. ----
-  const demandBanner = showDemandBanner ? (
-    <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap">
-      <div className="flex items-center gap-2 text-sm">
-        <Target className="h-4 w-4 text-primary shrink-0" />
-        <span>Chưa biết tìm gì? Thử tìm theo nhu cầu cụ thể của bạn</span>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <Button size="sm" onClick={() => setDemandSheetOpen(true)}>
-          Tìm theo nhu cầu
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
-          aria-label="Đóng thông báo"
-          onClick={dismissDemandBanner}
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    </div>
-  ) : null;
 
   // ---- Nội dung danh sách (dùng chung mọi breakpoint) ----
+  // Skeleton phải dùng ĐÚNG lưới của danh sách thật. Trước đây nó cứng grid-cols-2 trong khi
+  // danh sách thật đã chuyển sang container query — nên lúc dữ liệu về, bố cục nhảy từ 2 cột
+  // sang 4 cột ngay trước mắt người dùng.
   const listContent = query.isLoading ? (
-    <div className="grid grid-cols-2 gap-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+    <div className="@container">
+    <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
+      {Array.from({ length: 8 }).map((_, i) => (
         <Card key={i} className="overflow-hidden py-0 gap-0">
           <Skeleton className="aspect-[4/3] w-full rounded-none" />
           <div className="p-4 space-y-2">
@@ -776,6 +755,7 @@ function PublicListingsPage() {
         </Card>
       ))}
     </div>
+    </div>
   ) : query.isError ? (
     <Card className="p-8 text-center text-sm text-destructive space-y-3">
       <AlertTriangle className="h-8 w-8 mx-auto text-destructive/60" />
@@ -785,10 +765,43 @@ function PublicListingsPage() {
       </Button>
     </Card>
   ) : items.length === 0 ? (
-    <Card className="p-10 text-center text-sm text-muted-foreground space-y-1.5">
-      <Home className="h-10 w-10 mx-auto text-muted-foreground/40 mb-1" />
-      <p>Không tìm thấy tin đăng nào phù hợp với bộ lọc.</p>
-      <p>Thử mở rộng bán kính tìm kiếm hoặc bỏ bớt bộ lọc.</p>
+    /* Trạng thái rỗng phải cho LỐI THOÁT, không chỉ lời khuyên.
+       Bản cũ viết "Thử mở rộng bán kính hoặc bỏ bớt bộ lọc" rồi dừng ở đó — người dùng vẫn
+       phải tự đi tìm xem mình đã đặt những điều kiện nào và gỡ ở đâu, mà các chip điều kiện
+       thì nằm tận trên đầu trang. Ở đây liệt kê đúng những điều kiện đang bật, gỡ được ngay
+       tại chỗ, kèm một nút xoá sạch. */
+    <Card className="p-8 text-center space-y-4">
+      <Home className="h-10 w-10 mx-auto text-muted-foreground/40" />
+      <div className="space-y-1">
+        <p className="font-medium">Không có tin nào khớp {appliedFilters.length > 0 ? "các điều kiện này" : "tìm kiếm này"}</p>
+        <p className="text-sm text-muted-foreground">
+          {appliedFilters.length > 0
+            ? "Gỡ bớt một điều kiện bên dưới để mở rộng kết quả."
+            : "Thử đổi từ khoá, hoặc chuyển giữa Bán và Cho thuê."}
+        </p>
+      </div>
+
+      {appliedFilters.length > 0 && (
+        <>
+          <div className="flex flex-wrap justify-center gap-2">
+            {appliedFilters.map((f) => (
+              <Button
+                key={f.key}
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={f.clear}
+              >
+                {f.label}
+                <X className="ml-1.5 h-3.5 w-3.5" />
+              </Button>
+            ))}
+          </div>
+          <Button size="sm" variant="ghost" onClick={clearAllFilters}>
+            Xoá tất cả điều kiện
+          </Button>
+        </>
+      )}
     </Card>
   ) : (
     // Fade nhẹ (không nhảy cóc) khi đổi filter mà đang refetch — vẫn giữ layout cũ, không
@@ -915,12 +928,23 @@ function PublicListingsPage() {
             </div>
           )}
           {typeToggle}
+
+          {/* Vạch ngăn: tách "đang xem loại tin nào" khỏi "lọc trong loại đó". Không có nó,
+              sáu điều khiển đứng thành một dải liền không phân nhóm. */}
+          <span aria-hidden="true" className="mx-1 h-6 w-px shrink-0 bg-border" />
+
           {addressSearchBox("w-56")}
           {keywordSearchBox("flex-1 min-w-[200px] max-w-md")}
 
           <Popover open={desktopFilterOpen} onOpenChange={setDesktopFilterOpen}>
             <PopoverTrigger asChild>
-              <Button size="sm" variant="outline" className="h-8 ml-auto shrink-0">
+              {/* Nút đổi sang dạng đặc khi đang có điều kiện lọc — trạng thái nói ra bằng
+                  HÌNH DẠNG chứ không chỉ bằng con số nhỏ trong ngoặc. */}
+              <Button
+                size="sm"
+                variant={activeFilterCount > 0 ? "default" : "outline"}
+                className="h-9 ml-auto shrink-0"
+              >
                 <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
                 Bộ lọc
                 {activeFilterCount > 0 && (
@@ -998,7 +1022,6 @@ function PublicListingsPage() {
             className="overflow-y-auto p-4 space-y-4 shrink-0"
             style={{ width: `${listWidthPercent}%` }}
           >
-            {demandBanner}
             {appliedFilterBar}
             {resultsBar}
             {listContent}
@@ -1023,7 +1046,6 @@ function PublicListingsPage() {
           <div
             className={`absolute inset-0 overflow-y-auto p-4 space-y-4 ${tabletView === "list" ? "" : "invisible pointer-events-none"}`}
           >
-            {demandBanner}
             {appliedFilterBar}
             {resultsBar}
             {listContent}
@@ -1046,7 +1068,6 @@ function PublicListingsPage() {
             onActiveSnapChange={setMobileSnap}
           >
             <div className="space-y-3">
-              {demandBanner}
               {appliedFilterBar}
               {resultsBar}
               {listContent}
