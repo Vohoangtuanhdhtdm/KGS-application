@@ -29,29 +29,34 @@ function postedAgoLabel(iso: string): string {
 
 interface PropertyListCardProps {
   property: PublicListingSummaryDto;
-  hovered: boolean;
-  highlighted: boolean;
   /** Tin này đã nằm trong danh sách đã lưu của người dùng chưa. */
   saved: boolean;
   /** Bật/tắt lưu tin. Cha xử lý đăng nhập và gọi API — xem chú thích ở nút trái tim. */
   onToggleSave: (id: string) => void;
+
+  /* Bốn thuộc tính dưới đây chỉ trang tìm kiếm cần, vì ở đó thẻ phải đồng bộ với marker
+     trên bản đồ. Trang chủ không có bản đồ nên để mặc định — trước đây trang chủ tự dựng
+     một thẻ tin ĐỘC LẬP chỉ vì thẻ này bắt buộc bốn thuộc tính đó, và hậu quả là mọi cải
+     tiến của thẻ (tổng chi phí, nút lưu, số thẳng hàng) không hề tới được trang chủ. */
+  hovered?: boolean;
+  highlighted?: boolean;
   // Nhận id làm tham số thay vì đóng gói closure — để cha truyền được callback ỔN ĐỊNH
   // (useCallback deps rỗng), giúp React.memo bên dưới thực sự chặn re-render thừa khi
   // hoveredId đổi (chỉ card liên quan tới id đó mới re-render, không phải toàn danh sách).
-  onHover: (id: string) => void;
-  onLeave: (id: string) => void;
+  onHover?: (id: string) => void;
+  onLeave?: (id: string) => void;
 }
 
 export const PropertyListCard = memo(
   forwardRef<HTMLDivElement, PropertyListCardProps>(function PropertyListCard(
-    { property: p, hovered, highlighted, saved, onToggleSave, onHover, onLeave },
+    { property: p, hovered = false, highlighted = false, saved, onToggleSave, onHover, onLeave },
     ref,
   ) {
     const [imgLoaded, setImgLoaded] = useState(false);
     const distanceKm = p.distanceMeters != null ? p.distanceMeters / 1000 : null;
 
     return (
-      <div ref={ref} onMouseEnter={() => onHover(p.id)} onMouseLeave={() => onLeave(p.id)}>
+      <div ref={ref} onMouseEnter={() => onHover?.(p.id)} onMouseLeave={() => onLeave?.(p.id)}>
         <Link
           to="/tin-dang/$slug"
           params={{ slug: p.slug }}
