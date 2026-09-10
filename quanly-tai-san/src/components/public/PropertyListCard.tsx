@@ -2,9 +2,20 @@ import { forwardRef, memo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { formatListingPrice, type PublicListingSummaryDto } from "@/lib/api/listings";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon, CheckCircle2 } from "lucide-react";
+import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon } from "lucide-react";
+
+/**
+ * Tổng chi phí viết ĐỦ SỐ, không rút gọn.
+ *
+ * Bản đầu tôi rút gọn thành "8,0 tr" cho vừa thẻ. Nhưng tin có giá thuê 7.900.000 và tổng
+ * 7.950.000 sẽ hiện thành "Tổng 8,0 tr" — nói quá 50.000đ, và đứng ngay cạnh con số
+ * 7.900.000 thì người đọc tưởng phí cộng thêm tới cả trăm nghìn. Cả sản phẩm này dựng lên
+ * quanh lời hứa minh bạch chi phí, nên đúng chỗ này là chỗ không được phép làm tròn.
+ */
+function formatFullVnd(v: number): string {
+  return `${Math.round(v).toLocaleString("vi-VN")} ₫`;
+}
 
 /** "Đăng 2 ngày trước" — chỉ hiện khi có createdAt (field còn cần backend xác nhận). */
 function postedAgoLabel(iso: string): string {
@@ -20,6 +31,10 @@ interface PropertyListCardProps {
   property: PublicListingSummaryDto;
   hovered: boolean;
   highlighted: boolean;
+  /** Tin này đã nằm trong danh sách đã lưu của người dùng chưa. */
+  saved: boolean;
+  /** Bật/tắt lưu tin. Cha xử lý đăng nhập và gọi API — xem chú thích ở nút trái tim. */
+  onToggleSave: (id: string) => void;
   // Nhận id làm tham số thay vì đóng gói closure — để cha truyền được callback ỔN ĐỊNH
   // (useCallback deps rỗng), giúp React.memo bên dưới thực sự chặn re-render thừa khi
   // hoveredId đổi (chỉ card liên quan tới id đó mới re-render, không phải toàn danh sách).
@@ -29,10 +44,9 @@ interface PropertyListCardProps {
 
 export const PropertyListCard = memo(
   forwardRef<HTMLDivElement, PropertyListCardProps>(function PropertyListCard(
-    { property: p, hovered, highlighted, onHover, onLeave },
+    { property: p, hovered, highlighted, saved, onToggleSave, onHover, onLeave },
     ref,
   ) {
-    const [favorited, setFavorited] = useState(false);
     const [imgLoaded, setImgLoaded] = useState(false);
     const distanceKm = p.distanceMeters != null ? p.distanceMeters / 1000 : null;
 
@@ -44,8 +58,8 @@ export const PropertyListCard = memo(
           className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <Card
-            className={`overflow-hidden py-0 gap-0 h-full transition-all duration-150 ${
-              hovered ? "shadow-lg -translate-y-0.5" : "shadow-sm"
+            className={`overflow-hidden py-0 gap-0 h-full transition-[box-shadow,transform] duration-[--dur-base] ease-[--ease-out] ${
+              hovered ? "shadow-[--shadow-e3] -translate-y-0.5" : "shadow-none"
             } ${highlighted ? "ring-2 ring-primary" : ""}`}
           >
             <div className="relative aspect-[4/3] bg-muted">
@@ -68,33 +82,45 @@ export const PropertyListCard = memo(
                   <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
                 </div>
               )}
+              {/* Nút lưu tin.
+                  Trước đây nút này chỉ đổi một biến useState trong chính thẻ — nó sáng lên
+                  khi bấm rồi mất sạch khi tải lại trang, và không bao giờ xuất hiện ở mục
+                  "Tin đã lưu". Một nút giả vờ chạy còn tệ hơn không có nút. Nay cha gọi
+                  đúng API lưu tin, và đưa người chưa đăng nhập sang trang đăng nhập. */}
               <button
                 type="button"
-                aria-label={favorited ? "Bỏ yêu thích" : "Yêu thích"}
-                aria-pressed={favorited}
+                aria-label={saved ? "Bỏ lưu tin" : "Lưu tin"}
+                aria-pressed={saved}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setFavorited((f) => !f);
+                  onToggleSave(p.id);
                 }}
-                className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-sm hover:bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-card/90 backdrop-blur transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                {/* key đổi theo favorited → remount → animation heart-pop tự chạy lại mỗi lần bấm */}
+                {/* key đổi theo trạng thái → remount → animation heart-pop chạy lại mỗi lần bấm */}
                 <Heart
-                  key={favorited ? "on" : "off"}
+                  key={saved ? "on" : "off"}
                   className={`h-4 w-4 animate-heart-pop ${
-                    favorited ? "fill-destructive text-destructive" : "text-muted-foreground"
+                    saved ? "fill-destructive text-destructive" : "text-muted-foreground"
                   }`}
                 />
               </button>
-              <Badge className="absolute top-2 left-2 bg-success/90 hover:bg-success/90 text-success-foreground gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                Đã duyệt
-              </Badge>
             </div>
             <div className="p-4 space-y-1.5">
-              <div className="text-lg font-bold text-foreground">
-                {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-lg font-bold tabular-nums text-foreground">
+                  {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
+                </span>
+                {/* Tổng chi phí hàng tháng — luận điểm cốt lõi của sản phẩm, và nó đã nằm
+                    sẵn trong dữ liệu trả về từ trước mà thẻ không hề dùng tới. Chỉ hiện khi
+                    LỚN HƠN giá thuê: bằng nhau nghĩa là tin chưa khai phí nào, lúc đó lặp
+                    lại con số cũ chỉ làm thẻ rối mà không thêm thông tin. */}
+                {p.type === 2 && p.totalMonthlyCost > p.price && (
+                  <span className="rounded bg-price-soft px-1.5 py-0.5 text-xs font-medium tabular-nums text-price">
+                    Tổng {formatFullVnd(p.totalMonthlyCost)}/tháng
+                  </span>
+                )}
               </div>
               <div className="font-medium line-clamp-1">{p.title}</div>
               <div className="text-sm text-muted-foreground flex items-center gap-1.5">

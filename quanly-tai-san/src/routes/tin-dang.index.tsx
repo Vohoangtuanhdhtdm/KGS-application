@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   useCallback,
   useEffect,
@@ -8,7 +8,9 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import type L from "leaflet";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { savedListingsApi } from "@/lib/api/engagement";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { toast } from "sonner";
 import {
   listingsApi,
@@ -90,6 +92,10 @@ function PublicListingsPage() {
   const [keyword, setKeyword] = useState("");
   const [sortBy, setSortBy] = useState<ListingSortCode>(1);
 
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { isAuthenticated } = useAuth();
+
   // Đồng bộ hover 2 chiều Card <-> Marker + click marker cuộn tới card
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -98,6 +104,52 @@ function PublicListingsPage() {
   // Callback ỔN ĐỊNH (deps rỗng) truyền cho PropertyListCard đã bọc React.memo — nếu tạo
   // closure mới mỗi render (như trước) thì memo vô nghĩa, toàn bộ danh sách vẫn re-render
   // mỗi khi hoveredId đổi thay vì chỉ card liên quan.
+  /**
+   * Lưu tin ngay từ danh sách.
+   *
+   * Danh sách tin không trả về trạng thái đã-lưu của từng tin, nên lấy trọn danh sách đã
+   * lưu một lần rồi tra bằng Set — rẻ hơn nhiều so với hỏi từng tin, và react-query giữ
+   * lại nên chuyển qua lại giữa các trang không gọi lại.
+   */
+  const savedQuery = useQuery({
+    queryKey: ["saved-listings"],
+    queryFn: () => savedListingsApi.list(),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const savedIds = useMemo(
+    () => new Set((savedQuery.data ?? []).map((s) => s.listingId)),
+    [savedQuery.data],
+  );
+
+  const toggleSave = useMutation({
+    mutationFn: ({ id, dangLuu }: { id: string; dangLuu: boolean }) =>
+      dangLuu ? savedListingsApi.unsave(id) : savedListingsApi.save(id),
+    onSuccess: (_r, v) => {
+      qc.invalidateQueries({ queryKey: ["saved-listings"] });
+      toast.success(v.dangLuu ? "Đã bỏ lưu tin" : "Đã lưu tin");
+    },
+    onError: (e) => toast.error(getErrorMessage(e, "Không lưu được tin")),
+  });
+
+  const handleToggleSave = useCallback(
+    (id: string) => {
+      // Chưa đăng nhập thì không im lặng nuốt thao tác: đưa sang đăng nhập kèm đường quay lại.
+      if (!isAuthenticated) {
+        navigate({ to: "/login", search: { redirect: "/tin-dang" } });
+        return;
+      }
+      toggleSave.mutate({ id, dangLuu: savedIdsRef.current.has(id) });
+    },
+    // Cố ý deps rỗng: callback phải ỔN ĐỊNH để React.memo trên thẻ còn tác dụng. Trạng thái
+    // đã-lưu đọc qua ref thay vì đóng gói vào closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAuthenticated],
+  );
+  const savedIdsRef = useRef(savedIds);
+  savedIdsRef.current = savedIds;
+
   const handleCardHover = useCallback((id: string) => setHoveredId(id), []);
   const handleCardLeave = useCallback(
     (id: string) => setHoveredId((cur) => (cur === id ? null : cur)),
@@ -746,7 +798,12 @@ function PublicListingsPage() {
         query.isFetching && !isFetchingNextPage ? "opacity-60" : "opacity-100"
       }`}
     >
-      <div className="grid grid-cols-2 gap-3">
+      {/* @container: cột danh sách này KÉO GIÃN ĐƯỢC (người dùng tự chỉnh bề rộng, lưu ở
+          localStorage), nên số cột phải theo bề rộng của chính nó chứ không theo viewport.
+          Trước đây cứng grid-cols-2 ở mọi bề rộng: kéo rộng ra thì thẻ phình to vô ích, thu
+          hẹp lại thì hai thẻ chen nhau không đọc được. */}
+      <div className="@container">
+      <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
         {items.map((p) => (
           <PropertyListCard
             key={p.id}
@@ -756,10 +813,13 @@ function PublicListingsPage() {
             }}
             hovered={hoveredId === p.id}
             highlighted={highlightedId === p.id}
+            saved={savedIds.has(p.id)}
+            onToggleSave={handleToggleSave}
             onHover={handleCardHover}
             onLeave={handleCardLeave}
           />
         ))}
+      </div>
       </div>
       {/* Cot moc cuon vo han. Van giu nut bam duoi day: IntersectionObserver khong
           chay khi nguoi dung dieu huong bang ban phim hoac trinh duyet chan no. */}
