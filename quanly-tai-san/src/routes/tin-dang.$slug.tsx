@@ -200,20 +200,21 @@ function PublicListingDetailPage() {
                   Đăng ngày {formatDate(p.publishedAt)}
                 </span>
               </div>
+              {/* GIÁ là neo thị giác, không phải tiêu đề.
+                  Trước đây cả hai cùng text-2xl font-semibold nên mắt không biết bám vào
+                  đâu — trong khi thứ quyết định người ta đọc tiếp hay đóng tab là con số.
+                  Dòng "Tổng cố định ..." trước nằm ở đây cũng đã bỏ: nó lặp lại đúng thứ
+                  khối bóc tách chi phí bên dưới nói kỹ hơn. */}
               <div className="flex items-start justify-between gap-3">
-                <h1 className="text-2xl font-semibold">{p.title}</h1>
+                <div className="min-w-0 space-y-1">
+                  <div className="text-3xl font-bold tabular-nums leading-none text-price">
+                    {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
+                  </div>
+                  <h1 className="text-lg font-medium leading-snug text-foreground">{p.title}</h1>
+                </div>
                 <ListingShareActions slug={p.slug} title={p.title} />
               </div>
-              <div className="text-2xl font-semibold text-primary">
-                {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
-              </div>
-              {p.type === 2 && p.totalMonthlyCost > p.price && (
-                <p className="text-sm text-muted-foreground">
-                  Tổng cố định {formatCurrency(p.totalMonthlyCost)}/tháng (đã gồm phí dịch vụ,
-                  gửi xe, internet) — chưa tính điện nước
-                </p>
-              )}
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 shrink-0" />
                 {address || "—"}
               </p>
@@ -538,18 +539,29 @@ function TermsCard({ listing: p }: { listing: PublicListingDetailDto }) {
   const t = p.terms;
   const money = (v: number | null) => (v == null ? null : formatCurrency(v));
 
-  const rows: [string, string | null][] = [
+  /* Bóc tách chi phí — điểm nhấn ký tên của sản phẩm.
+     Bản trước đổ cả chín mục vào một lưới ô ngang hàng nhau: tiền cọc, điện, nước, phí dịch
+     vụ, gửi xe, internet, ngày dọn vào, thuê tối thiểu, số người. Đó là một bảng thông số,
+     và nó KHÔNG diễn đạt được điều duy nhất làm KGS khác các sàn khác — rằng giá thuê cộng
+     các khoản cố định mới ra con số người thuê thực sự trả mỗi tháng.
+     Ở đây viết ra đúng phép cộng đó. Điện và nước tách xuống dưới vì chúng tính theo mức
+     dùng, cộng vào một con số cố định là nói sai. */
+  const khoanCoDinh: [string, number][] = [
+    ["Phí dịch vụ", t.serviceFee ?? 0],
+    ["Gửi xe", t.parkingFee ?? 0],
+    ["Internet", t.internetFee ?? 0],
+  ].filter(([, v]) => (v as number) > 0) as [string, number][];
+
+  const theoMucDung: string[] = [];
+  if (t.electricityPrice != null)
+    theoMucDung.push(`điện ${formatCurrency(t.electricityPrice)}/kWh`);
+  if (t.waterPrice != null)
+    theoMucDung.push(
+      `nước ${formatCurrency(t.waterPrice)}${t.waterPricing === 1 ? "/m³" : "/người/tháng"}`,
+    );
+
+  const dieuKien: [string, string | null][] = [
     ["Tiền cọc", t.depositMonths != null ? `${t.depositMonths} tháng` : null],
-    ["Tiền điện", t.electricityPrice != null ? `${money(t.electricityPrice)}/kWh` : null],
-    [
-      "Tiền nước",
-      t.waterPrice != null
-        ? `${money(t.waterPrice)}${t.waterPricing === 1 ? "/m³" : "/người/tháng"}`
-        : null,
-    ],
-    ["Phí dịch vụ", t.serviceFee != null ? `${money(t.serviceFee)}/tháng` : null],
-    ["Gửi xe", t.parkingFee != null ? `${money(t.parkingFee)}/tháng` : null],
-    ["Internet", t.internetFee != null ? `${money(t.internetFee)}/tháng` : null],
     ["Dọn vào từ", t.availableFrom ? formatDate(t.availableFrom) : null],
     ["Thuê tối thiểu", t.minLeaseMonths != null ? `${t.minLeaseMonths} tháng` : null],
     ["Ở tối đa", t.maxOccupants != null ? `${t.maxOccupants} người` : null],
@@ -562,10 +574,12 @@ function TermsCard({ listing: p }: { listing: PublicListingDetailDto }) {
     ["Được nấu ăn", t.cookingAllowed],
   ];
 
-  const shown = rows.filter(([, v]) => v);
+  const dieuKienHien = dieuKien.filter(([, v]) => v);
   const shownRules = rules.filter(([, v]) => v !== null);
+  const coGiDeHien =
+    khoanCoDinh.length > 0 || theoMucDung.length > 0 || dieuKienHien.length > 0 || shownRules.length > 0;
 
-  if (shown.length === 0 && shownRules.length === 0) {
+  if (!coGiDeHien) {
     return (
       <Card>
         <CardContent className="py-5 text-sm text-muted-foreground">
@@ -576,40 +590,87 @@ function TermsCard({ listing: p }: { listing: PublicListingDetailDto }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Chi phí &amp; điều kiện</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {shown.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
-            {shown.map(([label, v]) => (
-              <div key={label}>
-                <div className="text-xs text-muted-foreground">{label}</div>
-                <div className="font-medium mt-0.5">{v}</div>
+    <div className="space-y-4">
+      {/* Khối phép cộng. Dùng viền màu giá + nền chìm để nó KHÁC mọi thẻ khác trên trang —
+          đây là chỗ đáng nhìn nhất, nên nó phải trông khác. */}
+      <Card className="border-price/30 bg-price-soft/40 shadow-[--shadow-e2]">
+        <CardContent className="p-5">
+          <p className="text-xs font-medium uppercase tracking-wider text-price">
+            Mỗi tháng bạn trả
+          </p>
+
+          <dl className="mt-3 space-y-1.5 text-sm">
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-muted-foreground">Giá thuê</dt>
+              <dd className="tabular-nums font-medium">{formatCurrency(p.price)}</dd>
+            </div>
+            {khoanCoDinh.map(([nhan, v]) => (
+              <div key={nhan} className="flex items-baseline justify-between gap-4">
+                <dt className="text-muted-foreground">+ {nhan}</dt>
+                <dd className="tabular-nums font-medium">{formatCurrency(v)}</dd>
               </div>
             ))}
+          </dl>
+
+          <div className="mt-3 flex items-baseline justify-between gap-4 border-t border-price/25 pt-3">
+            <span className="font-semibold">Tổng cố định</span>
+            <span className="text-xl font-bold tabular-nums text-price">
+              {formatCurrency(p.totalMonthlyCost)}
+            </span>
           </div>
-        )}
-        {shownRules.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-1">
-            {shownRules.map(([label, v]) => (
-              <Badge
-                key={label}
-                variant="outline"
-                className={
-                  v
-                    ? "bg-success/10 text-success border-success/30 font-normal"
-                    : "bg-muted text-muted-foreground font-normal"
-                }
-              >
-                {v ? "✓" : "✕"} {label}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+
+          {theoMucDung.length > 0 && (
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              <span className="font-medium text-foreground">Chưa gồm</span>{" "}
+              {theoMucDung.join(" · ")} — hai khoản này tính theo mức dùng nên không cộng
+              thành một con số cố định được.
+            </p>
+          )}
+          {theoMucDung.length === 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Chủ tin chưa khai giá điện và nước. Nên hỏi trước khi đi xem.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {(dieuKienHien.length > 0 || shownRules.length > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Điều kiện thuê</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {dieuKienHien.length > 0 && (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-4">
+                {dieuKienHien.map(([label, v]) => (
+                  <div key={label}>
+                    <div className="text-xs text-muted-foreground">{label}</div>
+                    <div className="mt-0.5 font-medium tabular-nums">{v}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {shownRules.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {shownRules.map(([label, v]) => (
+                  <Badge
+                    key={label}
+                    variant="outline"
+                    className={
+                      v
+                        ? "border-price/30 bg-price-soft text-price font-normal"
+                        : "bg-muted text-muted-foreground font-normal"
+                    }
+                  >
+                    {v ? "✓" : "✕"} {label}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
