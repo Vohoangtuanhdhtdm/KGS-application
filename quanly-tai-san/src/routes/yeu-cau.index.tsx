@@ -24,7 +24,7 @@ export const Route = createFileRoute("/yeu-cau/")({
 });
 
 /** `embedded` = đang render bên trong FeatureSheet: bỏ padding/tiêu đề trùng lặp. */
-export function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
+function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
   return (
     <div className={embedded ? "space-y-5" : "p-6 space-y-5 max-w-[1000px]"}>
       <div>

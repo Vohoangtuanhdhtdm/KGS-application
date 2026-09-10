@@ -18,7 +18,7 @@ export const Route = createFileRoute("/da-luu/")({
 });
 
 /** `embedded` = đang render bên trong FeatureSheet: bỏ padding/tiêu đề trùng lặp. */
-export function SavedListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
+function SavedListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const qc = useQueryClient();
 
   const query = useQuery({
