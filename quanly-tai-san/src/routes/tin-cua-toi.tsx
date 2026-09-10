@@ -84,7 +84,7 @@ function Completeness({ percent }: { percent: number }) {
   );
 }
 
-export function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
+function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
