@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { adminApi, type AdminPendingListing } from "@/lib/api/admin";
@@ -98,10 +98,27 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
 
   const statsQ = useQuery({ queryKey: ["admin-stats"], queryFn: () => adminApi.stats(), retry: 1 });
 
+  /**
+   * Số trang của hàng đợi.
+   *
+   * Máy chủ vẫn luôn phân trang (20 tin/trang, kèm totalCount), nhưng phía giao diện
+   * trước đây không gửi `page` và cũng không dựng nút chuyển trang — nên nó vĩnh viễn
+   * đứng ở trang 1. Dữ liệu thử nghiệm có đúng 20 tin chờ duyệt nên trông vẫn đủ, và đó
+   * chính là lý do lỗi này lọt qua: hàng đợi thứ 21 trở đi không có đường nào tới được.
+   */
+  const [page, setPage] = useState(1);
+
   const filters = {
     keyword: keyword.trim() || undefined,
     type: type === "all" ? undefined : (Number(type) as 1 | 2),
+    page,
   };
+
+  // Đổi điều kiện lọc thì tập kết quả khác hẳn — giữ nguyên số trang cũ sẽ nhảy vào giữa
+  // một danh sách mới, hoặc rơi vào trang trống.
+  useEffect(() => {
+    setPage(1);
+  }, [keyword, type]);
 
   const queueQ = useQuery({
     queryKey: ["admin-pending", filters],
@@ -111,6 +128,11 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
   });
 
   const rows = queueQ.data?.items ?? [];
+  const totalCount = queueQ.data?.totalCount ?? 0;
+  const pageSize = queueQ.data?.pageSize ?? 20;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const firstOnPage = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastOnPage = Math.min(page * pageSize, totalCount);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin-pending"] });
@@ -139,7 +161,8 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
   const toggle = (id: string) =>
     setChecked((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
 
@@ -262,6 +285,33 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
                 ))}
               </ul>
             )}
+            {totalCount > pageSize && (
+              <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {firstOnPage}–{lastOnPage} / {totalCount}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7"
+                    disabled={page <= 1 || queueQ.isFetching}
+                    onClick={() => setPage((n) => Math.max(1, n - 1))}
+                  >
+                    Trước
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7"
+                    disabled={page >= totalPages || queueQ.isFetching}
+                    onClick={() => setPage((n) => Math.min(totalPages, n + 1))}
+                  >
+                    Sau
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -376,9 +426,12 @@ function QueueRow({
             <MapPin className="h-3 w-3" />
             {l.district}
           </span>
-          <span className="inline-flex items-center gap-1">
+          {/* Số ảnh là tiêu chí duyệt: tin không ảnh gần như luôn phải trả lại. Biểu tượng
+              một mình thì kiểm duyệt viên phải đoán con số đó đếm cái gì. */}
+          <span className="inline-flex items-center gap-1" title="Số ảnh">
             <ImageIcon className="h-3 w-3" />
             {l.imageCount}
+            <span className="sr-only">ảnh</span>
           </span>
         </div>
         <div className="text-xs text-muted-foreground truncate">{l.ownerName}</div>
