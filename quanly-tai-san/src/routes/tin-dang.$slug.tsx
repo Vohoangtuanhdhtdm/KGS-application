@@ -674,79 +674,139 @@ function TermsCard({ listing: p }: { listing: PublicListingDetailDto }) {
   );
 }
 
+/**
+ * Gallery ảnh.
+ *
+ * Bản trước là MỘT ảnh cao 320px kèm một dải thumbnail nhỏ bên dưới — trên một sàn bất động
+ * sản, nơi ảnh là thứ quyết định người ta bấm vào hay bỏ qua, đó là cách dùng chỗ tệ nhất:
+ * ảnh chính vẫn nhỏ, mà các ảnh còn lại thì bé tới mức không xem được gì.
+ *
+ * Bản này dựng lưới khảm: một ảnh lớn chiếm nửa trái, tối đa bốn ảnh nhỏ xếp lưới bên phải,
+ * và một nút "Xem tất cả N ảnh". Lưới chỉ dựng khi có từ 3 ảnh — ít hơn thì khảm trông
+ * khuyết, nên rơi về một ảnh lớn tràn chiều ngang.
+ */
 function Gallery({ images, title }: { images: string[]; title: string }) {
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
 
+  const moAnh = (i: number) => {
+    setIndex(i);
+    setLightbox(true);
+  };
+
+  // Điều hướng bằng bàn phím trong lightbox. Không có nó thì người dùng bàn phím mở được
+  // ảnh nhưng không đi tiếp được, và phải Esc ra rồi bấm chuột vào ảnh kế.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") setIndex((i) => (i - 1 + images.length) % images.length);
+      if (e.key === "ArrowRight") setIndex((i) => (i + 1) % images.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, images.length]);
+
   if (images.length === 0) {
     return (
-      <div className="h-80 rounded-lg bg-muted flex items-center justify-center">
+      <div className="flex aspect-[16/9] items-center justify-center rounded-xl bg-muted">
         <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
       </div>
     );
   }
 
-  const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
-  const next = () => setIndex((i) => (i + 1) % images.length);
+  const anhLon = (
+    <button
+      type="button"
+      onClick={() => moAnh(0)}
+      className="group relative h-full w-full overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <img
+        src={images[0]}
+        alt={`${title} — ảnh 1`}
+        className="h-full w-full cursor-zoom-in object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+      />
+    </button>
+  );
 
   return (
-    <div className="space-y-2">
-      <div className="relative h-80 rounded-lg overflow-hidden bg-muted">
-        <img
-          src={images[index]}
-          alt={`${title} — ảnh ${index + 1}`}
-          className="w-full h-full object-cover cursor-zoom-in"
-          onClick={() => setLightbox(true)}
-        />
-        {images.length > 1 && (
-          <>
-            <button
-              type="button"
-              className="absolute left-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
-              onClick={prev}
-              aria-label="Ảnh trước"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
-              onClick={next}
-              aria-label="Ảnh sau"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-            <div className="absolute bottom-2 right-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
-              {index + 1}/{images.length}
-            </div>
-          </>
-        )}
-      </div>
-      {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {images.map((url, i) => (
-            <button
-              key={url}
-              type="button"
-              className={`h-16 w-24 shrink-0 rounded-md overflow-hidden border-2 ${
-                i === index ? "border-primary" : "border-transparent opacity-70"
-              }`}
-              onClick={() => setIndex(i)}
-            >
-              <img src={url} alt="" className="w-full h-full object-cover" />
-            </button>
-          ))}
+    <div>
+      {images.length < 3 ? (
+        <div className="aspect-[16/9] overflow-hidden rounded-xl bg-muted">{anhLon}</div>
+      ) : (
+        <div className="relative grid aspect-[16/9] grid-cols-2 gap-2">
+          {anhLon}
+          {/* Lưới phải TỰ THÍCH ỨNG theo số ảnh còn lại.
+              Bản đầu tôi cố định 2x2 rồi lấp chỗ thiếu bằng ô xám — mà ô xám trong lưới
+              khảm trông y hệt ảnh hỏng, đúng thứ đang muốn tránh. Có 1-2 ảnh phụ thì xếp
+              một cột; từ 3 ảnh trở lên mới dùng 2x2. Không bao giờ có ô trống. */}
+          <div
+            className={`grid gap-2 ${
+              images.length - 1 <= 2 ? "grid-cols-1" : "grid-cols-2 grid-rows-2"
+            }`}
+          >
+            {images.slice(1, 5).map((url, i) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => moAnh(i + 1)}
+                className="group relative overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <img
+                  src={url}
+                  alt={`${title} — ảnh ${i + 2}`}
+                  className="h-full w-full cursor-zoom-in object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute bottom-3 right-3 bg-card shadow-[--shadow-e2]"
+            onClick={() => moAnh(0)}
+          >
+            <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
+            Xem tất cả {images.length} ảnh
+          </Button>
         </div>
       )}
 
       <Dialog open={lightbox} onOpenChange={setLightbox}>
-        <DialogContent className="max-w-5xl p-2">
-          <DialogTitle className="sr-only">Ảnh phóng to</DialogTitle>
-          <img
-            src={images[index]}
-            alt={`${title} — phóng to`}
-            className="max-h-[80vh] w-full object-contain"
-          />
+        <DialogContent className="max-w-6xl p-2">
+          <DialogTitle className="sr-only">
+            {title} — ảnh {index + 1} trên {images.length}
+          </DialogTitle>
+          <div className="relative">
+            <img
+              src={images[index]}
+              alt={`${title} — ảnh ${index + 1}`}
+              className="max-h-[82vh] w-full object-contain"
+            />
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}
+                  aria-label="Ảnh trước"
+                  className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIndex((i) => (i + 1) % images.length)}
+                  aria-label="Ảnh sau"
+                  className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs tabular-nums text-white">
+                  {index + 1} / {images.length}
+                </div>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

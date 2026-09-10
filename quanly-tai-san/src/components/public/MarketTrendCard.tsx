@@ -17,8 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const HEDONIC = "#7c3aed";
-const NAIVE = "#94a3b8";
+/* Màu lấy từ token, không viết cứng.
+   Trước đây là "#7c3aed" (tím) và "#94a3b8" — tím không có trong bảng màu của sản phẩm, và
+   cả hai đều là giá trị cố định nên ở giao diện tối chúng không đổi theo nền. Chỉ số này nói
+   về GIÁ, nên nó dùng đúng màu giá của hệ thống. */
+const HEDONIC = "var(--color-price)";
+const NAIVE = "var(--color-muted-foreground)";
 
 /** "16/06" — 17 mốc tuần, ghi đủ năm thì nhãn chồng lên nhau. */
 function shortWeek(iso: string) {
@@ -118,9 +122,38 @@ export function MarketTrendCard({
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-            <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={2} />
-            <YAxis tick={{ fontSize: 11 }} width={42} domain={["dataMin - 3", "dataMax + 3"]} />
+            {/* interval="preserveStartEnd" thay cho interval={2}: số nhãn tự giãn theo bề
+                rộng thật, và luôn giữ mốc đầu/cuối — với interval cố định, khung hẹp vẫn cố
+                vẽ đủ nhãn nên chúng chồng lên nhau. */}
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+              tickLine={false}
+              axisLine={{ stroke: "var(--color-border)" }}
+              interval="preserveStartEnd"
+              minTickGap={28}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+              tickLine={false}
+              axisLine={false}
+              width={38}
+              domain={["dataMin - 3", "dataMax + 3"]}
+            />
+            {/* Tooltip mặc định của Recharts là hộp trắng viền xám cứng — ở giao diện tối nó
+                thành một mảng trắng chói giữa nền tối. Dựng lại bằng token. */}
             <Tooltip
+              cursor={{ stroke: "var(--color-border)", strokeWidth: 1 }}
+              contentStyle={{
+                background: "var(--color-popover)",
+                border: "1px solid var(--color-border)",
+                borderRadius: 8,
+                fontSize: 12,
+                color: "var(--color-popover-foreground)",
+                boxShadow: "var(--shadow-e2)",
+              }}
+              labelStyle={{ color: "var(--color-muted-foreground)", fontSize: 11 }}
+              itemStyle={{ color: "var(--color-popover-foreground)" }}
               formatter={(v: number, name: string) => [
                 v?.toFixed(2),
                 name === "hedonic" ? "Chỉ số hedonic" : "Trung vị thô",
