@@ -530,3 +530,18 @@
    cảnh báo không tải được ảnh nền). Phải trên mọi thứ của Leaflet nhưng vẫn dưới 50 để
    popover và dialog che được. */
 .map-overlay { z-index: 20; }
+
+/* Lop noi cua Radix (Select, Popover, DropdownMenu, Tooltip).
+ *
+ * Radix portal cac lop nay ra document.body, va shadcn dat cho chung z-index 50 — thap hon
+ * MOI lop trong thang o docs/z-index.md (840-1000). Hau qua: mo mot <Select> ben trong bat
+ * ky modal nao cung bi lop phu cua modal nuot. Trieu chung nhin thay duoc la danh sach hien
+ * mo mo phia sau nen toi, hoac tuot len goc man hinh vi khong con cho.
+ *
+ * Day khong phai loi cua rieng mot man hinh nao — no dung cho moi cho ghep Select vao modal,
+ * nen sua o day mot lan thay vi nang z-index tai tung diem.
+ *
+ * !important vi Radix ghi z-index thang vao thuoc tinh style cua wrapper. */
+[data-radix-popper-content-wrapper] {
+  z-index: 1100 !important;
+}
