@@ -26,10 +26,34 @@ namespace kgs_api.Services
             IRepository<ContactParty> contacts,
             IRepository<ApplicationUser> users,
             IUnitOfWork uow,
-            ICurrentUserService currentUser)
+            ICurrentUserService currentUser,
+            INotificationSender notifier,
+            ILogger<MarketplaceEngagementService> logger)
         {
             _listings = listings; _saved = saved; _inquiries = inquiries;
             _contacts = contacts; _users = users; _uow = uow; _currentUser = currentUser;
+            _notifier = notifier; _logger = logger;
+        }
+
+        private readonly INotificationSender _notifier;
+        private readonly ILogger<MarketplaceEngagementService> _logger;
+
+        /// <summary>Gửi thông báo mà KHÔNG để lỗi gửi làm hỏng thao tác đã ghi xong.
+        ///
+        /// Yêu cầu xem nhà đã lưu vào cơ sở dữ liệu rồi; nếu SMTP chết mà ta ném lỗi lên thì
+        /// người dùng thấy "gửi thất bại" trong khi yêu cầu vẫn nằm đó, và họ gửi lại — lúc
+        /// đó ràng buộc một-yêu-cầu-đang-mở sẽ chặn, để lại đúng một tình huống không lối ra.</summary>
+        private async Task BaoAsync(
+            string userId, string title, string body, string linkPath, string linkLabel, CancellationToken ct)
+        {
+            try
+            {
+                await _notifier.SendAsync(userId, title, body, linkPath, linkLabel, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không gửi được thông báo yêu cầu xem nhà tới {UserId}", userId);
+            }
         }
 
         // ==================== E1. TIN ĐÃ LƯU ====================
@@ -128,6 +152,31 @@ namespace kgs_api.Services
             await _inquiries.AddAsync(inquiry, ct);
             await _uow.SaveChangesAsync(ct);
 
+            /* Báo cho CHỦ TIN.
+               Trước đây không có bước này: yêu cầu nằm im trong cơ sở dữ liệu cho tới khi chủ
+               tin tự nhớ ra mà vào /yeu-cau. Người hỏi thì chờ một cuộc gọi không bao giờ tới.
+               Đó là mắt xích đứt giữa hai phía của cả sàn giao dịch này. */
+            var nguoiHoi = await _users.Query().AsNoTracking()
+                .Where(u => u.Id == userId)
+                .Select(u => new { u.Name, u.PhoneNumber })
+                .FirstOrDefaultAsync(ct);
+
+            var lienHe = string.IsNullOrWhiteSpace(nguoiHoi?.PhoneNumber)
+                ? ""
+                : $" Số điện thoại: {nguoiHoi!.PhoneNumber}.";
+            var lichXem = inquiry.PreferredViewingAt is null
+                ? ""
+                : $" Họ muốn xem nhà lúc {inquiry.PreferredViewingAt:HH:mm dd/MM/yyyy}.";
+            var loiNhan = string.IsNullOrWhiteSpace(inquiry.Message)
+                ? ""
+                : $" Lời nhắn: {inquiry.Message}";
+
+            await BaoAsync(
+                listing.OwnerId,
+                $"Có người hỏi thuê: {listing.Title}",
+                $"{nguoiHoi?.Name ?? "Một người dùng"} vừa gửi yêu cầu xem nhà.{lienHe}{lichXem}{loiNhan}",
+                "/yeu-cau", "Xem yêu cầu", ct);
+
             return await ProjectSent(_inquiries.Query().AsNoTracking().Where(i => i.Id == inquiry.Id))
                 .FirstAsync(ct);
         }
@@ -160,6 +209,38 @@ namespace kgs_api.Services
 
             inquiry.Status = request.Status;
             await _uow.SaveChangesAsync(ct);
+
+            /* Báo cho NGƯỜI HỎI.
+               Đây là nửa còn lại của mắt xích. Không có nó, người gửi yêu cầu không bao giờ
+               biết mình có được trả lời hay không — và một người không biết mình có được trả
+               lời thì không có lý do nào để quay lại. */
+            var tinh = await _listings.Query().AsNoTracking()
+                .Where(l => l.Id == inquiry.ListingId)
+                .Select(l => new { l.Title, l.Slug })
+                .FirstOrDefaultAsync(ct);
+
+            var moTa = request.Status switch
+            {
+                InquiryStatus.Contacted =>
+                    "Chủ nhà đã ghi nhận yêu cầu của bạn và sẽ liên hệ. Nếu chưa thấy ai gọi, bạn có thể chủ động gọi số trên tin.",
+                InquiryStatus.Viewed =>
+                    "Chủ nhà đã đánh dấu là đã dẫn bạn đi xem nhà.",
+                InquiryStatus.Closed =>
+                    "Chủ nhà đã đóng yêu cầu này. Có thể chỗ đã có người thuê — bạn nên tìm tin khác trong khu vực.",
+                _ => null,
+            };
+
+            // Chỉ báo với những chuyển trạng thái NÓI ĐƯỢC điều gì đó cho người hỏi. Gửi email
+            // cho mọi thay đổi nội bộ sẽ nhanh chóng dạy họ bỏ qua toàn bộ email từ KGS.
+            if (moTa is not null)
+            {
+                await BaoAsync(
+                    inquiry.FromUserId,
+                    $"Cập nhật yêu cầu xem nhà: {tinh?.Title ?? "tin đăng"}",
+                    moTa,
+                    tinh?.Slug is null ? "/yeu-cau" : $"/tin-dang/{tinh.Slug}",
+                    "Xem tin đăng", ct);
+            }
 
             return await ProjectReceived(_inquiries.Query().AsNoTracking().Where(i => i.Id == inquiryId))
                 .FirstAsync(ct);
