@@ -374,7 +374,8 @@ namespace kgs_api.Controllers
                          + " Sửa xong bạn gửi duyệt lại, tin không bị xoá.";
 
                 await _notifier.SendAsync(
-                    listing.Asset.UserId, $"Tin đăng cần chỉnh sửa: {listing.Title}", body, ct);
+                    listing.Asset.UserId, $"Tin đăng cần chỉnh sửa: {listing.Title}", body,
+                    "/tin-cua-toi", "Mở tin để sửa", ct);
             }
             catch (Exception ex)
             {
@@ -407,9 +408,13 @@ namespace kgs_api.Controllers
 
                 var body = approved
                     ? "Tin của bạn đã hiển thị công khai trên KGS."
-                    : $"Lý do: {reason}\n\nBạn có thể sửa lại nội dung và gửi duyệt lần nữa.";
+                    // Một đoạn liền: body bị HTML-encode vào đúng một thẻ <p> nên ký tự
+                    // xuống dòng không hiện ra — xem chú thích ở EmailNotificationSender.
+                    : $"Lý do: {reason}. Bạn có thể sửa lại nội dung và gửi duyệt lần nữa.";
 
-                await _notifier.SendAsync(listing.Asset.UserId, title, body, ct);
+                await _notifier.SendAsync(
+                    listing.Asset.UserId, title, body,
+                    "/tin-cua-toi", approved ? "Xem tin đã đăng" : "Mở tin để sửa", ct);
             }
             catch (Exception ex)
             {

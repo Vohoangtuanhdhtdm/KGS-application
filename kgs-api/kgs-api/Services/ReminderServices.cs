@@ -250,7 +250,8 @@ namespace kgs_api.Services
                 try
                 {
                     await _notifier.SendAsync(r.UserId, r.Title,
-                        $"Đến hạn ngày {r.DueDate:dd/MM/yyyy}.", ct);
+                        $"Đến hạn ngày {r.DueDate:dd/MM/yyyy}.",
+                        "/quan-ly/nhac-lich", "Xem nhắc lịch", ct);
                     r.LastNotifiedAt = now;
 
                     // Đã QUA hạn → nhảy kỳ tiếp theo (lặp) hoặc tắt (một lần)

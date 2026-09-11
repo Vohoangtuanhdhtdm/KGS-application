@@ -90,7 +90,8 @@ namespace kgs_api.Services
                 try
                 {
                     await _notifier.SendAsync(search.UserId, BuildTitle(total, search.Name),
-                        BuildBody(search.Name, total, titles), ct);
+                        BuildBody(search.Name, total, titles),
+                        "/tin-dang", "Xem tin mới", ct);
                     sent++;
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
