@@ -51,10 +51,43 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
   const ready = input != null && input.area > 0 && !!input.city && !!input.district;
   const r = estimate.data;
 
-  const diffPercent =
-    r && currentPrice != null && currentPrice > 0
-      ? ((currentPrice - r.price) / r.price) * 100
-      : null;
+  /* Đối chiếu giá người dùng nhập với KHOẢNG của mô hình, không phải với điểm giữa.
+   *
+   * Bản trước so với điểm giữa rồi cảnh báo khi lệch ≥15%. Hai vấn đề:
+   *
+   * 1. Ngưỡng đó nằm DƯỚI sai số của chính mô hình. Sai số trung vị đo được là 17,4%, và
+   *    chỉ 31% dự đoán rơi trong ±10%. Nói cách khác, phân nửa số lần cảnh báo bật lên là
+   *    do mô hình sai chứ không phải người dùng sai. Cảnh báo sai nhiều lần thì người dùng
+   *    học được cách bỏ qua nó, kể cả lần nó đúng.
+   *
+   * 2. Nó bỏ qua `confidence`, trong khi mô hình đã tự nói nó chắc chắn tới đâu: khoảng
+   *    ±12% khi tin cậy cao, ±32% khi thấp. Lệch 20% là chuyện đáng nói ở trường hợp đầu
+   *    và hoàn toàn bình thường ở trường hợp sau.
+   *
+   * Ở đây dùng đúng khoảng đó làm ngưỡng. Vượt ra ngoài khoảng mới nói, và nói mạnh hơn khi
+   * vượt xa. Mô hình tự nhận độ tin cậy THẤP thì im lặng — nó đang nói rằng nó không biết,
+   * và cảnh báo dựa trên một ước tính không đáng tin còn tệ hơn không cảnh báo. */
+  const doLech = (() => {
+    if (!r || currentPrice == null || currentPrice <= 0) return null;
+    if (r.confidence === "thấp") return null;
+
+    const ngoaiTren = currentPrice > r.priceHigh;
+    const ngoaiDuoi = currentPrice < r.priceLow;
+    if (!ngoaiTren && !ngoaiDuoi) return null;
+
+    // Biên độ nửa khoảng — dùng làm đơn vị đo "vượt ra ngoài bao xa".
+    const bien = Math.max(1, r.priceHigh - r.price);
+    const vuot = ngoaiTren
+      ? (currentPrice - r.priceHigh) / bien
+      : (r.priceLow - currentPrice) / bien;
+
+    return {
+      huong: ngoaiTren ? ("cao" as const) : ("thap" as const),
+      // Vượt thêm hơn một lần biên độ nữa = lệch đủ xa để nói mạnh.
+      manh: vuot >= 1,
+      phanTram: Math.abs(Math.round(((currentPrice - r.price) / r.price) * 100)),
+    };
+  })();
 
   return (
     <div className="rounded-md border bg-muted/30 p-3 space-y-2.5">
@@ -117,18 +150,35 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
             )}
           </p>
 
-          {/* Chỉ nói khi lệch đáng kể. Nhắc người dùng về mức lệch 3% là nhiễu, và làm họ
-              bỏ qua luôn cả những lần cảnh báo thật sự đáng nghe. */}
-          {diffPercent != null && Math.abs(diffPercent) >= 15 && (
-            <p className="text-xs inline-flex items-center gap-1.5">
-              {diffPercent > 0 ? (
-                <TrendingUp className="h-3.5 w-3.5 text-warning-foreground" />
-              ) : (
-                <TrendingDown className="h-3.5 w-3.5 text-info" />
-              )}
-              Giá bạn nhập {diffPercent > 0 ? "cao hơn" : "thấp hơn"} ước tính{" "}
-              {Math.abs(Math.round(diffPercent))}%.
-            </p>
+          {doLech && (
+            <div
+              className={`rounded-md border px-2.5 py-2 text-xs ${
+                doLech.manh
+                  ? "border-warning/40 bg-warning/10"
+                  : "border-border bg-muted/40"
+              }`}
+            >
+              <p className="inline-flex items-start gap-1.5 font-medium">
+                {doLech.huong === "cao" ? (
+                  <TrendingUp className="h-3.5 w-3.5 shrink-0 mt-0.5 text-warning-foreground" />
+                ) : (
+                  <TrendingDown className="h-3.5 w-3.5 shrink-0 mt-0.5 text-info" />
+                )}
+                <span>
+                  Giá bạn nhập {doLech.huong === "cao" ? "cao hơn" : "thấp hơn"} ước tính{" "}
+                  {doLech.phanTram}% — nằm ngoài khoảng tham khảo.
+                </span>
+              </p>
+              {/* Nói hậu quả, không chỉ nói con số. Người đăng cần biết điều này ảnh hưởng
+                  gì tới tin của họ thì mới có lý do để cân nhắc lại. */}
+              <p className="mt-1 text-muted-foreground">
+                {doLech.manh
+                  ? doLech.huong === "cao"
+                    ? "Lệch khá xa mặt bằng. Tin đặt giá cao hơn hẳn khu vực thường ít người liên hệ, và có thể bị trả về khi duyệt."
+                    : "Thấp hơn hẳn mặt bằng. Nếu không cố ý thì nên kiểm lại đơn vị — nhầm triệu với nghìn là lỗi hay gặp."
+                  : "Vẫn có thể hợp lý nếu căn nhà có điểm mô hình chưa biết. Nếu vậy, hãy nói rõ điểm đó trong phần mô tả."}
+              </p>
+            </div>
           )}
 
           {r.notes.map((n) => (
