@@ -1,9 +1,10 @@
 import { forwardRef, memo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { formatListingPrice, type PublicListingSummaryDto } from "@/lib/api/listings";
+import type { CompareItem } from "@/hooks/useCompareList";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon } from "lucide-react";
+import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon, Scale } from "lucide-react";
 
 /**
  * Tổng chi phí viết ĐỦ SỐ, không rút gọn.
@@ -45,11 +46,30 @@ interface PropertyListCardProps {
   // hoveredId đổi (chỉ card liên quan tới id đó mới re-render, không phải toàn danh sách).
   onHover?: (id: string) => void;
   onLeave?: (id: string) => void;
+
+  /* So sánh tin — tuỳ chọn: chỉ những trang có gắn CompareBar mới truyền, các nơi khác
+     (ví dụ thẻ trong "Tin đã lưu") giữ nguyên không có nút này. */
+  compareSelected?: boolean;
+  /** true khi đã chọn đủ 3 tin và tin này KHÔNG nằm trong đó — vô hiệu nút để không hứa
+      suông một thao tác sẽ bị hook âm thầm bỏ qua. */
+  compareFull?: boolean;
+  onToggleCompare?: (item: CompareItem) => void;
 }
 
 export const PropertyListCard = memo(
   forwardRef<HTMLDivElement, PropertyListCardProps>(function PropertyListCard(
-    { property: p, hovered = false, highlighted = false, saved, onToggleSave, onHover, onLeave },
+    {
+      property: p,
+      hovered = false,
+      highlighted = false,
+      saved,
+      onToggleSave,
+      onHover,
+      onLeave,
+      compareSelected = false,
+      compareFull = false,
+      onToggleCompare,
+    },
     ref,
   ) {
     const [imgLoaded, setImgLoaded] = useState(false);
@@ -86,6 +106,43 @@ export const PropertyListCard = memo(
                 <div className="w-full h-full flex items-center justify-center">
                   <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
                 </div>
+              )}
+              {/* Nút thêm vào so sánh — đối xứng với nút lưu tin, nhưng ở góc trái để
+                  không tranh chỗ. Chỉ hiện khi trang cha gắn CompareBar (truyền
+                  onToggleCompare); im lặng biến mất ở những nơi chưa hỗ trợ so sánh
+                  thay vì hiện một nút bấm-vào-không-làm-gì. */}
+              {onToggleCompare && (
+                <button
+                  type="button"
+                  aria-label={compareSelected ? "Bỏ khỏi so sánh" : "Thêm vào so sánh"}
+                  aria-pressed={compareSelected}
+                  disabled={!compareSelected && compareFull}
+                  title={
+                    !compareSelected && compareFull
+                      ? "Đã chọn đủ 3 tin để so sánh"
+                      : compareSelected
+                        ? "Bỏ khỏi so sánh"
+                        : "Thêm vào so sánh"
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onToggleCompare({
+                      id: p.id,
+                      slug: p.slug,
+                      type: p.type,
+                      title: p.title,
+                      thumbnailUrl: p.thumbnailUrl,
+                    });
+                  }}
+                  className={`absolute top-2 left-2 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 ${
+                    compareSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card/90 text-muted-foreground hover:bg-card"
+                  }`}
+                >
+                  <Scale className="h-4 w-4" />
+                </button>
               )}
               {/* Nút lưu tin.
                   Trước đây nút này chỉ đổi một biến useState trong chính thẻ — nó sáng lên

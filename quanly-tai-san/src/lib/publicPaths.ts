@@ -14,6 +14,7 @@ export const PUBLIC_PREFIXES = [
   "/confirm-email",
   "/403",
   "/tin-dang",
+  "/so-sanh",
 ];
 
 export function isPublicPath(p: string): boolean {
