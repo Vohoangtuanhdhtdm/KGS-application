@@ -1,0 +1,17 @@
+# Giữ ngữ cảnh build nhỏ. data/ chứa prepared.parquet 55 MB và models/ chứa booster 39 MB —
+# cả hai đều KHÔNG được vào ảnh: dữ liệu huấn luyện không cần cho việc phục vụ, còn mô hình
+# được gắn vào lúc chạy từ S3.
+.venv/
+venv/
+data/
+models/
+training/
+tests/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+pytest.ini
+README.md
+Dockerfile
+.dockerignore

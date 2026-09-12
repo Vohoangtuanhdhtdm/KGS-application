@@ -1,0 +1,101 @@
+# Kiểm tra chất lượng — chạy trên mọi pull request và mọi lần đẩy lên main.
+#
+# Ba thành phần chạy SONG SONG và độc lập: hỏng phần định giá thì vẫn phải thấy ngay kết
+# quả của API và giao diện, thay vì phải sửa lần lượt từng cái rồi chờ lại từ đầu.
+#
+# Quy trình này KHÔNG triển khai gì cả. Việc đó nằm ở deploy.yml và chỉ chạy sau khi mã đã
+# vào main.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Đẩy liên tiếp lên cùng một nhánh thì huỷ lượt chạy cũ: không ai đọc kết quả của một bản
+# đã bị thay thế, mà nó vẫn ăn hết số phút chạy của tài khoản.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API · .NET 8
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Khôi phục gói
+        run: dotnet restore kgs-api/kgs-api.sln
+
+      # --no-restore: bước trên đã làm rồi. Cảnh báo coi như lỗi để mã mới không lặng lẽ
+      # tích thêm nợ — hiện kho mã đang có sẵn một số cảnh báo nullable nên tạm chưa bật,
+      # xem ghi chú ở cuối tệp.
+      - name: Biên dịch
+        run: dotnet build kgs-api/kgs-api.sln --no-restore -c Release
+
+      - name: Chạy kiểm thử
+        run: dotnet test kgs-api/kgs-api.sln --no-build -c Release --verbosity normal
+
+  web:
+    name: Giao diện · React + TanStack
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: quanly-tai-san
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: quanly-tai-san/package-lock.json
+
+      - name: Cài phụ thuộc
+        run: npm ci
+
+      # Kiểm tra kiểu TRƯỚC khi dựng: tsc nói rõ tệp và dòng, còn bản dựng hỏng vì lỗi kiểu
+      # thì thường chỉ để lại một thông báo của bundler khó lần ra nguồn.
+      - name: Kiểm tra kiểu
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Lint
+        # Kho mã hiện còn một số lỗi định dạng có từ trước (xem PR #29). Chưa chặn bản dựng
+        # vì thế, nhưng vẫn chạy để lỗi mới hiện ra trong nhật ký.
+        run: npm run lint || true
+
+      - name: Dựng bản SPA
+        env:
+          # Giá trị giả, chỉ để bản dựng chạy được. Bản dựng thật dùng địa chỉ thật, xem
+          # deploy.yml — biến VITE_* được nhúng thẳng vào tệp JS lúc dựng.
+          VITE_API_BASE_URL: https://example.invalid/api
+        run: npm run build
+
+  ml:
+    name: Định giá · Python 3.12
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ml-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ml-service/requirements.txt
+
+      - name: Cài phụ thuộc
+        run: pip install -r requirements.txt
+
+      # Bộ kiểm thử cố ý không cần mô hình đã huấn luyện: nó kiểm phần thuần — chuẩn hoá
+      # tên hành chính và logic dự báo — nên chạy được trên máy chạy CI trống trơn.
+      - name: Chạy kiểm thử
+        run: pytest -q

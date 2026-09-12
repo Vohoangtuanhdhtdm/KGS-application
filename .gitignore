@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------------------
+# Bí mật — không bao giờ đưa vào kho mã
+# ---------------------------------------------------------------------------
+# Cấu hình phát triển chứa chuỗi kết nối, TokenKey ký JWT, khoá Cloudinary và mật khẩu
+# SMTP. Khi triển khai, mọi giá trị này đọc từ biến môi trường sinh ra từ AWS SSM
+# Parameter Store — xem deploy/README.md.
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/appsettings.Production.json
+*.pem
+*.pfx
+*.key
+
+# ---------------------------------------------------------------------------
+# Kết quả biên dịch
+# ---------------------------------------------------------------------------
+**/bin/
+**/obj/
+**/dist/
+**/.output/
+**/.wrangler/
+**/.nitro/
+**/node_modules/
+
+# ---------------------------------------------------------------------------
+# Hiện vật học máy
+# ---------------------------------------------------------------------------
+# Mô hình và dữ liệu huấn luyện không phải mã nguồn. Mô hình sống ở S3 và được máy chủ tải
+# về lúc triển khai; dữ liệu huấn luyện dựng lại được bằng training/prepare_data.py.
+ml-service/models/
+ml-service/data/
+ml-service/.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# ---------------------------------------------------------------------------
+# Rác của công cụ
+# ---------------------------------------------------------------------------
+.vs/
+.idea/
+*.user
+.DS_Store
+**/.claude/worktrees/

@@ -1,0 +1,65 @@
+{
+  "//": [
+    "Bản mẫu. Chép thành appsettings.Development.json rồi điền giá trị thật.",
+    "Tệp thật nằm trong .gitignore và KHÔNG bao giờ được đưa lên kho mã.",
+    "Trên AWS, mọi khoá dưới đây đọc từ SSM Parameter Store — xem deploy/README.md",
+    "để biết tên tham số tương ứng (ConnectionStrings:PostgresDb ↦ ConnectionStrings__PostgresDb)."
+  ],
+
+  "Logging": {
+    "LogLevel": { "Default": "Information" }
+  },
+
+  "ConnectionStrings": {
+    "PostgresDb": "Host=localhost;Port=5432;Database=kgs;Username=postgres;Password=THAY_BANG_MAT_KHAU"
+  },
+
+  "AppSettings": {
+    "//": "Khoá ký JWT. Tối thiểu 32 ký tự ngẫu nhiên. Sinh bằng: openssl rand -base64 48",
+    "TokenKey": "THAY_BANG_CHUOI_NGAU_NHIEN_IT_NHAT_32_KY_TU"
+  },
+
+  "CloudinarySettings": {
+    "CloudName": "THAY_BANG_CLOUD_NAME",
+    "ApiKey": "THAY_BANG_API_KEY",
+    "ApiSecret": "THAY_BANG_API_SECRET"
+  },
+
+  "AuthSettings": {
+    "AccessTokenMinutes": 60,
+    "RefreshTokenDays": 7,
+    "//": "Gốc của giao diện — dùng để dựng liên kết trong email. Trên AWS là tên miền CloudFront.",
+    "ClientBaseUrl": "http://localhost:8081",
+    "RequireConfirmedEmail": false
+  },
+
+  "SeedAdmin": {
+    "Email": "admin@kgs.local",
+    "Name": "Quản trị viên",
+    "Password": "THAY_BANG_MAT_KHAU_MANH"
+  },
+
+  "SmtpSettings": {
+    "Host": "smtp.gmail.com",
+    "Port": 587,
+    "Username": "THAY_BANG_EMAIL",
+    "//": "Với Gmail phải dùng App Password, không phải mật khẩu tài khoản.",
+    "Password": "THAY_BANG_APP_PASSWORD",
+    "FromEmail": "THAY_BANG_EMAIL",
+    "FromName": "KGS"
+  },
+
+  "GoogleAuth": {
+    "ClientId": "THAY_BANG_GOOGLE_CLIENT_ID"
+  },
+
+  "Cors": {
+    "//": "Trên AWS, giao diện và API chung một tên miền CloudFront nên danh sách này rỗng cũng được.",
+    "AllowedOrigins": ["http://localhost:8081"]
+  },
+
+  "Valuation": {
+    "BaseUrl": "http://localhost:8000",
+    "TimeoutSeconds": 5
+  }
+}

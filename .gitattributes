@@ -1,0 +1,19 @@
+# Kho mã này phát triển trên Windows nhưng chạy trên Linux. Không ghim ký tự xuống dòng ở
+# đây thì git có thể chuyển các tệp dưới sang CRLF lúc checkout, và trên máy chủ Linux
+# chúng hỏng theo kiểu rất khó lần:
+#
+#   • script bash báo "\r: command not found" hoặc "bad interpreter"
+#   • Dockerfile dựng được nhưng ENTRYPOINT tìm một chương trình có \r ở cuối tên
+#
+# eol=lf buộc mọi bản sao làm việc dùng LF cho những tệp này, bất kể core.autocrlf.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# Hiện vật nhị phân — git không được chạm vào nội dung.
+*.parquet   binary
+*.joblib    binary
+*.png       binary
+*.jpg       binary
+*.ico       binary

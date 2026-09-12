@@ -4,6 +4,8 @@ using kgs_api.Extensions;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using kgs_api.Utility;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using static kgs_api.Common.Common;
 
@@ -57,7 +59,28 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Sau reverse proxy (nginx trên EC2, CloudFront phía trước), request tới Kestrel là HTTP
+// thuần và mang IP của proxy chứ không phải của người dùng. Không đọc X-Forwarded-* thì ba
+// thứ hỏng cùng lúc: chuyển hướng HTTPS quay vòng, liên kết tuyệt đối sinh ra "http://",
+// và bộ giới hạn tốc độ gom mọi người dùng vào đúng một ngăn theo IP của proxy.
+var forwarded = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+};
+// Mặc định ASP.NET chỉ tin proxy ở loopback. Trong Docker, nginx nằm ở container khác nên
+// địa chỉ của nó không phải loopback — không xoá hai danh sách này thì header bị bỏ qua
+// hoàn toàn, lặng lẽ, và triệu chứng chỉ hiện ra dưới dạng vòng lặp chuyển hướng.
+forwarded.KnownNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
+
+// Trong container, TLS kết thúc ở nginx/CloudFront; Kestrel không có chứng chỉ nào để
+// chuyển hướng sang, nên bật chuyển hướng HTTPS ở đây chỉ tạo ra vòng lặp vô hạn. Biến
+// DOTNET_RUNNING_IN_CONTAINER do chính ảnh nền của Microsoft đặt sẵn.
+if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
+{
+    app.UseHttpsRedirection();
+}
 
 // Đặt TRƯỚC MapControllers cho rõ ý: mọi DomainException từ service được map sang
 // ProblemDetails 400/404/409 thay vì rơi ra ngoài thành 500.
@@ -88,6 +111,24 @@ app.UseRateLimiter();
 using (var scope = app.Services.CreateScope())
 {
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    // Áp migration khi được bật TƯỜNG MINH qua RunMigrations=true.
+    //
+    // Không bật mặc định vì nó chỉ an toàn khi có đúng một tiến trình: nhân bản lên hai
+    // container mà cùng chạy migration lúc khởi động thì hai tiến trình cùng sửa schema.
+    // Ở quy mô một máy EC2 như hiện tại, đây là cách triển khai gọn nhất — schema luôn khớp
+    // với mã vừa deploy, không cần một bước thủ công mà ai đó sẽ quên.
+    //
+    // Phải chạy TRƯỚC seed: SeedRolesAndAdminAsync ghi vào bảng Identity, mà những bảng đó
+    // chỉ tồn tại sau khi migration chạy xong.
+    if (builder.Configuration.GetValue("RunMigrations", false))
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        logger.LogInformation("Đang áp migration cơ sở dữ liệu…");
+        await db.Database.MigrateAsync();
+        logger.LogInformation("Đã áp xong migration.");
+    }
+
     await DbInitializer.SeedRolesAndAdminAsync(app.Services, builder.Configuration, logger);
 
     var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
@@ -120,6 +161,16 @@ using (var scope = app.Services.CreateScope())
 
 
 app.MapControllers();
+
+// Thăm dò sống-chết cho Docker và nginx.
+//
+// Cố ý KHÔNG chạm cơ sở dữ liệu và KHÔNG trả về chi tiết nào. Endpoint này công khai trên
+// internet, nên nó không được lộ trạng thái hạ tầng; và một healthcheck truy vấn DB mỗi 30
+// giây vừa tự tạo tải, vừa biến một sự cố DB thoáng qua thành việc container bị khai tử và
+// khởi động lại — đúng lúc hệ thống cần nó đứng vững nhất.
+// (Endpoint chẩn đoán đầy đủ nằm ở /api/diagnostics/health và chỉ bật ở môi trường Development.)
+app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
+
 // Hangfire Dashboard (optional, cho dev)
 if (app.Environment.IsDevelopment())
 {

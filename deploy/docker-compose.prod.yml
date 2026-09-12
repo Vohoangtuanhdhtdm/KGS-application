@@ -1,0 +1,64 @@
+# Ngăn xếp chạy trên EC2. Tệp này nằm ở /opt/kgs/docker-compose.yml trên máy chủ.
+#
+# Chỉ có HAI container, và cố ý không có container nào thừa:
+#   • api — ASP.NET Core, thứ duy nhất mở ra internet (cổng 80).
+#   • ml  — dịch vụ định giá, KHÔNG ánh xạ cổng nào ra ngoài; chỉ api gọi được nó qua mạng
+#           nội bộ của compose. Mô hình định giá không có xác thực, nên để nó lộ ra internet
+#           là mời người lạ dùng CPU của mình.
+#
+# Không có nginx: CloudFront đã đứng trước làm nhiệm vụ kết thúc TLS và định tuyến, nên
+# thêm một tầng proxy nữa chỉ tốn RAM trên máy vốn đã chật mà không giải quyết việc gì.
+#
+# Không có PostgreSQL: cơ sở dữ liệu nằm ở RDS. Chạy Postgres cạnh hai dịch vụ này trên
+# cùng 2 GB RAM là cách chắc chắn nhất để cả ba cùng chết khi có tải.
+
+name: kgs
+
+services:
+  api:
+    image: ${API_IMAGE}
+    restart: unless-stopped
+    ports:
+      # Cổng 80 của máy chủ — CloudFront gọi vào đây qua HTTP. Chỉ nhóm bảo mật mở cho
+      # dải địa chỉ của CloudFront, xem deploy/README.md.
+      - "80:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+      # Ghi đè theo quy ước hai gạch dưới của .NET: Valuation__BaseUrl ↦ Valuation:BaseUrl.
+      # "ml" là tên dịch vụ bên dưới, được DNS nội bộ của compose phân giải.
+      Valuation__BaseUrl: http://ml:8000
+
+      # Áp migration lúc khởi động. An toàn ở đây vì chỉ có đúng một bản sao của api chạy;
+      # xem ghi chú trong Program.cs trước khi nhân bản thêm.
+      RunMigrations: "true"
+
+    # Mọi bí mật (chuỗi kết nối RDS, TokenKey, Cloudinary, SMTP, Google OAuth) nằm trong
+    # tệp này. Nó được sinh ra trên máy chủ từ SSM Parameter Store lúc triển khai và KHÔNG
+    # bao giờ nằm trong kho mã.
+    env_file:
+      - /opt/kgs/.env
+
+    depends_on:
+      ml:
+        # Chờ ml lành hẳn chứ không chỉ "đã khởi động": nạp booster LightGBM mất vài giây,
+        # và trong khoảng đó nó vẫn trả lời nhưng với model_loaded=false.
+        condition: service_healthy
+
+    logging: &logging
+      driver: json-file
+      options:
+        # Không giới hạn thì log đầy 8 GB ổ đĩa của gói miễn phí trong vài tuần, và triệu
+        # chứng đầu tiên là cơ sở dữ liệu ngừng ghi được chứ không phải một dòng log nào.
+        max-size: "10m"
+        max-file: "3"
+
+  ml:
+    image: ${ML_IMAGE}
+    restart: unless-stopped
+    expose:
+      - "8000"
+    volumes:
+      # Mô hình tải sẵn từ S3 về máy chủ, gắn vào chỉ-đọc. Xem deploy/fetch-models.sh.
+      - /opt/kgs/models:/app/models:ro
+    logging: *logging
