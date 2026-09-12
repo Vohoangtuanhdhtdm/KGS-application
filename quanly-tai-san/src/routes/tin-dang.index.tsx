@@ -33,6 +33,7 @@ import { DemandSearchSheet, type DemandSearchResult } from "@/components/public/
 import { useGeolocationOnDemand, type LatLng } from "@/hooks/useGeolocationOnDemand";
 import { useViewportKind } from "@/hooks/useViewportKind";
 import { AreaSearchBox } from "@/components/public/AreaSearchBox";
+import { useCompareList } from "@/hooks/useCompareList";
 import { formatCurrency } from "@/lib/format";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Card } from "@/components/ui/card";
@@ -148,6 +149,13 @@ function PublicListingsPage() {
   );
   const savedIdsRef = useRef(savedIds);
   savedIdsRef.current = savedIds;
+
+  const {
+    items: compareItems,
+    has: compareHas,
+    toggle: compareToggle,
+    max: compareMax,
+  } = useCompareList();
 
   const handleCardHover = useCallback((id: string) => setHoveredId(id), []);
   const handleCardLeave = useCallback(
@@ -830,6 +838,9 @@ function PublicListingsPage() {
             onToggleSave={handleToggleSave}
             onHover={handleCardHover}
             onLeave={handleCardLeave}
+            compareSelected={compareHas(p.id)}
+            compareFull={compareItems.length >= compareMax && !compareHas(p.id)}
+            onToggleCompare={compareToggle}
           />
         ))}
       </div>

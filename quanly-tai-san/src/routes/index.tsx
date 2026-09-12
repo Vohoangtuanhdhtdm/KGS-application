@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { getErrorMessage } from "@/lib/api/errors";
 import { PropertyListCard } from "@/components/public/PropertyListCard";
 import { listingsApi } from "@/lib/api/listings";
+import { useCompareList } from "@/hooks/useCompareList";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -397,6 +398,12 @@ function LatestListings() {
   );
 
   const items = query.data?.items ?? [];
+  const {
+    items: compareItems,
+    has: compareHas,
+    toggle: compareToggle,
+    max: compareMax,
+  } = useCompareList();
 
   return (
     <section className="space-y-4">
@@ -430,6 +437,9 @@ function LatestListings() {
               property={l}
               saved={savedIds.has(l.id)}
               onToggleSave={onToggleSave}
+              compareSelected={compareHas(l.id)}
+              compareFull={compareItems.length >= compareMax && !compareHas(l.id)}
+              onToggleCompare={compareToggle}
             />
           ))}
         </div>

@@ -18,6 +18,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailNotConfirmedBanner } from "@/components/auth/EmailNotConfirmedBanner";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { BottomTabBar } from "@/components/navigation/BottomTabBar";
+import { CompareBar } from "@/components/public/CompareBar";
 import { Toaster } from "@/components/ui/sonner";
 import { isPublicPath } from "@/lib/publicPaths";
 
@@ -174,9 +175,20 @@ function AppShell() {
   // Trang cong khai tu lo header rieng (PublicHeader). Nguoi da dang nhap van thay thanh
   // dieu huong de di tiep sang Dang tin / Tin cua toi ma khong phai quay ve.
   if (isPublicPath(pathname)) {
+    // CompareBar chỉ nổi ở những trang có LƯỚI tin (trang chủ, kết quả tìm kiếm, chính
+    // trang so sánh) — nơi người dùng thật sự bấm nút "so sánh" trên nhiều thẻ liên tiếp.
+    // Trang chi tiết một tin (/tin-dang/$slug) đã có sẵn thanh liên hệ cố định ở đáy trên
+    // mobile; chồng thêm một thanh nổi thứ ba vào đúng khu vực đó chỉ khiến ba thanh
+    // tranh chỗ nhau, nên trang đó dùng một lối vào so sánh khác, không phải thanh nổi.
+    const showCompareBar =
+      pathname === "/" ||
+      pathname === "/tin-dang" ||
+      pathname === "/tin-dang/" ||
+      pathname === "/so-sanh";
     return (
       <>
         <Outlet />
+        {showCompareBar && <CompareBar />}
         {isAuthenticated && <BottomTabBar />}
       </>
     );

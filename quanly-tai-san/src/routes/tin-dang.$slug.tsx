@@ -212,7 +212,17 @@ function PublicListingDetailPage() {
                   </div>
                   <h1 className="text-lg font-medium leading-snug text-foreground">{p.title}</h1>
                 </div>
-                <ListingShareActions slug={p.slug} title={p.title} />
+                <ListingShareActions
+                  slug={p.slug}
+                  title={p.title}
+                  compareItem={{
+                    id: p.id,
+                    slug: p.slug,
+                    type: p.type,
+                    title: p.title,
+                    thumbnailUrl: p.imageUrls[0] ?? null,
+                  }}
+                />
               </div>
               <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 shrink-0" />

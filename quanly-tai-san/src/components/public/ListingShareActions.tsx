@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Flag, Loader2, Share2 } from "lucide-react";
+import { Flag, Loader2, Scale, Share2 } from "lucide-react";
 import { listingsApi, REPORT_REASON, type ReportReasonCode } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { useCompareList, type CompareItem } from "@/hooks/useCompareList";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -18,12 +20,51 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-/** Chia sẻ và báo vi phạm — hai hành động phụ, đặt cạnh nhau dưới tiêu đề tin. */
-export function ListingShareActions({ slug, title }: { slug: string; title: string }) {
+/** Chia sẻ, thêm vào so sánh và báo vi phạm — các hành động phụ dưới tiêu đề tin. */
+export function ListingShareActions({
+  slug,
+  title,
+  compareItem,
+}: {
+  slug: string;
+  title: string;
+  /** Có giá trị thì hiện nút "So sánh"; bỏ trống ở nơi chưa cần (không có, không phải lỗi). */
+  compareItem?: CompareItem;
+}) {
   return (
     <div className="flex items-center gap-1">
+      {compareItem && <CompareButton item={compareItem} />}
       <ShareButton title={title} />
       <ReportButton slug={slug} />
+    </div>
+  );
+}
+
+function CompareButton({ item }: { item: CompareItem }) {
+  const { items, has, toggle, max } = useCompareList();
+  const selected = has(item.id);
+  const full = !selected && items.length >= max;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={full}
+        title={full ? "Đã chọn đủ 3 tin để so sánh" : undefined}
+        className={`gap-1.5 ${selected ? "text-primary" : "text-muted-foreground"}`}
+        onClick={() => toggle(item)}
+      >
+        <Scale className="h-4 w-4" />
+        {selected ? "Đã thêm so sánh" : "So sánh"}
+      </Button>
+      {/* Đã chọn ít nhất 2 tin thì cho đi thẳng sang bảng so sánh ngay từ đây — không bắt
+          quay lại danh sách tìm kiếm chỉ để bấm vào thanh nổi ở đó. */}
+      {items.length >= 2 && (
+        <Button asChild variant="link" size="sm" className="px-0 text-xs">
+          <Link to="/so-sanh">Xem ({items.length})</Link>
+        </Button>
+      )}
     </div>
   );
 }
