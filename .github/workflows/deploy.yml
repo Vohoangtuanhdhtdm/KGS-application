@@ -1,0 +1,224 @@
+# Triển khai lên AWS — chạy sau khi mã đã vào main, hoặc bấm tay từ tab Actions.
+#
+# KIẾN TRÚC
+#
+#   CloudFront  ──(mặc định)──►  S3            : giao diện tĩnh
+#               ──(/api/*)────►  EC2 :80       : API .NET  ──►  ml :8000 (mạng nội bộ)
+#                                                          └──►  RDS PostgreSQL
+#
+# Giao diện và API dùng CHUNG một tên miền CloudFront, nên trình duyệt coi mọi lời gọi là
+# cùng nguồn — không có CORS, không có preflight, và không cần chứng chỉ TLS nào trên EC2.
+#
+# XÁC THỰC VỚI AWS
+#
+# Dùng OIDC: GitHub tự xuất một token ngắn hạn, AWS đổi lấy quyền tạm thời. Không có khoá
+# truy cập dài hạn nào nằm trong GitHub Secrets — một khoá như vậy bị lộ là bị lộ mãi mãi,
+# còn token ở đây hết hạn sau vài phút.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Không bao giờ để hai lượt triển khai chồng lên nhau: lượt sau có thể kéo ảnh cũ hơn lượt
+# trước và âm thầm hạ cấp hệ thống. cancel-in-progress: false — lượt đang chạy phải xong
+# hẳn, vì huỷ giữa chừng có thể bỏ lại migration làm dở.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_API: ghcr.io/${{ github.repository }}/kgs-api
+  IMAGE_ML: ghcr.io/${{ github.repository }}/kgs-ml
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Đóng gói hai ảnh Docker, đẩy lên GitHub Container Registry
+  # ---------------------------------------------------------------------------
+  build-images:
+    name: Đóng gói ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: API
+            image_env: IMAGE_API
+            context: kgs-api
+            dockerfile: kgs-api/kgs-api/Dockerfile
+          - name: ML
+            image_env: IMAGE_ML
+            context: ml-service
+            dockerfile: ml-service/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Đăng nhập GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          # Token do chính lượt chạy này sinh ra, hết hiệu lực khi nó kết thúc.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dựng và đẩy
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          # Hai thẻ: một theo SHA để biết chính xác bản nào đang chạy và để quay lui được,
+          # một là "latest" cho người đọc. Máy chủ luôn kéo theo SHA.
+          tags: |
+            ${{ env[matrix.image_env] }}:${{ github.sha }}
+            ${{ env[matrix.image_env] }}:latest
+          # Bộ đệm lưu ngay trong registry: lượt sau không phải cài lại numpy/scipy/lightgbm
+          # (mất khoảng 4 phút) khi requirements.txt không đổi.
+          cache-from: type=registry,ref=${{ env[matrix.image_env] }}:buildcache
+          cache-to: type=registry,ref=${{ env[matrix.image_env] }}:buildcache,mode=max
+
+  # ---------------------------------------------------------------------------
+  # 2. Dựng giao diện tĩnh, đẩy lên S3, xoá bộ đệm CloudFront
+  # ---------------------------------------------------------------------------
+  deploy-web:
+    name: Giao diện → S3 + CloudFront
+    runs-on: ubuntu-latest
+    # Bỏ qua (xám) thay vì hỏng (đỏ) khi hạ tầng AWS chưa được khai báo. Nhờ vậy PR này
+    # merge được ngay: bước đóng gói ảnh vẫn chạy thật — tức là hai Dockerfile được dựng thử
+    # trên GitHub — còn hai bước cần AWS chỉ tự bật sau khi biến AWS_EC2_INSTANCE_ID có mặt.
+    if: vars.AWS_EC2_INSTANCE_ID != ''
+    permissions:
+      contents: read
+      id-token: write # bắt buộc cho OIDC
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: quanly-tai-san/package-lock.json
+
+      - name: Cài phụ thuộc
+        working-directory: quanly-tai-san
+        run: npm ci
+
+      - name: Dựng
+        working-directory: quanly-tai-san
+        env:
+          # Đường dẫn TƯƠNG ĐỐI, không phải tên miền tuyệt đối. Giao diện và API chung một
+          # tên miền CloudFront nên "/api" là đủ — và nhờ vậy bản dựng không bị đóng đinh
+          # vào một tên miền cụ thể.
+          VITE_API_BASE_URL: /api
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+        run: npm run build
+
+      - name: Đặt tên khung SPA thành index.html
+        working-directory: quanly-tai-san
+        # Chế độ SPA của TanStack Start sinh ra _shell.html. Đổi tên để dùng được quy ước
+        # mặc định của S3/CloudFront (Default Root Object = index.html) thay vì phải cấu
+        # hình một ngoại lệ mà người sau sẽ không hiểu vì sao có.
+        run: cp dist/client/_shell.html dist/client/index.html
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # Hai lượt đồng bộ, vì hai loại tệp cần hai chính sách bộ đệm khác hẳn nhau.
+      #
+      # Tệp trong assets/ mang mã băm trong tên (app-a1b2c3.js): nội dung đổi thì tên đổi,
+      # nên cache được một năm mà không bao giờ cũ.
+      - name: Đẩy tài nguyên có mã băm (bộ đệm dài)
+        working-directory: quanly-tai-san/dist/client
+        run: |
+          aws s3 sync . "s3://${{ vars.AWS_WEB_BUCKET }}/" \
+            --delete \
+            --exclude "index.html" --exclude "_shell.html" --exclude "sw.js" \
+            --cache-control "public,max-age=31536000,immutable"
+
+      # index.html và sw.js giữ nguyên tên qua mọi phiên bản. Cache chúng nghĩa là người
+      # dùng tiếp tục tải bản cũ — trỏ tới những tệp assets vừa bị --delete xoá mất.
+      - name: Đẩy tệp điểm vào (không cache)
+        working-directory: quanly-tai-san/dist/client
+        run: |
+          aws s3 cp index.html "s3://${{ vars.AWS_WEB_BUCKET }}/index.html" \
+            --cache-control "no-cache,must-revalidate" --content-type "text/html; charset=utf-8"
+          if [ -f sw.js ]; then
+            aws s3 cp sw.js "s3://${{ vars.AWS_WEB_BUCKET }}/sw.js" \
+              --cache-control "no-cache,must-revalidate" --content-type "application/javascript"
+          fi
+
+      - name: Xoá bộ đệm CloudFront
+        # Chỉ xoá những tệp không mang mã băm. Xoá "/*" cũng chạy nhưng đốt hết hạn mức
+        # 1.000 đường dẫn miễn phí mỗi tháng nhanh hơn nhiều mà không thu được gì.
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.AWS_CLOUDFRONT_ID }}" \
+            --paths "/index.html" "/sw.js" "/"
+
+  # ---------------------------------------------------------------------------
+  # 3. Cập nhật máy chủ qua SSM
+  # ---------------------------------------------------------------------------
+  deploy-server:
+    name: API + ML → EC2
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: vars.AWS_EC2_INSTANCE_ID != ''
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Gửi lệnh triển khai
+        id: send
+        # Máy chủ kéo ảnh theo SHA, không theo "latest": "latest" là một mục tiêu di động,
+        # và khi cần biết chính xác bản nào đang chạy thì nó không trả lời được câu nào.
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.AWS_EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Triển khai ${{ github.sha }}" \
+            --parameters commands="[\"sudo /opt/kgs/deploy.sh '${{ env.IMAGE_API }}:${{ github.sha }}' '${{ env.IMAGE_ML }}:${{ github.sha }}'\"]" \
+            --timeout-seconds 600 \
+            --query "Command.CommandId" --output text)
+          echo "command_id=${COMMAND_ID}" >> "$GITHUB_OUTPUT"
+          echo "Đã gửi lệnh ${COMMAND_ID}"
+
+      - name: Chờ kết quả
+        # `ssm wait command-executed` trả mã khác 0 khi lệnh thất bại, nên bản dựng sẽ đỏ
+        # đúng lúc máy chủ không lên được — thay vì báo xanh rồi hệ thống sập trong im lặng.
+        run: |
+          set +e
+          aws ssm wait command-executed \
+            --command-id "${{ steps.send.outputs.command_id }}" \
+            --instance-id "${{ vars.AWS_EC2_INSTANCE_ID }}"
+          WAIT_STATUS=$?
+          set -e
+
+          echo "----- Nhật ký từ máy chủ -----"
+          aws ssm get-command-invocation \
+            --command-id "${{ steps.send.outputs.command_id }}" \
+            --instance-id "${{ vars.AWS_EC2_INSTANCE_ID }}" \
+            --query "StandardOutputContent" --output text
+
+          if [ $WAIT_STATUS -ne 0 ]; then
+            echo "----- Lỗi -----" >&2
+            aws ssm get-command-invocation \
+              --command-id "${{ steps.send.outputs.command_id }}" \
+              --instance-id "${{ vars.AWS_EC2_INSTANCE_ID }}" \
+              --query "StandardErrorContent" --output text >&2
+            exit 1
+          fi
