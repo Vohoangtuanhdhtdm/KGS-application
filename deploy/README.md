@@ -342,7 +342,9 @@ diện lên S3, và máy chủ trả về `TRIỂN KHAI THÀNH CÔNG`.
 Kiểm tra lại bằng tay:
 
 ```bash
-curl https://dXXXX.cloudfront.net/api/health                       # {"status":"ok"}
+# /health nằm ở gốc API chứ không dưới /api, nên qua CloudFront không gọi tới được — đó là
+# chủ ý, nó chỉ dành cho kịch bản triển khai gọi từ bên trong máy chủ.
+curl https://dXXXX.cloudfront.net/api/listings/areas               # JSON danh sách khu vực
 curl https://dXXXX.cloudfront.net/api/valuation/model-info         # loaded:true, mdape:17.44
 curl -I https://dXXXX.cloudfront.net/tin-dang                      # 200, không phải 403
 ```

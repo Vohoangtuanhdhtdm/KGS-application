@@ -91,6 +91,10 @@ jobs:
   deploy-web:
     name: Giao diện → S3 + CloudFront
     runs-on: ubuntu-latest
+    # Bỏ qua (xám) thay vì hỏng (đỏ) khi hạ tầng AWS chưa được khai báo. Nhờ vậy PR này
+    # merge được ngay: bước đóng gói ảnh vẫn chạy thật — tức là hai Dockerfile được dựng thử
+    # trên GitHub — còn hai bước cần AWS chỉ tự bật sau khi biến AWS_EC2_INSTANCE_ID có mặt.
+    if: vars.AWS_EC2_INSTANCE_ID != ''
     permissions:
       contents: read
       id-token: write # bắt buộc cho OIDC
@@ -168,6 +172,7 @@ jobs:
     name: API + ML → EC2
     runs-on: ubuntu-latest
     needs: build-images
+    if: vars.AWS_EC2_INSTANCE_ID != ''
     permissions:
       contents: read
       id-token: write
