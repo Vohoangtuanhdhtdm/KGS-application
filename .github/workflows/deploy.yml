@@ -31,16 +31,37 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_API: ghcr.io/${{ github.repository }}/kgs-api
-  IMAGE_ML: ghcr.io/${{ github.repository }}/kgs-ml
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # 0. Tính tên ảnh viết thường
+  # ---------------------------------------------------------------------------
+  # Docker BẮT BUỘC tên registry viết thường tuyệt đối, nhưng ${{ github.repository }} giữ
+  # nguyên hoa/thường thật của tài khoản GitHub — ở đây là "Vohoangtuanhdhtdm/KGS-application".
+  # Ghép thẳng chuỗi đó vào tag ảnh cho lỗi "repository name must be lowercase" ngay ở bước
+  # đẩy ảnh. Cú pháp workflow không có hàm hạ chữ thường (không có lower()), nên phải tính
+  # bằng một bước shell rồi truyền qua output cho các job khác dùng.
+  prep:
+    name: Chuẩn bị tên ảnh
+    runs-on: ubuntu-latest
+    outputs:
+      image_api: ${{ steps.names.outputs.image_api }}
+      image_ml: ${{ steps.names.outputs.image_ml }}
+    steps:
+      - name: Hạ chữ thường tên kho mã
+        id: names
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image_api=${{ env.REGISTRY }}/${REPO_LOWER}/kgs-api" >> "$GITHUB_OUTPUT"
+          echo "image_ml=${{ env.REGISTRY }}/${REPO_LOWER}/kgs-ml" >> "$GITHUB_OUTPUT"
+
   # ---------------------------------------------------------------------------
   # 1. Đóng gói hai ảnh Docker, đẩy lên GitHub Container Registry
   # ---------------------------------------------------------------------------
   build-images:
     name: Đóng gói ${{ matrix.name }}
     runs-on: ubuntu-latest
+    needs: prep
     permissions:
       contents: read
       packages: write
@@ -49,11 +70,11 @@ jobs:
       matrix:
         include:
           - name: API
-            image_env: IMAGE_API
+            image: ${{ needs.prep.outputs.image_api }}
             context: kgs-api
             dockerfile: kgs-api/kgs-api/Dockerfile
           - name: ML
-            image_env: IMAGE_ML
+            image: ${{ needs.prep.outputs.image_ml }}
             context: ml-service
             dockerfile: ml-service/Dockerfile
     steps:
@@ -78,12 +99,12 @@ jobs:
           # Hai thẻ: một theo SHA để biết chính xác bản nào đang chạy và để quay lui được,
           # một là "latest" cho người đọc. Máy chủ luôn kéo theo SHA.
           tags: |
-            ${{ env[matrix.image_env] }}:${{ github.sha }}
-            ${{ env[matrix.image_env] }}:latest
+            ${{ matrix.image }}:${{ github.sha }}
+            ${{ matrix.image }}:latest
           # Bộ đệm lưu ngay trong registry: lượt sau không phải cài lại numpy/scipy/lightgbm
           # (mất khoảng 4 phút) khi requirements.txt không đổi.
-          cache-from: type=registry,ref=${{ env[matrix.image_env] }}:buildcache
-          cache-to: type=registry,ref=${{ env[matrix.image_env] }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ matrix.image }}:buildcache
+          cache-to: type=registry,ref=${{ matrix.image }}:buildcache,mode=max
 
   # ---------------------------------------------------------------------------
   # 2. Dựng giao diện tĩnh, đẩy lên S3, xoá bộ đệm CloudFront
@@ -171,7 +192,7 @@ jobs:
   deploy-server:
     name: API + ML → EC2
     runs-on: ubuntu-latest
-    needs: build-images
+    needs: [prep, build-images]
     if: vars.AWS_EC2_INSTANCE_ID != ''
     permissions:
       contents: read
@@ -191,7 +212,7 @@ jobs:
             --instance-ids "${{ vars.AWS_EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Triển khai ${{ github.sha }}" \
-            --parameters commands="[\"sudo /opt/kgs/deploy.sh '${{ env.IMAGE_API }}:${{ github.sha }}' '${{ env.IMAGE_ML }}:${{ github.sha }}'\"]" \
+            --parameters commands="[\"sudo /opt/kgs/deploy.sh '${{ needs.prep.outputs.image_api }}:${{ github.sha }}' '${{ needs.prep.outputs.image_ml }}:${{ github.sha }}'\"]" \
             --timeout-seconds 600 \
             --query "Command.CommandId" --output text)
           echo "command_id=${COMMAND_ID}" >> "$GITHUB_OUTPUT"
