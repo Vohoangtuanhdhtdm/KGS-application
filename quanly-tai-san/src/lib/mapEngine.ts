@@ -77,14 +77,16 @@ export function pickMapEngine(): MapEngine {
 /**
  * Lỗi nào của GL là "chết hẳn" (phải đổi động cơ) chứ không phải vài tile lẻ hỏng.
  * 401: token sai/bị thu hồi · 403: sai giới hạn URL · 429: vượt hạn mức hoặc tốc độ.
+ *
+ * CHỈ dựa vào mã HTTP. Bản trước còn coi mọi thông báo có chữ "style" + "error" là chết hẳn
+ * — và một yêu cầu tải style bị HUỶ (người dùng chuyển trang khi bản đồ đang tải, mạng chập
+ * chờn) khớp đúng mẫu đó, nên GL bị đánh dấu hỏng cho cả phiên: mất bản đồ GL cùng mọi
+ * tính năng đường đi chỉ vì bấm chuyển trang hơi nhanh. Lỗi mạng tạm thời không phải lý do
+ * đổi động cơ — Leaflet cũng cần mạng y như vậy.
  */
 export function isFatalGlError(e: { error?: { status?: number; message?: string } }): boolean {
   const status = e.error?.status;
-  if (status === 401 || status === 403 || status === 429) return true;
-  // Kiểu bản đồ không tải được thì không còn gì để vẽ.
-  return (
-    /style/i.test(e.error?.message ?? "") && /fail|error|not found/i.test(e.error?.message ?? "")
-  );
+  return status === 401 || status === 403 || status === 429;
 }
 
 /** Chuỗi giao diện của GL JS bằng tiếng Việt. `language: "vi"` chỉ dịch nhãn bản đồ. */
@@ -154,4 +156,6 @@ export interface MapViewApi {
   getCenter(): { lat: number; lng: number };
   /** Khoảng cách từ tâm tới góc khung nhìn — bán kính vừa phủ trọn vùng đang thấy. */
   getViewRadiusMeters(): number;
+  /** Đưa camera tới một điểm (không đặt ghim, không đổi bộ lọc). */
+  flyTo(lat: number, lng: number, zoom?: number): void;
 }
