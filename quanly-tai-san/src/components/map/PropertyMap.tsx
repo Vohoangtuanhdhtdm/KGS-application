@@ -179,6 +179,7 @@ export default function PropertyMap({
                 return { lat: c.lat, lng: c.lng };
               },
               getViewRadiusMeters: () => map.getCenter().distanceTo(map.getBounds().getNorthEast()),
+              flyTo: (lat, lng, zoom) => map.flyTo([lat, lng], zoom ?? 15, { duration: 0.7 }),
             })
           }
         />
