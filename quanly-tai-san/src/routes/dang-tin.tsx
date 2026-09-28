@@ -23,6 +23,7 @@ import { ListingTermsFields } from "@/components/listings/ListingTermsFields";
 import { VietnamAddressPicker } from "@/components/assets/VietnamAddressPicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { PriceSuggestion } from "@/components/listings/PriceSuggestion";
+import { LocationPinField, type LatLngValue } from "@/components/listings/LocationPinField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,7 @@ function CreateListingPage() {
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [floors, setFloors] = useState("");
+  const [pin, setPin] = useState<LatLngValue | null>(null);
 
   // Bước 3 — điều kiện thuê
   const [terms, setTerms] = useState<ListingTermsDto>(EMPTY_TERMS);
@@ -129,6 +131,7 @@ function CreateListingPage() {
     setBedrooms(d.bedrooms?.toString() ?? "");
     setBathrooms(d.bathrooms?.toString() ?? "");
     setFloors(d.floors?.toString() ?? "");
+    if (d.latitude != null && d.longitude != null) setPin({ lat: d.latitude, lng: d.longitude });
     setTerms(d.terms);
     setAmenities(d.amenities);
     setImages(d.images);
@@ -154,6 +157,8 @@ function CreateListingPage() {
     bedrooms: num(bedrooms),
     bathrooms: num(bathrooms),
     floors: num(floors),
+    latitude: pin?.lat ?? null,
+    longitude: pin?.lng ?? null,
     terms,
     amenities,
   });
@@ -182,6 +187,8 @@ function CreateListingPage() {
                 bedrooms: b.bedrooms,
                 bathrooms: b.bathrooms,
                 floors: b.floors,
+                // Chưa ghim thì không gửi: null ở đây nghĩa là "giữ nguyên", không phải "xoá".
+                ...(pin ? { latitude: pin.lat, longitude: pin.lng } : {}),
               }
             : {}),
         });
@@ -255,6 +262,13 @@ function CreateListingPage() {
       nhan: "Thông tin bất động sản",
       batBuoc: true,
       xong: !!city && !!district && !!ward,
+    },
+    {
+      // Không bắt buộc để gửi duyệt, nhưng thiếu thì tin không lên bản đồ tìm kiếm.
+      id: "muc-vi-tri",
+      nhan: "Vị trí",
+      batBuoc: false,
+      xong: !!pin,
     },
     {
       id: "muc-chi-phi",
@@ -487,6 +501,16 @@ function CreateListingPage() {
               placeholder="Ví dụ: 45/12 Điện Biên Phủ"
             />
           </Field>
+
+          {/* Không bọc trong Field: Field nối nhãn bằng id của phần tử con, mà bản đồ không
+              phải ô nhập nên nhãn trỏ vào đó là sai ngữ nghĩa. */}
+          <section id="muc-vi-tri" aria-labelledby="muc-vi-tri-nhan" className="scroll-mt-28 space-y-1.5">
+            <p id="muc-vi-tri-nhan" className="text-sm font-medium leading-none">
+              Vị trí trên bản đồ{" "}
+              <span className="font-normal text-muted-foreground">(nên có)</span>
+            </p>
+            <LocationPinField value={pin} onChange={setPin} disabled={!canEditProperty} />
+          </section>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Loại hình">

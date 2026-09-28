@@ -244,6 +244,9 @@ export interface EditListingDto {
   /** false khi tai san con tin dang khac — sua dia chi luc do se doi luon cac tin kia. */
   canEditPropertyFields: boolean;
   moderationNote: string | null;
+  /** Ghim vị trí hiện tại, null nếu chưa ghim. */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** Khop voi enum ListingSort phia backend. */
@@ -329,6 +332,9 @@ export interface UpdateListingInput {
   houseDirection?: string | null;
   legalStatus?: string | null;
   furnitureState?: string | null;
+  /** Gửi đủ cả hai thì đặt/di chuyển ghim; bỏ trống thì giữ nguyên. */
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 // ---- Helper hiển thị giá theo loại tin ----

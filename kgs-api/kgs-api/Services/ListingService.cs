@@ -568,7 +568,8 @@ namespace kgs_api.Services
                 a.HouseDirection, a.LegalStatus, a.FurnitureState,
                 ToTermsDto(listing.Terms), listing.Amenities, images,
                 CanEditPropertyFields: otherListings == 0,
-                listing.ModerationNote);
+                listing.ModerationNote,
+                a.Location?.Y, a.Location?.X);   // Y=lat, X=lng
         }
 
         public async Task<OwnerListingDto> BumpAsync(Guid listingId, CancellationToken ct = default)
@@ -638,7 +639,11 @@ namespace kgs_api.Services
         private async Task ApplyPropertyFieldsAsync(
             Listing listing, UpdateListingRequest request, CancellationToken ct)
         {
-            if (request.City is null && request.Area is null && request.PropertyType is null)
+            if ((request.Latitude is null) != (request.Longitude is null))
+                throw new ValidationFailedException("Vị trí phải có đủ cả vĩ độ và kinh độ.");
+
+            if (request.City is null && request.Area is null && request.PropertyType is null
+                && request.Latitude is null)
                 return;   // client không gửi phần này
 
             var hasOtherListings = await _listings.Query()
@@ -663,6 +668,12 @@ namespace kgs_api.Services
             if (request.HouseDirection is not null) asset.HouseDirection = request.HouseDirection.Trim();
             if (request.LegalStatus is not null) asset.LegalStatus = request.LegalStatus.Trim();
             if (request.FurnitureState is not null) asset.FurnitureState = request.FurnitureState.Trim();
+
+            // Toạ độ do chính người đăng bấm/kéo ghim trên bản đồ — không lấy từ kết quả
+            // geocoding (loại geocoding miễn phí của Mapbox không cho lưu kết quả).
+            if (request.Latitude is not null && request.Longitude is not null)
+                asset.Location = _geometryFactory.CreatePoint(
+                    new Coordinate(request.Longitude.Value, request.Latitude.Value));
         }
 
         private async Task<Listing> GetOwnedListingAsync(Guid listingId, CancellationToken ct)
