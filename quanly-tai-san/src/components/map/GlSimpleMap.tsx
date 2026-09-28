@@ -8,6 +8,9 @@ import { GL_LOCALE_VI, GL_STYLES, MAPBOX_TOKEN, isFatalGlError } from "@/lib/map
 import type { SimpleMapProps } from "./simpleMapTypes";
 import { GeocodeBox } from "./GeocodeBox";
 
+const ROUTE_SOURCE = "kgs-route";
+const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+
 interface Props extends SimpleMapProps {
   onFatalError?: () => void;
 }
@@ -35,12 +38,14 @@ export default function GlSimpleMap({
   onPick,
   pickerMarker,
   geocodeSearch,
+  route,
   className,
   onFatalError,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const cb = useRef({ onPick, onFatalError });
   cb.current = { onPick, onFatalError };
 
@@ -69,6 +74,25 @@ export default function GlSimpleMap({
       }
     });
     m.on("click", (e) => cb.current.onPick?.(e.lngLat.lat, e.lngLat.lng));
+    m.on("load", () => {
+      m.addSource(ROUTE_SOURCE, { type: "geojson", data: EMPTY });
+      // Viền trắng dưới + nét màu trên: đường đi đọc rõ trên cả nền đường sá rối mắt.
+      m.addLayer({
+        id: `${ROUTE_SOURCE}-casing`,
+        type: "line",
+        source: ROUTE_SOURCE,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#ffffff", "line-width": 8 },
+      });
+      m.addLayer({
+        id: `${ROUTE_SOURCE}-line`,
+        type: "line",
+        source: ROUTE_SOURCE,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#2563eb", "line-width": 4.5 },
+      });
+      setLoaded(true);
+    });
     const ro = new ResizeObserver(() => m.resize());
     ro.observe(containerRef.current);
     mapRef.current = m;
@@ -110,16 +134,37 @@ export default function GlSimpleMap({
       mk.setPopup(new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupNode("Vị trí đã chọn")));
       pickRef.current = mk;
     }
-    pickRef.current.setLngLat([pickerMarker.lng, pickerMarker.lat]).addTo(map);
-  }, [map, pickerMarker?.lat, pickerMarker?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+    pickRef.current
+      .setLngLat([pickerMarker.lng, pickerMarker.lat])
+      .setDraggable(!!onPick)
+      .addTo(map);
+  }, [map, pickerMarker?.lat, pickerMarker?.lng, !!onPick]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Đang chờ chọn điểm thì con trỏ đổi thành dấu cộng — cho biết bấm vào bản đồ sẽ làm gì.
+  useEffect(() => {
+    if (map) map.getCanvas().style.cursor = onPick ? "crosshair" : "";
+  }, [map, !!onPick]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Đường đi: vẽ rồi căn khung ôm trọn nó.
+  const routeKey = route ? `${route.coordinates.length}:${route.coordinates[0]?.join(",")}` : "";
+  useEffect(() => {
+    if (!map || !loaded) return;
+    (map.getSource(ROUTE_SOURCE) as mapboxgl.GeoJSONSource).setData(
+      route ? { type: "Feature", properties: {}, geometry: route } : EMPTY,
+    );
+    if (!route || route.coordinates.length < 2) return;
+    const b = new mapboxgl.LngLatBounds();
+    route.coordinates.forEach((c) => b.extend(c as [number, number]));
+    map.fitBounds(b, { padding: 48, maxZoom: 16, duration: 600 });
+  }, [map, loaded, routeKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markersKey = markers
-    .map((m) => `${m.id}:${m.lat}:${m.lng}:${m.title}:${m.subtitle ?? ""}`)
+    .map((m) => `${m.id}:${m.lat}:${m.lng}:${m.title}:${m.subtitle ?? ""}:${m.color ?? ""}`)
     .join("|");
   useEffect(() => {
     if (!map) return;
     const made = markers.map((d) =>
-      new mapboxgl.Marker({ color: "#1f2f6b" })
+      new mapboxgl.Marker({ color: d.color ?? "#1f2f6b" })
         .setLngLat([d.lng, d.lat])
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupNode(d.title, d.subtitle)))
         .addTo(map),
