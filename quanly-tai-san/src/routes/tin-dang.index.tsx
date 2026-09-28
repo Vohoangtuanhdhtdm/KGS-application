@@ -7,7 +7,9 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
-import type { MapViewApi } from "@/lib/mapEngine";
+import type { MapEngine, MapViewApi } from "@/lib/mapEngine";
+import { encodeRing, fetchIsochrone, profileLabel } from "@/lib/mapboxNav";
+import { TravelTimeControl, type TravelMode } from "@/components/listings/TravelTimeControl";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { savedListingsApi } from "@/lib/api/engagement";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -178,6 +180,37 @@ function PublicListingsPage() {
   const mapRef = useRef<MapViewApi | null>(null);
 
   const [usingMyLocation, setUsingMyLocation] = useState(false);
+
+  // ---- Tìm theo thời gian đi lại (Mapbox Isochrone) ----
+  // Chỉ bật khi bản đồ chạy GL: điều khoản Mapbox bắt buộc vùng Isochrone hiển thị trên bản
+  // đồ Mapbox. Bản Leaflet dự phòng thì tính năng này ẩn đi, không lùi về cách khác.
+  const [mapEngine, setMapEngine] = useState<MapEngine | null>(null);
+  const [travel, setTravel] = useState<TravelMode | null>(null);
+  const travelEnabled = mapEngine === "gl" && !!travel && !!searchCenter;
+  const isoQ = useQuery({
+    queryKey: [
+      "isochrone",
+      searchCenter?.lat.toFixed(4),
+      searchCenter?.lng.toFixed(4),
+      travel?.profile,
+      travel?.minutes,
+    ],
+    queryFn: ({ signal }) =>
+      fetchIsochrone(searchCenter!, travel!.profile, travel!.minutes, signal),
+    enabled: travelEnabled,
+    // Cùng điểm, cùng cách đi, cùng số phút thì vùng không đổi trong một phiên — không gọi lại.
+    staleTime: Infinity,
+    retry: 1,
+  });
+  const travelArea = travelEnabled ? (isoQ.data ?? null) : null;
+  useEffect(() => {
+    if (!isoQ.isError || !travel) return;
+    toast.error("Không tính được vùng đi lại lúc này — đang dùng lại bán kính.");
+    setTravel(null);
+  }, [isoQ.isError, travel]);
+  useEffect(() => {
+    if (mapEngine === "leaflet") setTravel(null);
+  }, [mapEngine]);
   const [myLocationRadiusKm, setMyLocationRadiusKm] = useState(5);
   const [radiusPopoverOpen, setRadiusPopoverOpen] = useState(false);
   const [radiusInput, setRadiusInput] = useState("5");
@@ -221,6 +254,7 @@ function PublicListingsPage() {
   };
 
   const clearMyLocationSearch = () => {
+    setTravel(null);
     setSearchCenter(null);
     setRadiusMeters(null);
     setUsingMyLocation(false);
@@ -263,7 +297,14 @@ function PublicListingsPage() {
     keyword,
     latitude: searchCenter?.lat ?? "",
     longitude: searchCenter?.lng ?? "",
-    radiusMeters: searchCenter && radiusMeters ? radiusMeters : "",
+    // Chế độ thời gian đi lại: vòng tròn bao ngoài vùng (lọc thô qua GiST index) + chính
+    // vùng đó (lọc chính xác). Vùng chưa về thì vẫn tìm theo bán kính cũ.
+    radiusMeters: travelArea
+      ? travelArea.boundingRadiusMeters
+      : searchCenter && radiusMeters
+        ? radiusMeters
+        : "",
+    within: travelArea ? encodeRing(travelArea.ring) : "",
     sortBy,
     pageSize: 20,
   };
@@ -357,6 +398,7 @@ function PublicListingsPage() {
   const handleSearchThisArea = () => {
     const map = mapRef.current;
     if (!map) return;
+    setTravel(null); // "khu vực đang nhìn thấy" là một khung, không phải vùng đi lại
     const center = map.getCenter();
     const newRadius = map.getViewRadiusMeters(); // tâm → góc khung nhìn: vừa phủ trọn vùng đang thấy
     setSearchCenter({ lat: center.lat, lng: center.lng });
@@ -463,7 +505,9 @@ function PublicListingsPage() {
   if (searchCenter)
     appliedFilters.push({
       key: "area",
-      label: usingMyLocation
+      label: travelArea
+        ? `${travel!.minutes} phút ${profileLabel(travel!.profile)} từ điểm đã ghim`
+        : usingMyLocation
         ? `Quanh tôi ${myLocationRadiusKm} km`
         : `Trong bán kính ${Math.round((radiusMeters ?? DEFAULT_RADIUS_METERS) / 1000)} km`,
       clear: clearMyLocationSearch,
@@ -483,6 +527,7 @@ function PublicListingsPage() {
     setBedroomsMin(c.bedroomsMin ?? null);
     setKeywordInput(c.keyword ?? "");
     setKeyword(c.keyword ?? "");
+    setTravel(null);
 
     if (c.latitude != null && c.longitude != null && c.radiusMeters != null) {
       setSearchCenter({ lat: c.latitude, lng: c.longitude });
@@ -497,8 +542,19 @@ function PublicListingsPage() {
   };
 
   // Ten goi y: tom tat chinh cac chip dang bat, de nguoi dung khong phai tu nghi ten.
+  //
+  // Vùng đi lại không được lưu (điều khoản Mapbox) — bộ lọc lưu giữ vòng tròn bao ngoài vùng,
+  // nên tên gợi ý cũng phải nói đúng là bán kính, không hứa "15 phút" mà thứ lưu không giữ.
   const suggestedSearchName =
-    appliedFilters.map((f) => f.label).join(" · ").slice(0, 120) || "Bộ lọc của tôi";
+    appliedFilters
+      .map((f) =>
+        f.key === "area" && travelArea
+          ? `Bán kính ${Math.round(travelArea.boundingRadiusMeters / 1000)} km`
+          : f.label,
+      )
+      .join(" · ")
+      .slice(0, 120) || "Bộ lọc của tôi";
+  const savedSearchFilters = travelArea ? { ...filters, within: "" } : filters;
 
   const appliedFilterBar =
     appliedFilters.length === 0 ? null : (
@@ -555,7 +611,7 @@ function PublicListingsPage() {
         Tìm theo nhu cầu
       </Button>
       <SavedSearchesPopover
-        currentFilters={filters}
+        currentFilters={savedSearchFilters}
         suggestedName={suggestedSearchName}
         hasAnyFilter={appliedFilters.length > 0}
         onApply={applySavedSearch}
@@ -882,11 +938,22 @@ function PublicListingsPage() {
           userLocation={userLocation}
           searchCenter={searchCenter}
           onSearchCenterChange={handleSearchCenterChange}
-          radiusMeters={radiusMeters}
+          radiusMeters={travelArea ? null : radiusMeters}
+          areaPolygon={travelArea?.ring ?? null}
+          onEngine={setMapEngine}
           onMapReady={(map) => {
             mapRef.current = map;
           }}
           onShowSearchAreaButtonChange={setShowSearchAreaButton}
+        />
+      )}
+      {mapEngine === "gl" && (
+        <TravelTimeControl
+          hasCenter={!!searchCenter}
+          radiusKm={Math.round((radiusMeters ?? DEFAULT_RADIUS_METERS) / 1000)}
+          travel={travel}
+          onTravelChange={setTravel}
+          loading={travelEnabled && isoQ.isFetching}
         />
       )}
       {showSearchAreaButton && (

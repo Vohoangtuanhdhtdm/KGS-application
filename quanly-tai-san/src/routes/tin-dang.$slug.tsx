@@ -16,7 +16,7 @@ import { ListingShareActions } from "@/components/public/ListingShareActions";
 import { RelatedListings } from "@/components/public/RelatedListings";
 import { MarketTrendCard } from "@/components/public/MarketTrendCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ClientMap } from "@/components/map/ClientMap";
+import { ListingLocationMap } from "@/components/listings/ListingLocationMap";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -285,11 +285,11 @@ function PublicListingDetailPage() {
                   <CardTitle className="text-base">Vị trí</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ClientMap
-                    center={[p.latitude, p.longitude]}
-                    zoom={15}
-                    height={280}
-                    markers={[{ id: p.id, lat: p.latitude, lng: p.longitude, title: p.title }]}
+                  <ListingLocationMap
+                    listingId={p.id}
+                    title={p.title}
+                    lat={p.latitude}
+                    lng={p.longitude}
                   />
                 </CardContent>
               </Card>
