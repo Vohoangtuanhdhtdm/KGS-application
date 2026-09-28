@@ -8,17 +8,27 @@ import L from "leaflet";
 // Kéo phần khai báo bổ sung cho namespace `L` (L.MarkerCluster, MarkerClusterGroupOptions).
 // react-leaflet-cluster đã nạp plugin này ở runtime; import lặp là idempotent.
 import "leaflet.markercluster";
-import { MapContainer, Marker, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Tooltip, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import type { AssetMapItem } from "@/lib/api/assets";
 import type { AssetStatusCode } from "@/constants/enums";
 import type { PortfolioIncome } from "@/lib/asset-income";
 import { prefersReducedMotion } from "@/lib/motion";
 import { formatCurrency } from "@/lib/format";
-import { AssetQuickCard, QUICK_CARD_WIDTH } from "./AssetQuickCard";
 import { BaseTileLayer } from "./BaseTileLayer";
+import {
+  FALLBACK_CENTER,
+  MAX_CLUSTER_RADIUS,
+  STATUS_COLOR,
+  clusterHtml,
+  hasLocation,
+  makeRingRadius,
+  ringInnerHtml,
+  snapRadius,
+  type LocatedAsset,
+} from "./assetMapShared";
+import { SelectionOverlay } from "./AssetSelectionOverlay";
 
 // Nền "light" (Mapbox light-v11, lùi về OSM nếu không có Mapbox): gần như đơn sắc, không có
 // đường đỏ/vàng gắt — điều kiện để panel trắng bán trong suốt đặt lên trên vẫn đọc rõ.
@@ -26,57 +36,6 @@ import { BaseTileLayer } from "./BaseTileLayer";
 // Trước đây gắn cứng CARTO Positron. Nguồn đó nay trả tile đóng dấu chìm "API KEY REQUIRED"
 // kín mặt bản đồ (xem lib/mapTiles.ts) — và vì tile tải THÀNH CÔNG nên không có lỗi nào để
 // bắt. Dùng chung BaseTileLayer còn cho bản đồ này luôn cơ chế tự đổi nguồn khi nguồn hỏng.
-
-const FALLBACK_CENTER: L.LatLngTuple = [10.7769, 106.7009];
-
-// Dùng token ngữ nghĩa sẵn có, không đặt bảng màu riêng cho bản đồ.
-const STATUS_COLOR: Record<AssetStatusCode, string> = {
-  1: "var(--color-info)", // Đang sử dụng
-  2: "var(--color-success)", // Đang cho thuê
-  3: "var(--color-warning)", // Đang rao bán
-  4: "var(--color-muted-foreground)", // Trống
-  5: "var(--color-muted-foreground)", // Đã bán
-  6: "var(--color-destructive)", // Hết hạn thuê
-};
-
-// Bán kính vòng ngoài: nhỏ nhất → lớn nhất trong CHÍNH danh mục đang xem
-const RING_MIN = 18;
-const RING_MAX = 48;
-/** Tài sản chưa nhập giá trị: vòng nhỏ nhất, và không tham gia tính min–max. */
-const RING_NO_VALUE = 18;
-/** Mọi tài sản cùng giá trị → không có thang so sánh, dùng cỡ trung bình cố định. */
-const RING_UNIFORM = 24;
-
-type LocatedAsset = AssetMapItem & { latitude: number; longitude: number };
-
-function hasLocation(a: AssetMapItem): a is LocatedAsset {
-  return a.latitude != null && a.longitude != null;
-}
-
-/**
- * Chuẩn hoá bán kính theo min–max của chính danh mục người dùng đang xem, không theo giá
- * trị tuyệt đối: người chỉ có tài sản nhỏ vẫn phải thấy được cái nào lớn nhất của họ.
- */
-function makeRingRadius(items: LocatedAsset[]): (value: number | null) => number {
-  const values = items.map((a) => a.currentValue).filter((v): v is number => v != null);
-  if (values.length === 0) return () => RING_NO_VALUE;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  return (value) => {
-    if (value == null) return RING_NO_VALUE;
-    if (max === min) return RING_UNIFORM;
-    return RING_MIN + ((value - min) / (max - min)) * (RING_MAX - RING_MIN);
-  };
-}
-
-function ringInnerHtml(status: AssetStatusCode, radius: number, alive: boolean, active: boolean) {
-  const color = STATUS_COLOR[status] ?? STATUS_COLOR[4];
-  const size = radius * 2;
-  const cls = ["asset-ring", alive && "asset-ring--alive", active && "asset-ring--active"]
-    .filter(Boolean)
-    .join(" ");
-  return `<div class="${cls}" style="width:${size}px;height:${size}px;border-color:${color};background:color-mix(in oklab, ${color} 14%, transparent)"><i class="asset-ring__dot" style="background:${color}"></i></div>`;
-}
 
 // DivIcon bất biến theo (trạng thái, bán kính, thở, nổi bật) — cache để đổi hover không
 // phải dựng lại icon cho toàn bộ marker.
@@ -88,8 +47,7 @@ const iconCache = new Map<string, L.DivIcon>();
  * xử lý bằng cách bật/tắt class trên chính phần tử đó (xem HighlightMarkers).
  */
 function ringIcon(status: AssetStatusCode, radius: number, alive: boolean): L.DivIcon {
-  // Gom bán kính về bội số 2px: giữ cache nhỏ mà mắt thường không phân biệt được
-  const r = Math.max(RING_MIN, Math.round(radius / 2) * 2);
+  const r = snapRadius(radius);
   const key = `${status}|${r}|${alive}`;
   const cached = iconCache.get(key);
   if (cached) return cached;
@@ -115,23 +73,8 @@ function clusterIcon(cluster: L.MarkerCluster): L.DivIcon {
     const code = Number(/asset-ring--s(\d+)/.exec(cls)?.[1]);
     if (Number.isFinite(code)) tally.set(code, (tally.get(code) ?? 0) + 1);
   }
-  let top = 4;
-  let topCount = -1;
-  for (const [code, n] of tally) {
-    if (n > topCount) {
-      top = code;
-      topCount = n;
-    }
-  }
-  const color = STATUS_COLOR[top as AssetStatusCode] ?? STATUS_COLOR[4];
-  const size = count >= 50 ? 64 : count >= 10 ? 52 : 40;
-  const font = count >= 50 ? 18 : count >= 10 ? 16 : 14;
-
-  return L.divIcon({
-    html: `<div class="asset-cluster" style="width:${size}px;height:${size}px;font-size:${font}px;background:${color};box-shadow:0 0 0 8px color-mix(in oklab, ${color} 15%, transparent)">${count}</div>`,
-    className: "asset-cluster-wrap",
-    iconSize: L.point(size, size),
-  });
+  const { html, size } = clusterHtml(count, tally);
+  return L.divIcon({ html, className: "asset-cluster-wrap", iconSize: L.point(size, size) });
 }
 
 /**
@@ -179,124 +122,31 @@ function PanToSelected({ target }: { target: LocatedAsset | null }) {
   return null;
 }
 
-const CARD_GAP = 16;
-const CARD_EDGE = 8;
-/** Chiều cao ước lượng để căn chỗ; card thật có thể thấp hơn, không ảnh hưởng thẩm mỹ. */
-const CARD_EST_HEIGHT = 360;
-
-const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
-
-/**
- * Lớp "spotlight": làm tối nền bản đồ, vẽ lại marker đang chọn ở trên lớp tối, và mở card
- * ngay tại điểm vừa click.
- *
- * Vì sao phải vẽ LẠI marker thay vì nâng z-index marker gốc: marker nằm trong
- * `.leaflet-marker-pane` (position:absolute + z-index:600) — pane đó tự tạo stacking
- * context, nên không con nào bên trong vượt lên trên lớp tối đặt ngoài pane được.
- */
-function SelectionLayer({
-  target,
-  radius,
-  alive,
-  income,
-  onClose,
-  onOpenDetail,
-  rightInset,
-}: {
-  target: LocatedAsset;
-  radius: number;
-  alive: boolean;
-  income: PortfolioIncome;
-  onClose: () => void;
-  onOpenDetail: (id: string) => void;
-  rightInset: number;
-}) {
+/** Lớp spotlight + thẻ xem nhanh, lấy toạ độ từ Leaflet (phần vẽ dùng chung: SelectionOverlay). */
+function SelectionLayer(props: Omit<Parameters<typeof SelectionOverlay>[0], "read" | "subscribe">) {
   const map = useMap();
-  // Lớp này được PORTAL ra document.body (xem phần return) nên toạ độ phải quy về
-  // viewport, không phải toạ độ trong container bản đồ.
+  const { latitude, longitude } = props.target;
+  // Lớp được PORTAL ra document.body nên toạ độ phải quy về viewport.
   const read = useCallback(() => {
     const box = map.getContainer().getBoundingClientRect();
+    const pt = map.latLngToContainerPoint([latitude, longitude]);
+    const size = map.getSize();
     return {
-      pt: map.latLngToContainerPoint([target.latitude, target.longitude]),
-      size: map.getSize(),
+      pt: { x: pt.x, y: pt.y },
+      size: { x: size.x, y: size.y },
       offset: { x: box.left, y: box.top },
     };
-  }, [map, target.latitude, target.longitude]);
-  const [geo, setGeo] = useState(read);
-
-  // Card neo theo marker: pan/zoom thì đi theo, không bị "rớt" lại một chỗ
-  const sync = useCallback(() => setGeo(read()), [read]);
-  useEffect(() => sync(), [sync]);
-  useMapEvents({ move: sync, zoom: sync, resize: sync });
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      // Chỉ lớp trên cùng được xử lý Esc. Khi AssetDetailDialog (hoặc sheet) đang mở đè
-      // lên, một lần Esc phải đóng đúng lớp đó — không đóng luôn cả thẻ xem nhanh bên dưới.
-      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
-      onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  const { pt, size, offset } = geo;
-
-  // Chọn phía còn nhiều chỗ nhất, rồi kẹp lại trong viewport — cùng cách đã dùng để sửa
-  // popover "Tìm quanh vị trí" ở Marketplace.
-  const usableRight =
-    size.x - rightInset > QUICK_CARD_WIDTH + CARD_GAP * 2 ? size.x - rightInset : size.x;
-  const spaceRight = usableRight - pt.x;
-  const spaceLeft = pt.x;
-  let left =
-    spaceRight >= QUICK_CARD_WIDTH + CARD_GAP || spaceRight >= spaceLeft
-      ? pt.x + radius + CARD_GAP
-      : pt.x - radius - CARD_GAP - QUICK_CARD_WIDTH;
-  left = clamp(left, CARD_EDGE, usableRight - QUICK_CARD_WIDTH - CARD_EDGE);
-
-  let top = pt.y - CARD_EST_HEIGHT / 2;
-  top = clamp(top, CARD_EDGE, size.y - CARD_EST_HEIGHT - CARD_EDGE);
-
-  // Gốc phóng nằm đúng phía marker → card "nở ra" từ điểm vừa click
-  const originX = clamp(pt.x - left, 0, QUICK_CARD_WIDTH);
-  const originY = clamp(pt.y - top, 0, CARD_EST_HEIGHT);
-
-  // PORTAL ra document.body: nếu render trong cây bản đồ, cả 3 lớp này bị nhốt trong
-  // stacking context `z-0` của wrapper bản đồ (thứ bắt buộc phải có để giam các pane
-  // Leaflet z-400..700). Hệ quả đã đo được: quick card khai báo z-1000 vẫn bị panel
-  // thống kê z-10 che mất. Ra ngoài body thì z-index mới có hiệu lực thật.
-  return createPortal(
-    <>
-      <div className="asset-spotlight" onClick={onClose} role="presentation" aria-hidden="true" />
-      {/* Bản sao sáng của marker đang chọn, nằm trên lớp tối */}
-      <div
-        className="asset-selected-ring"
-        style={{ left: offset.x + pt.x - radius, top: offset.y + pt.y - radius }}
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{
-          __html: ringInnerHtml(target.status, radius, alive, true),
-        }}
-      />
-      <div
-        className="asset-quickcard"
-        style={{
-          left: offset.x + left,
-          top: offset.y + top,
-          width: QUICK_CARD_WIDTH,
-          transformOrigin: `${originX}px ${originY}px`,
-        }}
-      >
-        <AssetQuickCard
-          asset={target}
-          income={income[target.id]}
-          onClose={onClose}
-          onOpenDetail={onOpenDetail}
-        />
-      </div>
-    </>,
-    document.body,
+  }, [map, latitude, longitude]);
+  const subscribe = useCallback(
+    (cb: () => void) => {
+      map.on("move zoom resize", cb);
+      return () => {
+        map.off("move zoom resize", cb);
+      };
+    },
+    [map],
   );
+  return <SelectionOverlay {...props} read={read} subscribe={subscribe} />;
 }
 
 /**
@@ -421,7 +271,7 @@ export default function AssetMap({
       <MarkerClusterGroup
         chunkedLoading
         showCoverageOnHover={false}
-        maxClusterRadius={56}
+        maxClusterRadius={MAX_CLUSTER_RADIUS}
         iconCreateFunction={clusterIcon}
       >
         {located.map((a) => (
@@ -440,7 +290,7 @@ export default function AssetMap({
       {selected && (
         <SelectionLayer
           target={selected}
-          radius={Math.max(RING_MIN, Math.round(radiusOf(selected.currentValue) / 2) * 2)}
+          radius={snapRadius(radiusOf(selected.currentValue))}
           alive={isAlive(selected.id)}
           income={income}
           onClose={onCloseSelection}
