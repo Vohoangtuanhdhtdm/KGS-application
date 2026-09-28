@@ -285,6 +285,8 @@ export interface PublicListingFilters {
   latitude?: number | "";
   longitude?: number | "";
   radiusMeters?: number | "";
+  /** Vùng đi lại (Isochrone) "lng,lat;lng,lat;..." — gửi kèm vòng tròn bao ngoài ở trên. */
+  within?: string;
   // Bộ lọc điều kiện thuê — cũng là các hard filter AI Agent sẽ sinh ra
   totalCostMax?: number | "";
   petsAllowed?: boolean | "";

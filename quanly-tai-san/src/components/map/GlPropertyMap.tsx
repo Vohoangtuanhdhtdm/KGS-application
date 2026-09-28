@@ -38,6 +38,8 @@ interface Props {
   searchCenter?: LatLng | null;
   onSearchCenterChange?: (c: LatLng) => void;
   radiusMeters?: number | null;
+  /** Vùng "đi tới được trong X phút" (Isochrone). Có thì vẽ vùng này thay cho vòng bán kính. */
+  areaPolygon?: [number, number][] | null;
   onMapReady?: (api: MapViewApi) => void;
   onShowSearchAreaButtonChange?: (show: boolean) => void;
   /** GL hỏng hẳn (token, hạn mức) — lớp bọc đổi sang bản Leaflet. */
@@ -73,6 +75,7 @@ export default function GlPropertyMap({
   searchCenter,
   onSearchCenterChange,
   radiusMeters,
+  areaPolygon,
   onMapReady,
   onShowSearchAreaButtonChange,
   onFatalError,
@@ -170,9 +173,16 @@ export default function GlPropertyMap({
       cb.current.onSearchCenterChange?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }),
     );
 
-    map.on("moveend", () => {
+    map.on("moveend", (e) => {
       const { searchCenter: sc, onShowSearchAreaButtonChange: show } = cb.current;
       if (!sc || !show) return;
+      // Chỉ tính những lần NGƯỜI DÙNG kéo/phóng (sự kiện có originalEvent). Bản đồ tự căn
+      // khung theo vùng đi lại thì tâm khung lệch khỏi ghim — không phải lý do để mời
+      // "Tìm trong khu vực này".
+      if (!e.originalEvent) {
+        show(false);
+        return;
+      }
       const c = map.getCenter();
       show(distanceMeters({ lat: c.lat, lng: c.lng }, sc) > MOVE_THRESHOLD_METERS);
     });
@@ -281,6 +291,8 @@ export default function GlPropertyMap({
     }
   }, [hoveredId, validKey]);
 
+  const areaKey = areaPolygon ? `${areaPolygon.length}:${areaPolygon[0]?.join(",")}` : "";
+
   // ---------------- Căn khung theo các tin ----------------
   useEffect(() => {
     const map = mapRef.current;
@@ -291,7 +303,10 @@ export default function GlPropertyMap({
     // trong — nếu không, còn 2 kết quả là bản đồ phóng sát vào chúng, ghim trôi ra ngoài,
     // và tâm lệch khỏi ghim làm nút "Tìm trong khu vực này" bật lên dù người dùng chưa kéo.
     const cur = cb.current.searchCenter;
-    if (cur && radiusMeters != null) {
+    if (areaPolygon && areaPolygon.length > 2) {
+      areaPolygon.forEach(([lng, lat]) => b.extend([lng, lat]));
+      if (cur) b.extend([cur.lng, cur.lat]);
+    } else if (cur && radiusMeters != null) {
       for (const [lng, lat] of circlePolygon(cur, radiusMeters, 16).geometry.coordinates[0]) {
         b.extend([lng, lat]);
       }
@@ -304,7 +319,7 @@ export default function GlPropertyMap({
     valid.forEach((p) => b.extend([p.lng, p.lat]));
     map.fitBounds(b, { padding: 40, maxZoom: 15, duration: 500 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, points.map((p) => p.id).join(",")]);
+  }, [ready, points.map((p) => p.id).join(","), areaKey]);
 
   // ---------------- Tâm tìm kiếm: bay tới, ghim, vòng bán kính ----------------
   const lastFlown = useRef<string | null>(null);
@@ -346,11 +361,22 @@ export default function GlPropertyMap({
     if (!map || !ready) return;
     const src = map.getSource(RADIUS_SOURCE) as mapboxgl.GeoJSONSource | undefined;
     src?.setData(
-      radiusMeters != null && searchCenter
-        ? circlePolygon(searchCenter, radiusMeters)
-        : { type: "FeatureCollection", features: [] },
+      areaPolygon && areaPolygon.length > 2
+        ? {
+            type: "Feature",
+            properties: {},
+            geometry: { type: "Polygon", coordinates: [areaPolygon] },
+          }
+        : radiusMeters != null && searchCenter
+          ? circlePolygon(searchCenter, radiusMeters)
+          : { type: "FeatureCollection", features: [] },
     );
-  }, [ready, radiusMeters, searchCenter]);
+    // Vùng đi lại có hình dạng thật (men theo đường sá), nên tô đậm hơn vòng tròn một chút
+    // để người dùng thấy rõ nó không phải một vòng tròn.
+    map.setPaintProperty(`${RADIUS_SOURCE}-fill`, "fill-opacity", areaPolygon ? 0.12 : 0.06);
+    map.setPaintProperty(`${RADIUS_SOURCE}-line`, "line-width", areaPolygon ? 2 : 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, radiusMeters, searchCenter, areaKey]);
 
   // ---------------- Chấm GPS ----------------
   const dotRef = useRef<mapboxgl.Marker | null>(null);
