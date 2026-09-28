@@ -153,6 +153,10 @@ namespace kgs_api.Services
             District = string.IsNullOrWhiteSpace(c.District) ? null : c.District.Trim(),
             Keyword = string.IsNullOrWhiteSpace(c.Keyword) ? null : c.Keyword.Trim(),
             Amenities = ListingSearchFilter.NormalizeAmenities(c.Amenities),
+            // Vùng Isochrone không được lưu: điều khoản Mapbox chỉ cho hiển thị nó trên bản đồ,
+            // không cho cất giữ để dùng lại (job gửi thông báo sẽ dùng nó khi không có bản đồ
+            // nào). Bộ lọc lưu lại giữ vòng tròn bao ngoài vùng — rộng hơn một chút, không hẹp hơn.
+            Within = null,
             SortBy = null,
             Page = 1,
             PageSize = 20

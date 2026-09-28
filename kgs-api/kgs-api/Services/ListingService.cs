@@ -213,8 +213,11 @@ namespace kgs_api.Services
                 origin = _geometryFactory.CreatePoint(
                     new Coordinate(query.Longitude!.Value, query.Latitude!.Value));
 
+            if (!TravelArea.TryParse(query.Within, _geometryFactory, out var area, out var areaError))
+                throw new ValidationFailedException(areaError!);
+
             var q = ListingSearchFilter.Apply(
-                _listings.Query().AsNoTracking(), query, origin);
+                _listings.Query().AsNoTracking(), query, origin, area);
 
             var total = await q.CountAsync(ct);
             var pageSize = Math.Clamp(query.PageSize, 1, 50);

@@ -171,7 +171,13 @@ namespace kgs_api.Dtos
         ListingSort? SortBy,
 
         int Page = 1,
-        int PageSize = 20);
+        int PageSize = 20,
+
+        /// <summary>Vùng "đi tới được trong X phút" (Mapbox Isochrone), dạng
+        /// <c>lng,lat;lng,lat;...</c>. Gửi kèm Latitude/Longitude/RadiusMeters là vòng tròn
+        /// bao ngoài vùng: vòng tròn đi qua GiST index để loại nhanh, đa giác lọc chính xác,
+        /// và tâm vẫn dùng để sắp "gần nhất". Không bao giờ được lưu (xem TravelArea).</summary>
+        [MaxLength(8000)] string? Within = null);
 
     public sealed record PublicListingSummaryDto(
         Guid Id, string Slug, string Title, ListingType Type, decimal Price,

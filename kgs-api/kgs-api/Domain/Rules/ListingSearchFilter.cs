@@ -19,9 +19,11 @@ namespace kgs_api.Domain.Rules
     public static class ListingSearchFilter
     {
         /// <summary>Lọc theo tiêu chí công khai. <paramref name="origin"/> là tâm tìm kiếm đã
-        /// dựng sẵn — hàm này không giữ GeometryFactory để còn gọi được từ job nền.</summary>
+        /// dựng sẵn — hàm này không giữ GeometryFactory để còn gọi được từ job nền.
+        /// <paramref name="area"/> là vùng đi lại đã dựng từ <c>query.Within</c> (TravelArea).</summary>
         public static IQueryable<Listing> Apply(
-            IQueryable<Listing> source, PublicListingSearchQuery query, Point? origin)
+            IQueryable<Listing> source, PublicListingSearchQuery query, Point? origin,
+            Geometry? area = null)
         {
             var q = source.Where(l => l.Status == ListingStatus.Approved);
 
@@ -70,6 +72,11 @@ namespace kgs_api.Domain.Rules
             if (origin is not null && query.RadiusMeters is not null)
                 q = q.Where(l => l.Asset.Location != null
                               && EF.Functions.IsWithinDistance(l.Asset.Location, origin, query.RadiusMeters.Value, true));
+
+            // ST_Intersects chứ không phải ST_Within: cột Location là geography, và PostGIS
+            // chỉ có ST_Intersects cho geography. Với một điểm thì hai phép này như nhau.
+            if (area is not null)
+                q = q.Where(l => l.Asset.Location != null && l.Asset.Location.Intersects(area));
 
             return q;
         }
