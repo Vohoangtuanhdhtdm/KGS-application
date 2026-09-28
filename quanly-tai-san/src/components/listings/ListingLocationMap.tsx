@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Crosshair, Loader2, MapPinned, X } from "lucide-react";
 import { ClientMap } from "@/components/map/ClientMap";
@@ -13,6 +13,18 @@ import {
   formatDuration,
   profileLabel,
 } from "@/lib/mapboxNav";
+import {
+  NEARBY_GROUPS,
+  buildNearby,
+  collectFromMap,
+  fetchTilequery,
+  walkMinutes,
+  type NearbyGroupKey,
+} from "@/lib/mapboxNearby";
+import { NearbyAmenities } from "./NearbyAmenities";
+
+/** Tối đa bấy nhiêu điểm của một nhóm được ghim lên bản đồ — nhiều hơn thì rối mắt. */
+const NEARBY_ON_MAP = 8;
 
 const PLACE_COLOR = "#16a34a";
 const LABELS = ["Chỗ làm", "Trường học", "Nhà người thân"] as const;
@@ -62,11 +74,43 @@ export function ListingLocationMap({
   });
   const route = gl && place && !picking ? (routeQ.data ?? null) : null;
 
+  // Tiện ích xung quanh — gộp Tilequery (đủ sát nhà) với tile bản đồ đã tải (phủ rộng), xem
+  // lib/mapboxNearby.ts. Chỉ trên GL: đây là dữ liệu của bản đồ Mapbox.
+  const [fromMap, setFromMap] = useState<ReturnType<typeof collectFromMap> | null>(null);
+  const tqQ = useQuery({
+    queryKey: ["tilequery", lat.toFixed(5), lng.toFixed(5)],
+    queryFn: ({ signal }) => fetchTilequery({ lat, lng }, signal),
+    enabled: gl,
+    staleTime: Infinity,
+    retry: 1,
+  });
+  // Tilequery hỏng thì vẫn hiện phần lấy từ tile — thiếu vài điểm sát nhà còn hơn không có gì.
+  const tqDone = tqQ.isSuccess || tqQ.isError;
+  const nearby = useMemo(
+    () =>
+      fromMap && tqDone
+        ? buildNearby([fromMap.candidates, tqQ.data ?? []], fromMap.coveredMeters)
+        : null,
+    [fromMap, tqDone, tqQ.data],
+  );
+  const [nearbyGroup, setNearbyGroup] = useState<NearbyGroupKey | null>(null);
+  const groupMeta = NEARBY_GROUPS.find((g) => g.key === nearbyGroup);
+  const groupPlaces =
+    gl && nearbyGroup && nearby ? nearby.groups[nearbyGroup].slice(0, NEARBY_ON_MAP) : [];
+
   const markers = [
     { id: listingId, lat, lng, title },
     ...(gl && place && !picking
       ? [{ id: "commute", lat: place.lat, lng: place.lng, title: place.label, color: PLACE_COLOR }]
       : []),
+    ...groupPlaces.map((p) => ({
+      id: p.id,
+      lat: p.lat,
+      lng: p.lng,
+      title: p.name,
+      subtitle: `${p.kind} · ${formatDistance(p.distance)} · ~${walkMinutes(p.distance)} phút đi bộ`,
+      color: groupMeta?.color,
+    })),
   ];
 
   return (
@@ -77,7 +121,9 @@ export function ListingLocationMap({
         height={300}
         markers={markers}
         route={route?.line ?? null}
+        fitPoints={groupPlaces.length ? [{ lat, lng }, ...groupPlaces] : null}
         onEngine={setEngine}
+        onFirstIdle={(m) => setFromMap(collectFromMap(m, { lat, lng }))}
         onPick={
           picking
             ? (pLat, pLng) => {
@@ -220,6 +266,8 @@ export function ListingLocationMap({
           )}
         </div>
       )}
+
+      {gl && <NearbyAmenities data={nearby} selected={nearbyGroup} onSelect={setNearbyGroup} />}
     </div>
   );
 }

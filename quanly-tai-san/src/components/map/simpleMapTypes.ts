@@ -30,6 +30,10 @@ export interface SimpleMapProps {
    * buộc kết quả Directions hiển thị trên bản đồ Mapbox. Có đường thì khung nhìn ôm trọn nó.
    */
   route?: GeoJSON.LineString | null;
+  /** Căn khung ôm trọn các điểm này mỗi khi danh sách đổi (chỉ bản GL). */
+  fitPoints?: { lat: number; lng: number }[] | null;
+  /** Gọi MỘT lần khi bản đồ GL đã tải xong tile lần đầu — để đọc dữ liệu có sẵn trong tile. */
+  onFirstIdle?: (map: import("mapbox-gl").Map) => void;
   className?: string;
   children?: ReactNode;
 }

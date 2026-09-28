@@ -39,6 +39,8 @@ export default function GlSimpleMap({
   pickerMarker,
   geocodeSearch,
   route,
+  fitPoints,
+  onFirstIdle,
   className,
   onFatalError,
 }: Props) {
@@ -46,8 +48,8 @@ export default function GlSimpleMap({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const cb = useRef({ onPick, onFatalError });
-  cb.current = { onPick, onFatalError };
+  const cb = useRef({ onPick, onFatalError, onFirstIdle });
+  cb.current = { onPick, onFatalError, onFirstIdle };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -93,6 +95,7 @@ export default function GlSimpleMap({
       });
       setLoaded(true);
     });
+    m.once("idle", () => cb.current.onFirstIdle?.(m));
     const ro = new ResizeObserver(() => m.resize());
     ro.observe(containerRef.current);
     mapRef.current = m;
@@ -157,6 +160,14 @@ export default function GlSimpleMap({
     route.coordinates.forEach((c) => b.extend(c as [number, number]));
     map.fitBounds(b, { padding: 48, maxZoom: 16, duration: 600 });
   }, [map, loaded, routeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fitKey = fitPoints?.map((p) => `${p.lat},${p.lng}`).join("|") ?? "";
+  useEffect(() => {
+    if (!map || !fitPoints || fitPoints.length === 0) return;
+    const b = new mapboxgl.LngLatBounds();
+    fitPoints.forEach((p) => b.extend([p.lng, p.lat]));
+    map.fitBounds(b, { padding: 48, maxZoom: 17, duration: 500 });
+  }, [map, fitKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markersKey = markers
     .map((m) => `${m.id}:${m.lat}:${m.lng}:${m.title}:${m.subtitle ?? ""}:${m.color ?? ""}`)
