@@ -70,8 +70,18 @@ function getSnapshot() {
   return cache;
 }
 
+/**
+ * Ảnh chụp phía máy chủ phải là MỘT mảng cố định. Bản trước viết `() => []`: mỗi lần React
+ * gọi là một mảng mới, React coi như dữ liệu vừa đổi, vẽ lại, gọi tiếp — và báo "The result of
+ * getServerSnapshot should be cached to avoid an infinite loop" ở mọi trang có nút so sánh.
+ */
+const EMPTY: CompareItem[] = [];
+function getServerSnapshot() {
+  return EMPTY;
+}
+
 export function useCompareList() {
-  const items = useSyncExternalStore(subscribe, getSnapshot, () => []);
+  const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const has = useCallback((id: string) => items.some((i) => i.id === id), [items]);
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TileLayer } from "react-leaflet";
 import { WifiOff } from "lucide-react";
-import { TILE_PROVIDERS } from "@/lib/mapTiles";
+import { getTileProviders, type TileVariant } from "@/lib/mapTiles";
 
 /**
  * Lớp ảnh nền bản đồ: tự chuyển nguồn khi nguồn hiện tại hỏng, và nói ra khi hết nguồn.
@@ -20,6 +20,9 @@ import { TILE_PROVIDERS } from "@/lib/mapTiles";
 /** Dưới ngưỡng này có thể chỉ là vài tile lẻ hỏng — chuyện bình thường, chưa đáng đổi nguồn. */
 const FAIL_THRESHOLD = 6;
 
+/** Nguồn chưa tải được tile nào thì chỉ cần bấy nhiêu lỗi là đủ kết luận nó không dùng được. */
+const DEAD_ON_ARRIVAL = 3;
+
 /**
  * Chờ tối đa bấy nhiêu mili-giây cho tile ĐẦU TIÊN của một nguồn.
  *
@@ -32,34 +35,57 @@ const FAIL_THRESHOLD = 6;
  */
 const FIRST_TILE_TIMEOUT_MS = 8_000;
 
-export function BaseTileLayer() {
+export function BaseTileLayer({ variant = "streets" }: { variant?: TileVariant } = {}) {
+  const TILE_PROVIDERS = getTileProviders(variant);
   const [providerIndex, setProviderIndex] = useState(0);
   const failCount = useRef(0);
   const loadedOnce = useRef(false);
+  /**
+   * Nguồn đang dùng — ghi ĐỒNG BỘ ngay lúc quyết định đổi, không chờ React vẽ lại.
+   *
+   * Một nguồn hỏng thường hỏng cả loạt: 16–20 tile báo lỗi gần như cùng lúc, trước khi React
+   * kịp tháo lớp tile cũ. Bản trước chỉ có state, nên các lỗi đến sau vẫn được tính — lần đổi
+   * thứ hai, thứ ba chồng lên nhau, bộ đếm nhảy qua cả Esri (nguồn vẫn dùng được) và rơi thẳng
+   * vào "hết nguồn". Đã gặp thật trên máy phát triển: OSM bị chặn, Esri tải bình thường, vậy
+   * mà bản đồ vẫn báo "Không tải được ảnh nền". Giờ lỗi của một nguồn đã bị thay thế bị bỏ qua.
+   */
+  const active = useRef(0);
 
   const exhausted = providerIndex >= TILE_PROVIDERS.length;
   const provider = TILE_PROVIDERS[Math.min(providerIndex, TILE_PROVIDERS.length - 1)];
+
+  /** Bỏ nguồn `from`, chuyển sang nguồn kế tiếp — chỉ khi `from` vẫn là nguồn đang dùng. */
+  const advance = (from: number) => {
+    if (active.current !== from) return;
+    active.current = from + 1;
+    failCount.current = 0;
+    // Vượt qua độ dài mảng một bậc = đã thử hết. Trạng thái đó khác với "đang dùng nguồn
+    // cuối" và cần phân biệt, vì chỉ khi hết hẳn mới nên làm phiền người dùng.
+    setProviderIndex(from + 1);
+  };
 
   // Mỗi lần đổi nguồn là một lần chờ mới.
   useEffect(() => {
     if (exhausted) return;
     loadedOnce.current = false;
+    const from = providerIndex;
     const timer = window.setTimeout(() => {
-      if (loadedOnce.current) return;
-      failCount.current = 0;
-      setProviderIndex((i) => i + 1);
+      if (!loadedOnce.current) advance(from);
     }, FIRST_TILE_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [providerIndex, exhausted]);
 
-  const handleError = () => {
+  const handleError = (from: number) => {
+    if (active.current !== from) return; // lỗi muộn của một nguồn đã bị thay
     failCount.current += 1;
-    if (failCount.current < FAIL_THRESHOLD) return;
-
-    failCount.current = 0;
-    // Vượt qua độ dài mảng một bậc = đã thử hết. Trạng thái đó khác với "đang dùng nguồn
-    // cuối" và cần phân biệt, vì chỉ khi hết hẳn mới nên làm phiền người dùng.
-    setProviderIndex((i) => i + 1);
+    // Nguồn CHƯA TỪNG tải được tile nào mà đã hỏng vài tile thì gần như chắc chắn là chết cả
+    // nguồn (token bị từ chối, hết hạn mức, tên miền bị chặn), không phải vài tile lẻ. Ngưỡng
+    // 6 không áp được ở đây: với tile 512px của Mapbox, cả khung nhìn chỉ có khoảng 4 tile, nên
+    // Mapbox hỏng sẽ KHÔNG BAO GIỜ chạm ngưỡng 6 — người dùng phải nhìn khung trắng chờ bộ hẹn
+    // giờ 8 giây mới được lùi sang nguồn miễn phí.
+    const deadOnArrival = !loadedOnce.current && failCount.current >= DEAD_ON_ARRIVAL;
+    if (failCount.current < FAIL_THRESHOLD && !deadOnArrival) return;
+    advance(from);
   };
 
   return (
@@ -73,9 +99,18 @@ export function BaseTileLayer() {
           attribution={provider.attribution}
           subdomains={provider.subdomains ?? []}
           maxZoom={provider.maxZoom}
+          tileSize={provider.tileSize ?? 256}
+          zoomOffset={provider.zoomOffset ?? 0}
+          // Hai thiết lập giữ số lượt tải tile ở mức cần thiết — với Mapbox, mỗi tile là một
+          // lượt tính vào hạn mức miễn phí. Mặc định Leaflet tải tile cho MỌI mức zoom trung
+          // gian trong lúc hoạt ảnh phóng to chạy, và tải liên tục trong lúc người dùng còn
+          // đang kéo bản đồ; cả hai đều là tile người dùng không kịp nhìn thấy.
+          updateWhenZooming={false}
+          updateWhenIdle
           eventHandlers={{
-            tileerror: handleError,
+            tileerror: () => handleError(providerIndex),
             tileload: () => {
+              if (active.current !== providerIndex) return;
               loadedOnce.current = true;
               failCount.current = 0;
             },
@@ -94,9 +129,8 @@ export function BaseTileLayer() {
               Không tải được ảnh nền bản đồ
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Vị trí các tin đăng vẫn hiển thị đúng. Ảnh nền thường bị chặn bởi phần mềm chặn
-              quảng cáo hoặc DNS của nhà mạng — thử tắt chúng cho trang này, hoặc dùng danh
-              sách bên cạnh.
+              Vị trí các tin đăng vẫn hiển thị đúng. Ảnh nền thường bị chặn bởi phần mềm chặn quảng
+              cáo hoặc DNS của nhà mạng — thử tắt chúng cho trang này, hoặc dùng danh sách bên cạnh.
             </p>
           </div>
         </div>

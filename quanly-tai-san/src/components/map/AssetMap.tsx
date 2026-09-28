@@ -8,7 +8,7 @@ import L from "leaflet";
 // Kéo phần khai báo bổ sung cho namespace `L` (L.MarkerCluster, MarkerClusterGroupOptions).
 // react-leaflet-cluster đã nạp plugin này ở runtime; import lặp là idempotent.
 import "leaflet.markercluster";
-import { MapContainer, TileLayer, Marker, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -18,12 +18,14 @@ import type { PortfolioIncome } from "@/lib/asset-income";
 import { prefersReducedMotion } from "@/lib/motion";
 import { formatCurrency } from "@/lib/format";
 import { AssetQuickCard, QUICK_CARD_WIDTH } from "./AssetQuickCard";
+import { BaseTileLayer } from "./BaseTileLayer";
 
-// Positron: tile gần như đơn sắc, không có đường đỏ/vàng gắt như OSM mặc định — đây là
-// điều kiện để panel trắng bán trong suốt đặt lên trên vẫn đọc rõ.
-const POSITRON_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-const POSITRON_ATTRIB =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// Nền "light" (Mapbox light-v11, lùi về OSM nếu không có Mapbox): gần như đơn sắc, không có
+// đường đỏ/vàng gắt — điều kiện để panel trắng bán trong suốt đặt lên trên vẫn đọc rõ.
+//
+// Trước đây gắn cứng CARTO Positron. Nguồn đó nay trả tile đóng dấu chìm "API KEY REQUIRED"
+// kín mặt bản đồ (xem lib/mapTiles.ts) — và vì tile tải THÀNH CÔNG nên không có lỗi nào để
+// bắt. Dùng chung BaseTileLayer còn cho bản đồ này luôn cơ chế tự đổi nguồn khi nguồn hỏng.
 
 const FALLBACK_CENTER: L.LatLngTuple = [10.7769, 106.7009];
 
@@ -412,7 +414,7 @@ export default function AssetMap({
       scrollWheelZoom
       style={{ height: "100%", width: "100%" }}
     >
-      <TileLayer url={POSITRON_URL} attribution={POSITRON_ATTRIB} />
+      <BaseTileLayer variant="light" />
       <FitToAssets items={located} rightInset={rightInset} />
       <PanToSelected target={selected} />
 
