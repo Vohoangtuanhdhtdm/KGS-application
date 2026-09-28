@@ -8,8 +8,17 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import type { MapEngine, MapViewApi } from "@/lib/mapEngine";
-import { encodeRing, fetchIsochrone, profileLabel } from "@/lib/mapboxNav";
-import { TravelTimeControl, type TravelMode } from "@/components/listings/TravelTimeControl";
+import {
+  DEFAULT_TRAVEL,
+  encodeRing,
+  fetchIsochrone,
+  profileLabel,
+  type TravelMode,
+} from "@/lib/mapboxNav";
+import { TravelTimeControl } from "@/components/listings/TravelTimeControl";
+import { TravelTimeToOrigin } from "@/components/listings/TravelTimeToOrigin";
+import { useCommutePlace } from "@/hooks/useCommutePlace";
+import { distanceMeters } from "@/lib/mapEngine";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { savedListingsApi } from "@/lib/api/engagement";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -186,6 +195,12 @@ function PublicListingsPage() {
   // đồ Mapbox. Bản Leaflet dự phòng thì tính năng này ẩn đi, không lùi về cách khác.
   const [mapEngine, setMapEngine] = useState<MapEngine | null>(null);
   const [travel, setTravel] = useState<TravelMode | null>(null);
+  // Người dùng đã mở luồng "tìm theo thời gian đi làm": lần đặt ghim kế tiếp là điểm xuất phát.
+  const [travelIntent, setTravelIntent] = useState(false);
+  // Ghim là gì ("Chỗ làm", "Vị trí của tôi"...) — hiện trên đầu ghim và trong chip bộ lọc.
+  const [centerLabel, setCenterLabel] = useState<string | null>(null);
+  const commute = useCommutePlace();
+  const pendingTravelGeoRef = useRef(false);
   const travelEnabled = mapEngine === "gl" && !!travel && !!searchCenter;
   const isoQ = useQuery({
     queryKey: [
@@ -203,10 +218,16 @@ function PublicListingsPage() {
     retry: 1,
   });
   const travelArea = travelEnabled ? (isoQ.data ?? null) : null;
+  const travelOriginLabel = centerLabel ?? "Điểm xuất phát";
+  const centerIsSavedPlace =
+    !!searchCenter &&
+    !!commute.place &&
+    distanceMeters(searchCenter, commute.place) < 30;
   useEffect(() => {
     if (!isoQ.isError || !travel) return;
     toast.error("Không tính được vùng đi lại lúc này — đang dùng lại bán kính.");
     setTravel(null);
+    setTravelIntent(false);
   }, [isoQ.isError, travel]);
   useEffect(() => {
     if (mapEngine === "leaflet") setTravel(null);
@@ -218,6 +239,21 @@ function PublicListingsPage() {
 
   // Xử lý kết quả sau khi request() hoàn tất (được gọi từ nút "Tìm kiếm" trong popover) —
   // requestId chỉ đổi khi có kết quả mới (granted/denied), tránh xử lý trùng.
+  useEffect(() => {
+    if (requestId === 0 || !pendingTravelGeoRef.current) return;
+    pendingTravelGeoRef.current = false;
+    if (geoStatus === "granted" && userLocation) {
+      setSearchCenter(userLocation);
+      setRadiusMeters((r) => r ?? DEFAULT_RADIUS_METERS);
+      setCenterLabel("Vị trí của tôi");
+      setUsingMyLocation(false);
+      setTravel((t) => t ?? { ...DEFAULT_TRAVEL, profile: commute.profile });
+    } else if (geoStatus === "denied" || geoStatus === "unsupported") {
+      toast.error("Không lấy được vị trí — hãy gõ địa chỉ hoặc bấm lên bản đồ.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestId]);
+
   useEffect(() => {
     if (requestId === 0 || pendingRadiusKmRef.current == null) return;
     const km = pendingRadiusKmRef.current;
@@ -255,6 +291,8 @@ function PublicListingsPage() {
 
   const clearMyLocationSearch = () => {
     setTravel(null);
+    setTravelIntent(false);
+    setCenterLabel(null);
     setSearchCenter(null);
     setRadiusMeters(null);
     setUsingMyLocation(false);
@@ -390,6 +428,9 @@ function PublicListingsPage() {
   // Kéo pin / click map / dragend marker → đổi tâm tìm kiếm, tự tìm lại, ẩn nút "khu vực này"
   const handleSearchCenterChange = (c: LatLng) => {
     setSearchCenter(c);
+    // Ghim vừa bấm/kéo không còn là "Chỗ làm đã lưu" hay "Vị trí của tôi" nữa.
+    setCenterLabel(null);
+    if (travelIntent && !travel) setTravel({ ...DEFAULT_TRAVEL, profile: commute.profile });
     if (radiusMeters == null) setRadiusMeters(DEFAULT_RADIUS_METERS);
     setUsingMyLocation(false);
     setShowSearchAreaButton(false);
@@ -399,6 +440,8 @@ function PublicListingsPage() {
     const map = mapRef.current;
     if (!map) return;
     setTravel(null); // "khu vực đang nhìn thấy" là một khung, không phải vùng đi lại
+    setTravelIntent(false);
+    setCenterLabel(null);
     const center = map.getCenter();
     const newRadius = map.getViewRadiusMeters(); // tâm → góc khung nhìn: vừa phủ trọn vùng đang thấy
     setSearchCenter({ lat: center.lat, lng: center.lng });
@@ -506,7 +549,7 @@ function PublicListingsPage() {
     appliedFilters.push({
       key: "area",
       label: travelArea
-        ? `${travel!.minutes} phút ${profileLabel(travel!.profile)} từ điểm đã ghim`
+        ? `≤ ${travel!.minutes} phút ${profileLabel(travel!.profile)} tới ${travelOriginLabel.toLowerCase()}`
         : usingMyLocation
         ? `Quanh tôi ${myLocationRadiusKm} km`
         : `Trong bán kính ${Math.round((radiusMeters ?? DEFAULT_RADIUS_METERS) / 1000)} km`,
@@ -528,6 +571,8 @@ function PublicListingsPage() {
     setKeywordInput(c.keyword ?? "");
     setKeyword(c.keyword ?? "");
     setTravel(null);
+    setTravelIntent(false);
+    setCenterLabel(null);
 
     if (c.latitude != null && c.longitude != null && c.radiusMeters != null) {
       setSearchCenter({ lat: c.latitude, lng: c.longitude });
@@ -940,6 +985,19 @@ function PublicListingsPage() {
           onSearchCenterChange={handleSearchCenterChange}
           radiusMeters={travelArea ? null : radiusMeters}
           areaPolygon={travelArea?.ring ?? null}
+          searchCenterLabel={travel ? travelOriginLabel : null}
+          popupExtra={
+            travelArea && searchCenter
+              ? (p) => (
+                  <TravelTimeToOrigin
+                    from={{ lat: p.lat, lng: p.lng }}
+                    to={searchCenter}
+                    toLabel={travelOriginLabel}
+                    profile={travel!.profile}
+                  />
+                )
+              : undefined
+          }
           onEngine={setMapEngine}
           onMapReady={(map) => {
             mapRef.current = map;
@@ -949,11 +1007,45 @@ function PublicListingsPage() {
       )}
       {mapEngine === "gl" && (
         <TravelTimeControl
+          intent={travelIntent}
+          onIntentChange={setTravelIntent}
           hasCenter={!!searchCenter}
-          radiusKm={Math.round((radiusMeters ?? DEFAULT_RADIUS_METERS) / 1000)}
+          centerLabel={travelOriginLabel}
+          proximity={searchCenter ? [searchCenter.lat, searchCenter.lng] : null}
           travel={travel}
-          onTravelChange={setTravel}
+          onTravelChange={(t) => {
+            setTravel(t);
+            // Cách đi là thói quen của người dùng — nhớ lại cho lần sau và cho trang chi tiết.
+            if (t) commute.setProfile(t.profile);
+          }}
           loading={travelEnabled && isoQ.isFetching}
+          savedPlace={commute.place}
+          onUseSavedPlace={() => {
+            const p = commute.place;
+            if (!p) return;
+            setSearchCenter({ lat: p.lat, lng: p.lng });
+            setRadiusMeters((r) => r ?? DEFAULT_RADIUS_METERS);
+            setCenterLabel(p.label);
+            setUsingMyLocation(false);
+            setShowSearchAreaButton(false);
+            setTravel((t) => t ?? { ...DEFAULT_TRAVEL, profile: commute.profile });
+          }}
+          onUseMyLocation={() => {
+            pendingTravelGeoRef.current = true;
+            requestGeolocation();
+          }}
+          locating={geoStatus === "pending"}
+          onGeocode={(lat, lng) => mapRef.current?.flyTo(lat, lng, 16)}
+          canSaveCenter={!!searchCenter && !centerIsSavedPlace}
+          onSaveCenter={() => {
+            if (!searchCenter) return;
+            const label = centerLabel && centerLabel !== "Vị trí của tôi" ? centerLabel : "Chỗ làm";
+            commute.setPlace({ lat: searchCenter.lat, lng: searchCenter.lng, label });
+            setCenterLabel(label);
+            toast.success(`Đã lưu làm "${label}"`, {
+              description: "Mở tin nào cũng sẽ thấy thời gian đi tới đây.",
+            });
+          }}
         />
       )}
       {showSearchAreaButton && (

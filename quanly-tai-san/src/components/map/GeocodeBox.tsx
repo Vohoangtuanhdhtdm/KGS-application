@@ -17,6 +17,9 @@ interface Props {
   /** Ưu tiên kết quả gần điểm này (tâm bản đồ hiện tại). */
   proximity: [number, number];
   onSelect: (lat: number, lng: number) => void;
+  /** false: nằm trong luồng bố cục (ví dụ trong một thẻ điều khiển) thay vì nổi trên bản đồ. */
+  floating?: boolean;
+  placeholder?: string;
 }
 
 const MIN_CHARS = 3;
@@ -25,10 +28,17 @@ const LIMIT = 8;
 /** Kết quả trong bán kính này quanh tâm bản đồ được đưa lên đầu. */
 const NEAR_METERS = 50_000;
 
-export function GeocodeBox({ proximity, onSelect }: Props) {
+export function GeocodeBox({
+  proximity,
+  onSelect,
+  floating = true,
+  placeholder = "Tìm địa chỉ để di chuyển bản đồ…",
+}: Props) {
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
+  // Đã tìm xong mà không ra gì — phải NÓI ra, không thì người dùng tưởng ô tìm bị hỏng.
+  const [noResult, setNoResult] = useState(false);
   const [active, setActive] = useState(-1);
   const prox = useRef(proximity);
   prox.current = proximity;
@@ -44,28 +54,46 @@ export function GeocodeBox({ proximity, onSelect }: Props) {
     }
     if (text.length < MIN_CHARS) {
       setItems([]);
+      setNoResult(false);
       return;
     }
     // Chờ người dùng ngừng gõ rồi mới gọi — mỗi lần gõ một chữ không nên tốn một lượt.
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
-      const url = new URL("https://api.mapbox.com/search/geocode/v6/forward");
-      url.searchParams.set("q", text);
-      url.searchParams.set("country", "vn");
-      url.searchParams.set("language", "vi");
-      url.searchParams.set("limit", String(LIMIT));
-      url.searchParams.set("proximity", `${prox.current[1]},${prox.current[0]}`);
-      url.searchParams.set("access_token", MAPBOX_TOKEN);
-      try {
+      type Feature = {
+        id: string;
+        geometry: { coordinates: [number, number] };
+        properties: { name?: string; place_formatted?: string };
+      };
+      const search = async (q: string): Promise<Feature[] | null> => {
+        const url = new URL("https://api.mapbox.com/search/geocode/v6/forward");
+        url.searchParams.set("q", q);
+        url.searchParams.set("country", "vn");
+        url.searchParams.set("language", "vi");
+        url.searchParams.set("limit", String(LIMIT));
+        url.searchParams.set("proximity", `${prox.current[1]},${prox.current[0]}`);
+        url.searchParams.set("access_token", MAPBOX_TOKEN);
         const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) return setItems([]);
-        const data = (await res.json()) as {
-          features?: {
-            id: string;
-            geometry: { coordinates: [number, number] };
-            properties: { name?: string; place_formatted?: string };
-          }[];
-        };
+        if (!res.ok) return null;
+        return ((await res.json()) as { features?: Feature[] }).features ?? [];
+      };
+      try {
+        // Dữ liệu Mapbox đã theo địa giới MỚI (sau sáp nhập 2025): "Quận 1" không còn, nên
+        // gõ "Hàm Nghi, Quận 1" ra rỗng trong khi "Hàm Nghi" ra ngay. Người dùng vẫn quen gõ
+        // kèm quận — bỏ phần quận/huyện đi; vẫn rỗng thì thử lại với phần trước dấu phẩy
+        // (chỉ tốn thêm một lượt khi lượt đầu không ra gì).
+        const cleaned =
+          text
+            .replace(/(^|[\s,])(quận|huyện|q\.)\s*[^,]*/giu, " ")
+            .replace(/\s*,\s*(,\s*)+/g, ", ")
+            .replace(/^[\s,]+|[\s,]+$/g, "")
+            .trim() || text;
+        let features = await search(cleaned);
+        if (features && features.length === 0 && cleaned.includes(",")) {
+          features = await search(cleaned.split(",")[0].trim());
+        }
+        if (!features) return setItems([]);
+        const data = { features };
         const here = { lat: prox.current[0], lng: prox.current[1] };
         const all = (data.features ?? []).map((f) => ({
           id: f.id,
@@ -80,6 +108,7 @@ export function GeocodeBox({ proximity, onSelect }: Props) {
         const near = all.filter((s) => distanceMeters(here, s) <= NEAR_METERS);
         const far = all.filter((s) => distanceMeters(here, s) > NEAR_METERS);
         setItems([...near, ...far]);
+        setNoResult(all.length === 0);
         setActive(-1);
         setOpen(true);
       } catch {
@@ -100,7 +129,11 @@ export function GeocodeBox({ proximity, onSelect }: Props) {
   };
 
   return (
-    <div className="map-overlay absolute left-2 top-2 w-[min(320px,calc(100%-64px))]">
+    <div
+      className={
+        floating ? "map-overlay absolute left-2 top-2 w-[min(320px,calc(100%-64px))]" : "relative"
+      }
+    >
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -125,19 +158,32 @@ export function GeocodeBox({ proximity, onSelect }: Props) {
               setOpen(false);
             }
           }}
-          placeholder="Tìm địa chỉ để di chuyển bản đồ…"
-          aria-label="Tìm địa chỉ để di chuyển bản đồ"
+          placeholder={placeholder}
+          aria-label={placeholder}
           role="combobox"
           aria-expanded={open}
           aria-controls="kgs-geocode-list"
           className="h-9 w-full rounded-md border bg-background pl-8 pr-2 text-sm shadow-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
+      {open && noResult && (
+        <p
+          role="status"
+          className={`mt-1 rounded-md border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-lg ${
+            floating ? "" : "absolute inset-x-0 bottom-full z-10 mb-1"
+          }`}
+        >
+          Không tìm thấy. Ô này tìm được tên đường, số nhà, phường — chưa tìm được tên toà nhà hay
+          công ty. Thử gõ như "Hàm Nghi" hoặc "12 Nguyễn Huệ".
+        </p>
+      )}
       {open && items.length > 0 && (
         <ul
           id="kgs-geocode-list"
           role="listbox"
-          className="mt-1 overflow-hidden rounded-md border bg-popover text-sm shadow-lg"
+          className={`mt-1 overflow-hidden rounded-md border bg-popover text-sm shadow-lg ${
+            floating ? "" : "absolute inset-x-0 bottom-full z-10 mb-1"
+          }`}
         >
           {items.map((s, i) => (
             <li

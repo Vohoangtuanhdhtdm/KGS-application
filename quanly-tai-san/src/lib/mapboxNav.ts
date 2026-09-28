@@ -24,6 +24,13 @@ export const TRAVEL_PROFILES: { value: TravelProfile; label: string; short: stri
 
 export const TRAVEL_MINUTES = [10, 15, 20, 30, 45] as const;
 
+export interface TravelMode {
+  profile: TravelProfile;
+  minutes: number;
+}
+
+export const DEFAULT_TRAVEL: TravelMode = { profile: "driving-traffic", minutes: 15 };
+
 export const profileLabel = (p: TravelProfile) =>
   TRAVEL_PROFILES.find((x) => x.value === p)?.short ?? p;
 

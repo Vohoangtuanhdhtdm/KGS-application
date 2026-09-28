@@ -6,7 +6,7 @@
 // Client-only, nạp lười qua PropertyMapClient.
 import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { LatLng } from "@/hooks/useGeolocationOnDemand";
 import {
@@ -42,6 +42,10 @@ interface Props {
   areaPolygon?: [number, number][] | null;
   onMapReady?: (api: MapViewApi) => void;
   onShowSearchAreaButtonChange?: (show: boolean) => void;
+  /** Nhãn nổi trên ghim tâm tìm kiếm, ví dụ "Chỗ làm" — cho biết ghim đó là gì. */
+  searchCenterLabel?: string | null;
+  /** Nội dung thêm dưới thẻ xem nhanh của một tin (ví dụ thời gian đi tới chỗ làm). */
+  popupExtra?: (point: PropertyMapPoint) => ReactNode;
   /** GL hỏng hẳn (token, hạn mức) — lớp bọc đổi sang bản Leaflet. */
   onFatalError?: () => void;
 }
@@ -59,8 +63,17 @@ function userDot(): HTMLElement {
 function searchPin(): HTMLElement {
   const el = document.createElement("div");
   el.setAttribute("aria-label", "Kéo để đổi vị trí tìm kiếm");
-  el.style.cursor = "grab";
-  el.innerHTML = `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="var(--color-primary)"/><circle cx="15" cy="15" r="6" fill="white"/></svg>`;
+  el.style.cssText = "cursor:grab;display:flex;flex-direction:column;align-items:center;";
+  // Nhãn trên đầu ghim: ghim trơn không nói nó là gì — người dùng không biết đó là "chỗ làm
+  // của tôi" hay chỉ là một điểm bấm nhầm.
+  const tag = document.createElement("span");
+  tag.dataset.role = "label";
+  tag.style.cssText =
+    "display:none;margin-bottom:2px;padding:1px 7px;border-radius:999px;background:var(--color-primary);color:var(--color-primary-foreground);font:600 11px/18px var(--font-sans, system-ui);white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);";
+  el.appendChild(tag);
+  const svg = document.createElement("span");
+  svg.innerHTML = `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="var(--color-primary)"/><circle cx="15" cy="15" r="6" fill="white"/></svg>`;
+  el.appendChild(svg);
   return el;
 }
 
@@ -76,6 +89,8 @@ export default function GlPropertyMap({
   onSearchCenterChange,
   radiusMeters,
   areaPolygon,
+  searchCenterLabel,
+  popupExtra,
   onMapReady,
   onShowSearchAreaButtonChange,
   onFatalError,
@@ -165,6 +180,8 @@ export default function GlPropertyMap({
           const ne = map.getBounds()?.getNorthEast();
           return ne ? distanceMeters({ lat: c.lat, lng: c.lng }, { lat: ne.lat, lng: ne.lng }) : 0;
         },
+        flyTo: (lat, lng, zoom) =>
+          map.flyTo({ center: [lng, lat], zoom: zoom ?? 15, duration: 700 }),
       });
     });
 
@@ -354,7 +371,12 @@ export default function GlPropertyMap({
       pinRef.current = pin;
     }
     pinRef.current.setLngLat([searchCenter.lng, searchCenter.lat]).addTo(map);
-  }, [searchCenter]);
+    const tag = pinRef.current.getElement().querySelector<HTMLElement>('[data-role="label"]');
+    if (tag) {
+      tag.textContent = searchCenterLabel ?? "";
+      tag.style.display = searchCenterLabel ? "block" : "none";
+    }
+  }, [searchCenter, searchCenterLabel]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -407,7 +429,15 @@ export default function GlPropertyMap({
       <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
       {/* Thẻ xem nhanh render bằng React qua portal vào khung popup của GL — nhờ vậy nó vẫn
           nằm trong cây component và dùng được Link của router. */}
-      {popupHost && popupPoint && createPortal(<MiniPropertyCard point={popupPoint} />, popupHost)}
+      {popupHost &&
+        popupPoint &&
+        createPortal(
+          <>
+            <MiniPropertyCard point={popupPoint} />
+            {popupExtra?.(popupPoint)}
+          </>,
+          popupHost,
+        )}
     </div>
   );
 }
