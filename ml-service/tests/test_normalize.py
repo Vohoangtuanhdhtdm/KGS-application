@@ -81,10 +81,19 @@ class TestProvince:
             ("TPHCM", "ho chi minh"),
             ("Hà Nội", "ha noi"),
             ("Đà Nẵng", "da nang"),
+            # Dạng mà bộ chọn địa chỉ vietnam-provinces trả về cho 58/63 tỉnh.
+            ("Tỉnh Khánh Hòa", "khanh hoa"),
+            ("Tỉnh Bình Dương", "binh duong"),
+            ("Tỉnh Bà Rịa - Vũng Tàu", "ba ria vung tau"),
         ],
     )
     def test_cac_bien_the(self, raw: str, expected: str) -> None:
         assert norm_province(raw) == expected
+
+    def test_tien_to_tinh_khong_cat_nham_ten_huyen(self) -> None:
+        # "Tịnh" là một phần của tên huyện, không phải tiền tố hành chính. Tiền tố "tỉnh" chỉ
+        # được cắt ở cấp tỉnh — nếu lọt vào danh sách tiền tố chung, huyện này thành "bien".
+        assert norm_district("Huyện Tịnh Biên") == "tinh bien"
 
 
 class TestWard:

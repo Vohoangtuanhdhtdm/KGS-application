@@ -16,7 +16,10 @@ import { StoreProvider } from "@/lib/store";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailNotConfirmedBanner } from "@/components/auth/EmailNotConfirmedBanner";
-import { UserMenu } from "@/components/layout/UserMenu";
+import { AdminShell } from "@/components/layout/AdminShell";
+import { OwnerHeader } from "@/components/layout/OwnerHeader";
+import { PublicHeader } from "@/components/public/PublicHeader";
+import { useCurrentWorkspace } from "@/components/workspace/useCurrentWorkspace";
 import { BottomTabBar } from "@/components/navigation/BottomTabBar";
 import { CompareBar } from "@/components/public/CompareBar";
 import { Toaster } from "@/components/ui/sonner";
@@ -158,22 +161,29 @@ function RootComponent() {
 /** Route mà bản đồ phải chiếm trọn viewport — rail thu gọn, không header, không banner. */
 const MAP_PATH = "/quan-ly/ban-do";
 
-/** Điều hướng desktop cho các trang nội bộ (đã đăng nhập, ngoài marketplace công khai). */
-const SHELL_NAV = [
-  { to: "/tin-dang", label: "Tìm nhà" },
-  { to: "/dang-tin", label: "Đăng tin" },
-  { to: "/tin-cua-toi", label: "Tin của tôi" },
-  { to: "/da-luu", label: "Đã lưu" },
-  { to: "/yeu-cau", label: "Yêu cầu" },
-] as const;
-
+/**
+ * Chọn KHUNG giao diện theo không gian làm việc của trang (xem lib/workspace.ts).
+ *
+ * Trước bản này mọi trang nội bộ dùng chung một header "KGS · Nền tảng bất động sản" với
+ * cùng năm mục menu, bất kể người xem là quản trị viên đang duyệt tin, chủ nhà đang trả lời
+ * người hỏi thuê, hay người tìm nhà đang xem tin đã lưu. Giờ mỗi không gian có khung riêng:
+ *
+ *   • Tìm nhà  → header sàn giao dịch (PublicHeader), màu navy
+ *   • Chủ nhà  → OwnerHeader, dải và nút màu đồng thau
+ *   • Quản trị → AdminShell, thanh bên mực tím
+ */
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { isAuthenticated } = useAuth();
+  const ws = useCurrentWorkspace();
   const isMapPage = pathname === MAP_PATH || pathname === MAP_PATH + "/";
 
-  // Trang cong khai tu lo header rieng (PublicHeader). Nguoi da dang nhap van thay thanh
-  // dieu huong de di tiep sang Dang tin / Tin cua toi ma khong phai quay ve.
+  // Gắn không gian lên <html> để styles.css đổi --primary cho CẢ trang — kể cả menu thả và
+  // hộp thoại được portal ra ngoài cây component (xem ghi chú ở styles.css).
+  useEffect(() => {
+    document.documentElement.dataset.workspace = ws;
+  }, [ws]);
+
+  // Trang công khai tự lo header riêng (PublicHeader).
   if (isPublicPath(pathname)) {
     // CompareBar chỉ nổi ở những trang có LƯỚI tin (trang chủ, kết quả tìm kiếm, chính
     // trang so sánh) — nơi người dùng thật sự bấm nút "so sánh" trên nhiều thẻ liên tiếp.
@@ -189,51 +199,28 @@ function AppShell() {
       <>
         <Outlet />
         {showCompareBar && <CompareBar />}
-        {isAuthenticated && <BottomTabBar />}
+        {/* Thanh đáy hiện cho CẢ khách: trước đây khách trên điện thoại không có lối nào
+            tới trang tìm kiếm hay công cụ định giá ngoài các liên kết rải rác trong trang,
+            vì điều hướng desktop (trong header) bị ẩn ở màn hình hẹp. */}
+        <BottomTabBar />
       </>
+    );
+  }
+
+  if (ws === "admin") {
+    return (
+      <AdminShell>
+        <ProtectedRoute>
+          <Outlet />
+        </ProtectedRoute>
+      </AdminShell>
     );
   }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      {/* Màn bản đồ chiếm trọn viewport: không header, không banner. Các trang khác giữ
-          header mảnh. Điều hướng chung nằm ở BottomTabBar nổi đáy. */}
-      {!isMapPage && (
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card/80 px-4 backdrop-blur">
-          {/* Tên sản phẩm là LỐI VỀ trang chủ, không phải một dòng chữ trang trí. Trước đây
-              nó là <div>: người dùng bấm theo phản xạ và không có gì xảy ra, mà từ các
-              trang nội bộ cũng không còn đường nào quay lại marketplace. */}
-          <Link to="/" className="text-sm font-semibold hover:underline">
-            KGS
-          </Link>
-          <span className="hidden text-sm text-muted-foreground sm:inline">
-            Nền tảng bất động sản
-          </span>
-          {/* Desktop không còn thanh nổi dưới đáy, nên điều hướng chính chuyển lên đây. */}
-          <nav className="ml-4 hidden items-center gap-1 md:flex" aria-label="Điều hướng">
-            {SHELL_NAV.map((n) => {
-              const active = pathname.startsWith(n.to);
-              return (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  aria-current={active ? "page" : undefined}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                  }`}
-                >
-                  {n.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <UserMenu />
-          </div>
-        </header>
-      )}
+      {/* Màn bản đồ chiếm trọn viewport: không header, không banner. */}
+      {!isMapPage && (ws === "owner" ? <OwnerHeader /> : <PublicHeader />)}
       {!isMapPage && <EmailNotConfirmedBanner />}
       <main className={isMapPage ? "h-screen min-w-0" : "min-w-0 flex-1 pb-28"}>
         <ProtectedRoute>

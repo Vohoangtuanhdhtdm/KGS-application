@@ -45,9 +45,12 @@ function shortWeek(iso: string) {
 export function MarketTrendCard({
   city,
   district,
+  chartHeight = 200,
 }: {
   city: string;
   district: string;
+  /** Trên trang chi tiết tin đây là thông tin phụ nên thấp; trang /chi-so-gia cho nó cao hơn. */
+  chartHeight?: number;
 }) {
   const [showNaive, setShowNaive] = useState(false);
 
@@ -113,7 +116,7 @@ export function MarketTrendCard({
       </CardHeader>
 
       <CardContent className="space-y-3">
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
           <AreaChart data={rows} margin={{ top: 5, right: 8, left: -22, bottom: 0 }}>
             <defs>
               <linearGradient id="hedFill" x1="0" y1="0" x2="0" y2="1">

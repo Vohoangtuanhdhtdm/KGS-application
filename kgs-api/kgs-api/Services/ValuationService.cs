@@ -130,6 +130,26 @@ namespace kgs_api.Services
             }
         }
 
+        public async Task<IReadOnlyList<PriceIndexAreaDto>> GetPriceIndexAreasAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                var raw = await _http.GetFromJsonAsync<List<MlPriceIndexArea>>("/price-index/areas", ct);
+                return raw is null
+                    ? Array.Empty<PriceIndexAreaDto>()
+                    : raw.Select(a => new PriceIndexAreaDto(
+                            a.Province, a.District, a.N, a.Weeks,
+                            a.ChangePoints, a.WeeklyVolatility, a.LastIndex))
+                        .ToList();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Cùng nguyên tắc: danh sách rỗng thì trang tra cứu chỉ hiện chuỗi toàn quốc.
+                _logger.LogWarning(ex, "Không lấy được danh sách khu vực có chỉ số giá.");
+                return Array.Empty<PriceIndexAreaDto>();
+            }
+        }
+
         private static PriceIndexDto Unavailable() => new(
             false, "toàn quốc", Array.Empty<PriceIndexPoint>(), Array.Empty<PriceIndexPoint>(),
             null, null, null, null, null, null, null, null, null, Array.Empty<string>());

@@ -1,6 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Flag, KeyRound, LogOut, ShieldCheck, User } from "lucide-react";
+import { Check, KeyRound, LogOut, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { WORKSPACES } from "@/lib/workspace";
+import { WS_CLASS, useAvailableWorkspaces } from "@/components/workspace/wsStyles";
+import { useCurrentWorkspace } from "@/components/workspace/useCurrentWorkspace";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +30,8 @@ function initials(name: string) {
 export function UserMenu({ compact = false }: { compact?: boolean } = {}) {
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const current = useCurrentWorkspace();
+  const spaces = useAvailableWorkspaces();
   if (!user) return null;
 
   const doLogout = async () => {
@@ -61,7 +66,7 @@ export function UserMenu({ compact = false }: { compact?: boolean } = {}) {
             <span className="truncate">{user.name}</span>
             <span className="truncate text-xs font-normal text-muted-foreground">{user.email}</span>
             {isAdmin && (
-              <span className="mt-1 inline-flex w-fit items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+              <span className="mt-1 inline-flex w-fit items-center gap-1 rounded bg-ws-admin-soft px-1.5 py-0.5 text-[10px] font-medium text-ws-admin">
                 <ShieldCheck className="h-3 w-3" /> Admin
               </span>
             )}
@@ -69,29 +74,34 @@ export function UserMenu({ compact = false }: { compact?: boolean } = {}) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {/* Khu quản trị.
-            Trước đây menu này chỉ gắn một huy hiệu "Admin" rồi thôi — nói với người dùng
-            rằng họ có quyền, nhưng không cho họ đường nào để dùng quyền đó. Hai màn hình
-            duyệt tin và xử lý báo vi phạm chỉ vào được qua sheet Tài khoản ở thanh nổi
-            dưới đáy, mà thanh đó đã bị ẩn từ md trở lên — nên trên desktop khu quản trị
-            hoàn toàn không có lối vào. */}
-        {isAdmin && (
-          <>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/listings">
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Duyệt tin đăng
+        {/* Chuyển không gian.
+            Trước đây menu này liệt kê rời từng màn hình quản trị ngay cạnh "Hồ sơ cá nhân",
+            như thể duyệt tin là một mục cài đặt tài khoản. Giờ mỗi không gian là MỘT lựa
+            chọn, có màu định danh riêng và dấu tích ở không gian đang đứng — người dùng
+            thấy mình đang ở vai trò nào và đổi vai trò bằng một cú bấm. */}
+        <DropdownMenuLabel className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          Chuyển không gian
+        </DropdownMenuLabel>
+        {spaces.map((id) => {
+          const ws = WORKSPACES[id];
+          const Icon = ws.icon;
+          const here = id === current;
+          return (
+            <DropdownMenuItem key={id} asChild>
+              <Link to={ws.home} aria-current={here ? "page" : undefined}>
+                <span
+                  className={`mr-2 flex h-5 w-5 items-center justify-center rounded ${WS_CLASS[id].solid}`}
+                  aria-hidden="true"
+                >
+                  <Icon className="h-3 w-3" />
+                </span>
+                <span className="flex-1">{ws.label}</span>
+                {here && <Check className="ml-2 h-4 w-4 text-muted-foreground" />}
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/reports">
-                <Flag className="mr-2 h-4 w-4" />
-                Báo vi phạm
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
+          );
+        })}
+        <DropdownMenuSeparator />
 
         <DropdownMenuItem asChild>
           <Link to="/profile">

@@ -83,8 +83,22 @@ def norm_key(value: str | None) -> str:
 
 
 def norm_province(value: str | None) -> str:
-    """Khoá tỉnh/thành. ``"TP. Hồ Chí Minh"``, ``"Hồ Chí Minh"``, ``"HCM"`` cùng ra một khoá."""
+    """Khoá tỉnh/thành. ``"TP. Hồ Chí Minh"``, ``"Hồ Chí Minh"``, ``"HCM"`` cùng ra một khoá.
+
+    Tiền tố "Tỉnh" được cắt RIÊNG ở đây, không nằm trong ``_PREFIXES`` dùng chung.
+
+    Bộ chọn địa chỉ của giao diện (gói ``vietnam-provinces``) ghi 58/63 tỉnh dưới dạng
+    "Tỉnh Khánh Hòa", "Tỉnh Bình Dương"... còn dữ liệu huấn luyện ghi "khanh hoa". Thiếu bước
+    này thì mọi yêu cầu định giá ngoài 5 thành phố trực thuộc trung ương đều rơi vào nhánh
+    "khu vực chưa từng thấy": mô hình vẫn trả về một con số, chỉ là con số đó không dùng tới
+    mặt bằng giá của tỉnh — và không có gì báo lỗi.
+
+    Không thêm "tinh" vào ``_PREFIXES`` vì danh sách đó còn dùng cho quận và phường, và vòng
+    lặp cắt tiền tố sẽ biến "Huyện Tịnh Biên" thành "bien".
+    """
     key = norm_key(value)
+    if key.startswith("tinh "):
+        key = key[len("tinh ") :].strip()
     return _PROVINCE_ALIASES.get(key, key)
 
 

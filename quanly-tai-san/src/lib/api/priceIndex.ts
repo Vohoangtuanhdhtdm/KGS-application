@@ -36,9 +36,22 @@ export interface PriceIndexDto {
   caveats: string[];
 }
 
+/** Một quận có chuỗi chỉ số riêng. Tỉnh/quận ở dạng KHOÁ chuẩn hoá ("ho chi minh", "7") —
+    đối chiếu với danh mục hành chính bằng lib/areaKey.ts để lấy tên hiển thị. */
+export interface PriceIndexAreaDto {
+  province: string;
+  district: string;
+  n: number;
+  weeks: number;
+  changePoints: number;
+  weeklyVolatility: number;
+  lastIndex: number;
+}
+
 export const priceIndexApi = {
   get: (province?: string, district?: string) =>
     api<PriceIndexDto>(`/valuation/price-index${toQuery({ province, district })}`, {
       skipAuth: true,
     }),
+  areas: () => api<PriceIndexAreaDto[]>("/valuation/price-index/areas", { skipAuth: true }),
 };

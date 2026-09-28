@@ -85,6 +85,19 @@ class ForecastOut(BaseModel):
     note: str
 
 
+class PriceIndexArea(BaseModel):
+    """Một quận có chuỗi chỉ số riêng. Khoá ở dạng chuẩn hoá (không dấu, không tiền tố) —
+    giao diện tự đối chiếu với danh mục hành chính để hiện tên đầy đủ."""
+
+    province: str
+    district: str
+    n: int
+    weeks: int
+    change_points: float
+    weekly_volatility: float
+    last_index: float
+
+
 class PriceIndexResponse(BaseModel):
     available: bool
     scope: str = Field(description="\"toàn quốc\" hoặc tên quận")
