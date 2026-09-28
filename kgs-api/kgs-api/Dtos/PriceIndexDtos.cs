@@ -40,7 +40,27 @@ namespace kgs_api.Dtos
         int? Rows,
         IReadOnlyList<string> Caveats);
 
+    /// <summary>Một quận có chuỗi chỉ số riêng. Tỉnh/quận ở dạng khoá chuẩn hoá (không dấu,
+    /// không tiền tố) — giao diện tự đối chiếu với danh mục hành chính để hiện tên đầy đủ.</summary>
+    public sealed record PriceIndexAreaDto(
+        string Province,
+        string District,
+        int N,
+        int Weeks,
+        double ChangePoints,
+        double WeeklyVolatility,
+        double LastIndex);
+
     // ---- Hình dạng dây với dịch vụ Python ----
+
+    internal sealed record MlPriceIndexArea(
+        [property: JsonPropertyName("province")] string Province,
+        [property: JsonPropertyName("district")] string District,
+        [property: JsonPropertyName("n")] int N,
+        [property: JsonPropertyName("weeks")] int Weeks,
+        [property: JsonPropertyName("change_points")] double ChangePoints,
+        [property: JsonPropertyName("weekly_volatility")] double WeeklyVolatility,
+        [property: JsonPropertyName("last_index")] double LastIndex);
 
     internal sealed record MlIndexPoint(
         [property: JsonPropertyName("week_start")] string WeekStart,

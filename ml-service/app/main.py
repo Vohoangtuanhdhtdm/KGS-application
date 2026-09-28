@@ -26,6 +26,7 @@ from .predict import Model
 from .price_index import PriceIndex, forecast
 from .schemas import (
     ModelInfo,
+    PriceIndexArea,
     PriceIndexResponse,
     ValuationRequest,
     ValuationResponse,
@@ -118,6 +119,32 @@ def valuation(req: ValuationRequest) -> ValuationResponse:
         ) from exc
 
     return ValuationResponse(**result)
+
+
+@app.get("/price-index/areas", response_model=list[PriceIndexArea])
+def get_price_index_areas() -> list[PriceIndexArea]:
+    """Các quận có chuỗi chỉ số riêng, xếp theo cỡ mẫu giảm dần.
+
+    Trang tra cứu chỉ số giá cần danh sách này để người dùng chọn quận — chỉ những quận
+    thật sự dựng được chuỗi, không phải mọi quận trong danh mục hành chính. Chọn một quận
+    không có chuỗi thì trang chỉ nhận lại chuỗi toàn quốc, và người dùng sẽ tưởng đó là
+    số liệu của quận mình.
+    """
+    if not price_index.ready:
+        return []
+
+    return [
+        PriceIndexArea(
+            province=row["province"],
+            district=row["district"],
+            n=row["n"],
+            weeks=len(row["points"]),
+            change_points=row.get("change_points", 0.0),
+            weekly_volatility=row.get("weekly_volatility", 0.0),
+            last_index=row["points"][-1]["index"] if row["points"] else 100.0,
+        )
+        for row in price_index.districts()
+    ]
 
 
 @app.get("/price-index", response_model=PriceIndexResponse)

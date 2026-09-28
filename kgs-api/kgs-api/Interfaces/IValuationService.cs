@@ -15,5 +15,8 @@ namespace kgs_api.Interfaces
         /// được, không thì lùi về chuỗi toàn quốc.</summary>
         Task<PriceIndexDto> GetPriceIndexAsync(
             string? province, string? district, CancellationToken ct = default);
+
+        /// <summary>Các quận có chuỗi chỉ số riêng. Rỗng khi dịch vụ không dùng được.</summary>
+        Task<IReadOnlyList<PriceIndexAreaDto>> GetPriceIndexAreasAsync(CancellationToken ct = default);
     }
 }

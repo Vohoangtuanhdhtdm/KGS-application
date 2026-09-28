@@ -15,6 +15,9 @@ export const PUBLIC_PREFIXES = [
   "/403",
   "/tin-dang",
   "/so-sanh",
+  // Hai công cụ tra cứu công khai — khách chưa có tài khoản cũng dùng được.
+  "/dinh-gia",
+  "/chi-so-gia",
 ];
 
 export function isPublicPath(p: string): boolean {

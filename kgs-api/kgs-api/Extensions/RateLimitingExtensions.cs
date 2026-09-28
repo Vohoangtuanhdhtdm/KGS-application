@@ -23,6 +23,11 @@ namespace kgs_api.Extensions
         /// <summary>Đăng nhập, quên mật khẩu — chặn dò mật khẩu.</summary>
         public const string Auth = "auth";
 
+        /// <summary>Định giá — endpoint duy nhất mở cho khách mà mỗi lần gọi tốn CPU thật
+        /// (một lượt dự đoán LightGBM). Đây là ngoại lệ có chủ đích của nguyên tắc "không giới
+        /// hạn endpoint đọc": nó đọc, nhưng cái giá của mỗi lần đọc không bằng không.</summary>
+        public const string Valuation = "valuation";
+
         public static IServiceCollection AddKgsRateLimiting(this IServiceCollection services)
         {
             services.AddRateLimiter(options =>
@@ -49,6 +54,9 @@ namespace kgs_api.Extensions
                 options.AddPolicy(CreateListing, PartitionByUserOrIp(limit: 10, minutes: 10));
                 options.AddPolicy(ContactOthers, PartitionByUserOrIp(limit: 20, minutes: 10));
                 options.AddPolicy(Auth, PartitionByUserOrIp(limit: 10, minutes: 5));
+                // 15 lượt / 10 phút: đủ để một người thử vài biến thể cho cùng một căn (đổi
+                // số phòng, số tầng để xem giá dịch chuyển), không đủ để một script cào mô hình.
+                options.AddPolicy(Valuation, PartitionByUserOrIp(limit: 15, minutes: 10));
             });
 
             return services;

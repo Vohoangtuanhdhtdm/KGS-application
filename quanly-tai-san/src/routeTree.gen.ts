@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as R403RouteImport } from './routes/403'
+import { Route as ChiSoGiaRouteImport } from './routes/chi-so-gia'
 import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
 import { Route as DangTinRouteImport } from './routes/dang-tin'
+import { Route as DinhGiaRouteImport } from './routes/dinh-gia'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -50,6 +52,11 @@ const R403Route = R403RouteImport.update({
   path: '/403',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChiSoGiaRoute = ChiSoGiaRouteImport.update({
+  id: '/chi-so-gia',
+  path: '/chi-so-gia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
   id: '/confirm-email',
   path: '/confirm-email',
@@ -58,6 +65,11 @@ const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
 const DangTinRoute = DangTinRouteImport.update({
   id: '/dang-tin',
   path: '/dang-tin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DinhGiaRoute = DinhGiaRouteImport.update({
+  id: '/dinh-gia',
+  path: '/dinh-gia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -194,8 +206,10 @@ const QuanLyTaiSanIdSuaRoute = QuanLyTaiSanIdSuaRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/403': typeof R403Route
+  '/chi-so-gia': typeof ChiSoGiaRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/dang-tin': typeof DangTinRoute
+  '/dinh-gia': typeof DinhGiaRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
@@ -226,8 +240,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/403': typeof R403Route
+  '/chi-so-gia': typeof ChiSoGiaRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/dang-tin': typeof DangTinRoute
+  '/dinh-gia': typeof DinhGiaRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
@@ -259,8 +275,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/403': typeof R403Route
+  '/chi-so-gia': typeof ChiSoGiaRoute
   '/confirm-email': typeof ConfirmEmailRoute
   '/dang-tin': typeof DangTinRoute
+  '/dinh-gia': typeof DinhGiaRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
@@ -293,8 +311,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/403'
+    | '/chi-so-gia'
     | '/confirm-email'
     | '/dang-tin'
+    | '/dinh-gia'
     | '/forgot-password'
     | '/login'
     | '/profile'
@@ -325,8 +345,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/403'
+    | '/chi-so-gia'
     | '/confirm-email'
     | '/dang-tin'
+    | '/dinh-gia'
     | '/forgot-password'
     | '/login'
     | '/profile'
@@ -357,8 +379,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/403'
+    | '/chi-so-gia'
     | '/confirm-email'
     | '/dang-tin'
+    | '/dinh-gia'
     | '/forgot-password'
     | '/login'
     | '/profile'
@@ -390,8 +414,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   R403Route: typeof R403Route
+  ChiSoGiaRoute: typeof ChiSoGiaRoute
   ConfirmEmailRoute: typeof ConfirmEmailRoute
   DangTinRoute: typeof DangTinRoute
+  DinhGiaRoute: typeof DinhGiaRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
@@ -436,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof R403RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chi-so-gia': {
+      id: '/chi-so-gia'
+      path: '/chi-so-gia'
+      fullPath: '/chi-so-gia'
+      preLoaderRoute: typeof ChiSoGiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/confirm-email': {
       id: '/confirm-email'
       path: '/confirm-email'
@@ -448,6 +481,13 @@ declare module '@tanstack/react-router' {
       path: '/dang-tin'
       fullPath: '/dang-tin'
       preLoaderRoute: typeof DangTinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dinh-gia': {
+      id: '/dinh-gia'
+      path: '/dinh-gia'
+      fullPath: '/dinh-gia'
+      preLoaderRoute: typeof DinhGiaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -638,8 +678,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   R403Route: R403Route,
+  ChiSoGiaRoute: ChiSoGiaRoute,
   ConfirmEmailRoute: ConfirmEmailRoute,
   DangTinRoute: DangTinRoute,
+  DinhGiaRoute: DinhGiaRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,

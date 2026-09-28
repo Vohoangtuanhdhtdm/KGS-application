@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { valuationApi, type ValuationRequest } from "@/lib/api/valuation";
 import { formatCurrency } from "@/lib/format";
+import { comparePriceToBand } from "@/lib/priceBand";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -67,27 +68,8 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
    * Ở đây dùng đúng khoảng đó làm ngưỡng. Vượt ra ngoài khoảng mới nói, và nói mạnh hơn khi
    * vượt xa. Mô hình tự nhận độ tin cậy THẤP thì im lặng — nó đang nói rằng nó không biết,
    * và cảnh báo dựa trên một ước tính không đáng tin còn tệ hơn không cảnh báo. */
-  const doLech = (() => {
-    if (!r || currentPrice == null || currentPrice <= 0) return null;
-    if (r.confidence === "thấp") return null;
-
-    const ngoaiTren = currentPrice > r.priceHigh;
-    const ngoaiDuoi = currentPrice < r.priceLow;
-    if (!ngoaiTren && !ngoaiDuoi) return null;
-
-    // Biên độ nửa khoảng — dùng làm đơn vị đo "vượt ra ngoài bao xa".
-    const bien = Math.max(1, r.priceHigh - r.price);
-    const vuot = ngoaiTren
-      ? (currentPrice - r.priceHigh) / bien
-      : (r.priceLow - currentPrice) / bien;
-
-    return {
-      huong: ngoaiTren ? ("cao" as const) : ("thap" as const),
-      // Vượt thêm hơn một lần biên độ nữa = lệch đủ xa để nói mạnh.
-      manh: vuot >= 1,
-      phanTram: Math.abs(Math.round(((currentPrice - r.price) / r.price) * 100)),
-    };
-  })();
+  // Quy tắc so sánh nằm ở lib/priceBand.ts — dùng chung với trang tra cứu /dinh-gia.
+  const doLech = comparePriceToBand(r, currentPrice);
 
   return (
     <div className="rounded-md border bg-muted/30 p-3 space-y-2.5">
