@@ -298,9 +298,9 @@
   }
 }
 
-/* Marker viên thuốc dạng L.divIcon ở Marketplace — bỏ style mặc định của Leaflet
-   (nền/viền/shadow trắng vuông) để dùng đúng style pill tự vẽ trong PropertyMap.tsx */
-.leaflet-div-icon.property-pill-marker {
+/* Marker viên thuốc ở Marketplace — bỏ style mặc định của Leaflet (nền/viền/shadow trắng
+   vuông) để dùng đúng style pill tự vẽ (propertyMapShared.ts). Cùng lớp cho marker của GL. */
+:is(.leaflet-div-icon, .mapboxgl-marker).property-pill-marker {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -483,15 +483,15 @@
 /* ---- Marker "vòng giá trị" + cụm (L.divIcon) ---- */
 
 /* Bỏ nền/viền vuông mặc định của Leaflet để lộ đúng hình vòng tự vẽ */
-.leaflet-div-icon.asset-ring-wrap,
-.leaflet-div-icon.asset-cluster-wrap {
+:is(.leaflet-div-icon, .mapboxgl-marker).asset-ring-wrap,
+:is(.leaflet-div-icon, .mapboxgl-marker).asset-cluster-wrap {
   background: transparent;
   border: none;
 }
-.leaflet-div-icon.asset-ring-wrap {
+:is(.leaflet-div-icon, .mapboxgl-marker).asset-ring-wrap {
   cursor: pointer;
 }
-.leaflet-div-icon.asset-ring-wrap:focus-visible {
+:is(.leaflet-div-icon, .mapboxgl-marker).asset-ring-wrap:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 3px;
   border-radius: 9999px;
@@ -514,15 +514,16 @@
   box-shadow: 0 0 0 2px rgb(255 255 255 / 0.9);
 }
 /* Nổi bật khi hover trên bản đồ, hover card tương ứng ở panel danh sách, hoặc đang chọn */
-.leaflet-div-icon.asset-ring-wrap:hover .asset-ring,
-.leaflet-div-icon.asset-ring-wrap--active .asset-ring,
+:is(.leaflet-div-icon, .mapboxgl-marker).asset-ring-wrap:hover .asset-ring,
+:is(.leaflet-div-icon, .mapboxgl-marker).asset-ring-wrap--active .asset-ring,
 .asset-ring--active {
   filter: drop-shadow(0 4px 10px rgb(16 24 40 / 0.3));
   border-width: 3px;
 }
 
 /* Tooltip xem nhanh khi rê chuột — Leaflet không delay sẵn, giữ nguyên */
-.leaflet-tooltip.asset-tooltip {
+.leaflet-tooltip.asset-tooltip,
+.mapboxgl-popup.asset-tooltip .mapboxgl-popup-content {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-popover);
@@ -532,8 +533,13 @@
   padding: 4px 8px;
   white-space: nowrap;
 }
-.leaflet-tooltip.asset-tooltip::before {
+.leaflet-tooltip.asset-tooltip::before,
+.mapboxgl-popup.asset-tooltip .mapboxgl-popup-tip {
   display: none;
+}
+/* Tooltip chỉ để đọc: không được "bắt" chuột, nếu không rê qua nó sẽ tắt/bật liên tục. */
+.mapboxgl-popup.asset-tooltip {
+  pointer-events: none;
 }
 
 /* Spotlight: chỉ phủ tối vùng bản đồ. Panel/điều khiển ngoài bản đồ nằm ở stacking
@@ -567,7 +573,7 @@
   border: 2px solid rgb(255 255 255 / 0.9);
   cursor: pointer;
 }
-.leaflet-div-icon.asset-cluster-wrap:focus-visible {
+:is(.leaflet-div-icon, .mapboxgl-marker).asset-cluster-wrap:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 4px;
   border-radius: 9999px;
@@ -673,6 +679,17 @@
    cảnh báo không tải được ảnh nền). Phải trên mọi thứ của Leaflet nhưng vẫn dưới 50 để
    popover và dialog che được. */
 .map-overlay { z-index: 20; }
+
+/* Mapbox GL: toàn bộ bản đồ đã nằm trong stacking context `isolation: isolate; z-index: 0`
+   của khung bọc, nên các lớp của GL (điều khiển z-2, popup) không thể trồi lên trên
+   popover/dialog. Chỉ cần: marker đang hover (z-10 đặt tại chỗ) nằm dưới popup, và popup
+   nằm dưới lớp phủ của ứng dụng (20). */
+.mapboxgl-map .mapboxgl-popup { z-index: 15; }
+.mapboxgl-map .mapboxgl-popup-content {
+  border-radius: 8px;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgb(16 24 40 / 0.14);
+}
 
 /* Lop noi cua Radix (Select, Popover, DropdownMenu, Tooltip).
  *

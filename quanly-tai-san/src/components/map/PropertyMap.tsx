@@ -6,65 +6,26 @@
 // Client-only, load qua React.lazy (xem PropertyMapClient.tsx).
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import {
-  MapContainer,
-  Marker,
-  Popup,
-  Circle,
-  useMap,
-  useMapEvents,
-} from "react-leaflet";
-import { Link } from "@tanstack/react-router";
+import { MapContainer, Marker, Popup, Circle, useMap, useMapEvents } from "react-leaflet";
 import { BaseTileLayer } from "./BaseTileLayer";
 import { useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "@/lib/format";
-import { formatListingPrice } from "@/lib/api/listings";
-import type { ListingTypeCode } from "@/constants/enums";
 import type { LatLng } from "@/hooks/useGeolocationOnDemand";
-import type { PaymentCycleCode } from "@/constants/enums";
-import { ImageIcon } from "lucide-react";
+import type { MapViewApi } from "@/lib/mapEngine";
+import {
+  MOVE_THRESHOLD_METERS,
+  isValidLatLng,
+  pillLabel,
+  pillStyle,
+  type PropertyMapPoint,
+} from "./propertyMapShared";
+import { MiniPropertyCard } from "./MiniPropertyCard";
 
-
-// Bán = navy (màu primary chủ đạo của app), Cho thuê = xanh (màu success) —
-// dùng đúng token ngữ nghĩa hệ thống, không tạo bảng màu riêng cho Marketplace.
-const TYPE_BORDER: Record<ListingTypeCode, string> = {
-  1: "var(--color-primary)",
-  2: "var(--color-success)",
-};
-
-// Lệch quá 500m so với searchCenter mới coi là "đã pan/zoom lệch" — hiện nút "Tìm trong khu vực này"
-const MOVE_THRESHOLD_METERS = 500;
-
-export interface PropertyMapPoint {
-  id: string;
-  lat: number;
-  lng: number;
-  price: number;
-  type: ListingTypeCode;
-  // Cho popup xem nhanh (Phần A) — optional để component vẫn dùng được cho các điểm
-  // không cần popup (VD nếu sau này tái dùng cho mục đích khác)
-  slug?: string;
-  title?: string;
-  thumbnailUrl?: string | null;
-  rentPaymentCycle?: PaymentCycleCode | null;
-}
+export type { PropertyMapPoint } from "./propertyMapShared";
 
 function pillIcon(point: PropertyMapPoint, hovered: boolean): L.DivIcon {
-  const border = TYPE_BORDER[point.type];
-  const padding = hovered ? "5px 11px" : "4px 10px";
-  /* "white" và "#111827" ở đây là màu cứng CÓ CHỦ Ý, đừng đổi sang token.
-     Viên thuốc giá nằm trên ẢNH BẢN ĐỒ, mà ảnh bản đồ luôn sáng bất kể người dùng đang
-     dùng giao diện sáng hay tối. Đổi sang --color-card / --color-foreground thì ở giao
-     diện tối nó thành viên thuốc tối chữ sáng đặt trên nền bản đồ sáng — không đọc được.
-     Viền thì ngược lại: nó mang ý nghĩa loại tin nên vẫn lấy từ token (xem TYPE_BORDER). */
-  const bg = hovered ? border : "white";
-  const color = hovered ? "white" : "#111827";
-  const shadow = hovered ? "0 4px 10px rgba(0,0,0,0.25)" : "0 1px 3px rgba(0,0,0,0.15)";
-  const scale = hovered ? "scale(1.15)" : "scale(1)";
-  const label = formatCurrency(point.price, { compact: true });
-  const html = `<div style="display:inline-flex;align-items:center;padding:${padding};border-radius:999px;background:${bg};color:${color};border:2px solid ${border};font-size:12px;font-weight:600;white-space:nowrap;box-shadow:${shadow};transform:${scale};transition:transform 150ms, background 150ms, color 150ms;">${label}</div>`;
   return L.divIcon({
-    html,
+    html: `<div style="${pillStyle(point, hovered)}">${pillLabel(point)}</div>`,
     className: "property-pill-marker", // reset style mặc định của leaflet cho div icon
     iconSize: undefined,
     iconAnchor: [hovered ? 30 : 26, 14],
@@ -86,18 +47,6 @@ const SEARCH_PIN_ICON = L.divIcon({
   iconSize: [30, 40],
   iconAnchor: [15, 40],
 });
-
-/** Toạ độ dùng được: có thật, hữu hạn, và nằm trong dải hợp lệ của Trái Đất. */
-export function isValidLatLng(lat: unknown, lng: unknown): boolean {
-  return (
-    typeof lat === "number" &&
-    typeof lng === "number" &&
-    Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    Math.abs(lat) <= 90 &&
-    Math.abs(lng) <= 180
-  );
-}
 
 function FitBounds({ points }: { points: PropertyMapPoint[] }) {
   const map = useMap();
@@ -166,74 +115,6 @@ function MapController({
   return null;
 }
 
-/** Thẻ xem nhanh trong Popup khi click marker — ảnh nhỏ + giá + tên rút gọn + link chi tiết. */
-function MiniPropertyCard({ point }: { point: PropertyMapPoint }) {
-  return (
-    <div style={{ width: 180 }}>
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          alignItems: "flex-start",
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 6,
-            overflow: "hidden",
-            flexShrink: 0,
-            background: "var(--color-muted)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {point.thumbnailUrl ? (
-            <img
-              src={point.thumbnailUrl}
-              alt={point.title}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            <ImageIcon size={20} color="var(--color-muted-foreground)" />
-          )}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--color-foreground)" }}>
-            {formatListingPrice(point.price, point.type, point.rentPaymentCycle ?? null)}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--color-muted-foreground)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {point.title}
-          </div>
-        </div>
-      </div>
-      <Link
-        to="/tin-dang/$slug"
-        params={{ slug: point.slug! }}
-        style={{
-          display: "block",
-          marginTop: 6,
-          fontSize: 12,
-          fontWeight: 600,
-          color: "var(--color-primary)",
-        }}
-      >
-        Xem chi tiết →
-      </Link>
-    </div>
-  );
-}
-
 interface PropertyMapProps {
   points: PropertyMapPoint[];
   hoveredId: string | null;
@@ -246,7 +127,9 @@ interface PropertyMapProps {
   searchCenter?: LatLng | null;
   onSearchCenterChange?: (c: LatLng) => void;
   radiusMeters?: number | null;
-  onMapReady?: (map: L.Map) => void;
+  /** Trang tìm kiếm chỉ cần tâm và bán kính khung nhìn — không cầm thẳng đối tượng Leaflet,
+      để bản GL (GlPropertyMap) thay thế được mà trang không phải biết. */
+  onMapReady?: (api: MapViewApi) => void;
   onShowSearchAreaButtonChange?: (show: boolean) => void;
 }
 
@@ -289,7 +172,15 @@ export default function PropertyMap({
         <MapController
           onMapClick={(latlng) => onSearchCenterChange?.(latlng)}
           onMoveEnd={handleMoveEnd}
-          onMapReady={(map) => onMapReady?.(map)}
+          onMapReady={(map) =>
+            onMapReady?.({
+              getCenter: () => {
+                const c = map.getCenter();
+                return { lat: c.lat, lng: c.lng };
+              },
+              getViewRadiusMeters: () => map.getCenter().distanceTo(map.getBounds().getNorthEast()),
+            })
+          }
         />
 
         {radiusMeters != null && searchCenter && (
@@ -331,26 +222,28 @@ export default function PropertyMap({
 
         {/* Cùng lý do với FitBounds: một Marker mang toạ độ NaN cũng ném lỗi và hạ cả trang.
             Bỏ qua điểm hỏng thay vì tin dữ liệu luôn sạch. */}
-        {points.filter((p) => isValidLatLng(p.lat, p.lng)).map((p) => (
-          <Marker
-            key={p.id}
-            position={[p.lat, p.lng]}
-            icon={icons.get(p.id)}
-            alt={`Tin đăng giá ${formatCurrency(p.price, { compact: true })}`}
-            eventHandlers={{
-              mouseover: () => onHoverPoint(p.id),
-              mouseout: () => onHoverPoint(null),
-              click: () => onClickPoint(p.id),
-            }}
-          >
-            {/* Popup xem nhanh — song song với hành vi cuộn danh sách (onClickPoint ở trên) */}
-            {p.slug && p.title && (
-              <Popup autoPan={false} closeButton minWidth={200}>
-                <MiniPropertyCard point={p} />
-              </Popup>
-            )}
-          </Marker>
-        ))}
+        {points
+          .filter((p) => isValidLatLng(p.lat, p.lng))
+          .map((p) => (
+            <Marker
+              key={p.id}
+              position={[p.lat, p.lng]}
+              icon={icons.get(p.id)}
+              alt={`Tin đăng giá ${formatCurrency(p.price, { compact: true })}`}
+              eventHandlers={{
+                mouseover: () => onHoverPoint(p.id),
+                mouseout: () => onHoverPoint(null),
+                click: () => onClickPoint(p.id),
+              }}
+            >
+              {/* Popup xem nhanh — song song với hành vi cuộn danh sách (onClickPoint ở trên) */}
+              {p.slug && p.title && (
+                <Popup autoPan={false} closeButton minWidth={200}>
+                  <MiniPropertyCard point={p} />
+                </Popup>
+              )}
+            </Marker>
+          ))}
       </MapContainer>
     </div>
   );

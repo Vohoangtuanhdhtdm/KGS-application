@@ -219,6 +219,7 @@ function NewAsset() {
                   height={300}
                   onPick={(lat, lng) => setLocation({ lat, lng })}
                   pickerMarker={location ? { lat: location.lat, lng: location.lng } : null}
+                  geocodeSearch
                 />
                 {location && (
                   <p className="text-xs text-muted-foreground">

@@ -3,8 +3,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { BaseTileLayer } from "./BaseTileLayer";
-import type { ReactNode } from "react";
 import { useEffect } from "react";
+import type { SimpleMapProps } from "./simpleMapTypes";
 
 // Fix default marker icons (Vite bundler breaks the paths)
 const DefaultIcon = L.icon({
@@ -18,14 +18,7 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-
-export interface MarkerData {
-  id: string;
-  lat: number;
-  lng: number;
-  title: string;
-  subtitle?: string;
-}
+export type { MarkerData } from "./simpleMapTypes";
 
 function FlyTo({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number }) {
   const map = useMap();
@@ -44,18 +37,6 @@ function ClickPicker({ onPick }: { onPick: (lat: number, lng: number) => void })
   return null;
 }
 
-interface Props {
-  center: [number, number];
-  zoom?: number;
-  markers?: MarkerData[];
-  height?: string | number;
-  onPick?: (lat: number, lng: number) => void;
-  pickerMarker?: { lat: number; lng: number } | null;
-  circleRadius?: number; // meters
-  className?: string;
-  children?: ReactNode;
-}
-
 export default function LeafletMap({
   center,
   zoom = 13,
@@ -64,7 +45,7 @@ export default function LeafletMap({
   onPick,
   pickerMarker,
   className,
-}: Props) {
+}: SimpleMapProps) {
   return (
     <div
       className={className}
@@ -90,7 +71,17 @@ export default function LeafletMap({
         <FlyTo lat={center[0]} lng={center[1]} zoom={zoom} />
         {onPick && <ClickPicker onPick={onPick} />}
         {pickerMarker && (
-          <Marker position={[pickerMarker.lat, pickerMarker.lng]}>
+          <Marker
+            position={[pickerMarker.lat, pickerMarker.lng]}
+            // Kéo được như bản GL: tinh chỉnh chính xác hơn bấm lại nhiều lần.
+            draggable={!!onPick}
+            eventHandlers={{
+              dragend: (e) => {
+                const ll = (e.target as L.Marker).getLatLng();
+                onPick?.(ll.lat, ll.lng);
+              },
+            }}
+          >
             <Popup>Vị trí đã chọn</Popup>
           </Marker>
         )}

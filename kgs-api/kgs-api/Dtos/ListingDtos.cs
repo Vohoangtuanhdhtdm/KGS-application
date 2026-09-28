@@ -64,7 +64,11 @@ namespace kgs_api.Dtos
         [Range(0, 200)] int? Floors = null,
         [MaxLength(50)] string? HouseDirection = null,
         [MaxLength(100)] string? LegalStatus = null,
-        [MaxLength(100)] string? FurnitureState = null);
+        [MaxLength(100)] string? FurnitureState = null,
+        // Ghim vị trí do người đăng tự đặt trên bản đồ. Gửi đủ cả hai thì đặt/di chuyển ghim;
+        // không gửi thì giữ nguyên. Cùng luật khoá với các trường vật lý ở trên.
+        [Range(-90, 90)] double? Latitude = null,
+        [Range(-180, 180)] double? Longitude = null);
 
     /// <summary>Đăng tin TRỰC TIẾP — không cần tạo tài sản trước.
     ///
@@ -129,7 +133,11 @@ namespace kgs_api.Dtos
         /// <summary>false khi tài sản còn tin đăng khác — sửa địa chỉ hay diện tích lúc đó
         /// sẽ đổi luôn cả các tin kia, nên biểu mẫu phải khoá phần đó lại.</summary>
         bool CanEditPropertyFields,
-        string? ModerationNote);
+        string? ModerationNote,
+
+        /// <summary>Ghim vị trí hiện tại của tài sản, null nếu chưa ghim.</summary>
+        double? Latitude,
+        double? Longitude);
 
     public sealed record PublicListingSearchQuery(
         ListingType? Type,

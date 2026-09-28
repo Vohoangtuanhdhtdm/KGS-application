@@ -7,7 +7,7 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
-import type L from "leaflet";
+import type { MapViewApi } from "@/lib/mapEngine";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { savedListingsApi } from "@/lib/api/engagement";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -175,7 +175,7 @@ function PublicListingsPage() {
   const [searchCenter, setSearchCenter] = useState<LatLng | null>(null);
   const [radiusMeters, setRadiusMeters] = useState<number | null>(null);
   const [showSearchAreaButton, setShowSearchAreaButton] = useState(false);
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<MapViewApi | null>(null);
 
   const [usingMyLocation, setUsingMyLocation] = useState(false);
   const [myLocationRadiusKm, setMyLocationRadiusKm] = useState(5);
@@ -358,8 +358,7 @@ function PublicListingsPage() {
     const map = mapRef.current;
     if (!map) return;
     const center = map.getCenter();
-    const bounds = map.getBounds();
-    const newRadius = center.distanceTo(bounds.getNorthEast()); // Leaflet tính sẵn, không cần haversine tay
+    const newRadius = map.getViewRadiusMeters(); // tâm → góc khung nhìn: vừa phủ trọn vùng đang thấy
     setSearchCenter({ lat: center.lat, lng: center.lng });
     setRadiusMeters(newRadius);
     setUsingMyLocation(false);

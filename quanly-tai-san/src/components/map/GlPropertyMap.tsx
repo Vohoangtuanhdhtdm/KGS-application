@@ -1,0 +1,387 @@
+// Bản đồ tìm kiếm chạy bằng Mapbox GL JS — thay cho PropertyMap (Leaflet), giữ NGUYÊN props
+// và hành vi để trang tìm kiếm không phải đổi gì ngoài kiểu của onMapReady:
+//   • viên giá đồng bộ hover hai chiều với danh sách, bấm viên giá → cuộn tới thẻ + xem nhanh
+//   • chấm vị trí GPS, ghim tìm kiếm kéo/bấm được, vòng bán kính
+//   • căn khung theo các tin, bay tới tâm tìm kiếm, nút "Tìm trong khu vực này"
+// Client-only, nạp lười qua PropertyMapClient.
+import "mapbox-gl/dist/mapbox-gl.css";
+import mapboxgl from "mapbox-gl";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import type { LatLng } from "@/hooks/useGeolocationOnDemand";
+import {
+  GL_LOCALE_VI,
+  GL_STYLES,
+  MAPBOX_TOKEN,
+  circlePolygon,
+  distanceMeters,
+  isFatalGlError,
+  type MapViewApi,
+} from "@/lib/mapEngine";
+import {
+  MOVE_THRESHOLD_METERS,
+  isValidLatLng,
+  pillLabel,
+  pillStyle,
+  type PropertyMapPoint,
+} from "./propertyMapShared";
+import { MiniPropertyCard } from "./MiniPropertyCard";
+
+interface Props {
+  points: PropertyMapPoint[];
+  hoveredId: string | null;
+  onHoverPoint: (id: string | null) => void;
+  onClickPoint: (id: string) => void;
+  defaultCenter: [number, number];
+  className?: string;
+  userLocation?: LatLng | null;
+  searchCenter?: LatLng | null;
+  onSearchCenterChange?: (c: LatLng) => void;
+  radiusMeters?: number | null;
+  onMapReady?: (api: MapViewApi) => void;
+  onShowSearchAreaButtonChange?: (show: boolean) => void;
+  /** GL hỏng hẳn (token, hạn mức) — lớp bọc đổi sang bản Leaflet. */
+  onFatalError?: () => void;
+}
+
+const RADIUS_SOURCE = "kgs-search-radius";
+
+function userDot(): HTMLElement {
+  const el = document.createElement("div");
+  el.setAttribute("aria-label", "Vị trí hiện tại của bạn");
+  el.style.cssText =
+    "width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid white;box-shadow:0 0 0 2px rgba(66,133,244,0.35), 0 1px 4px rgba(0,0,0,0.3);";
+  return el;
+}
+
+function searchPin(): HTMLElement {
+  const el = document.createElement("div");
+  el.setAttribute("aria-label", "Kéo để đổi vị trí tìm kiếm");
+  el.style.cursor = "grab";
+  el.innerHTML = `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg"><path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="var(--color-primary)"/><circle cx="15" cy="15" r="6" fill="white"/></svg>`;
+  return el;
+}
+
+export default function GlPropertyMap({
+  points,
+  hoveredId,
+  onHoverPoint,
+  onClickPoint,
+  defaultCenter,
+  className,
+  userLocation,
+  searchCenter,
+  onSearchCenterChange,
+  radiusMeters,
+  onMapReady,
+  onShowSearchAreaButtonChange,
+  onFatalError,
+}: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // Callback mới nhất, đọc qua ref: sự kiện gắn MỘT lần lúc dựng marker/bản đồ không được
+  // giữ closure cũ (lúc đó searchCenter còn null, hoveredId còn cũ...).
+  const cb = useRef({
+    onHoverPoint,
+    onClickPoint,
+    onSearchCenterChange,
+    onShowSearchAreaButtonChange,
+    onFatalError,
+    searchCenter,
+  });
+  cb.current = {
+    onHoverPoint,
+    onClickPoint,
+    onSearchCenterChange,
+    onShowSearchAreaButtonChange,
+    onFatalError,
+    searchCenter,
+  };
+
+  const pillsRef = useRef(
+    new Map<string, { marker: mapboxgl.Marker; el: HTMLElement; point: PropertyMapPoint }>(),
+  );
+  const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const [popupHost, setPopupHost] = useState<HTMLElement | null>(null);
+  const [popupPoint, setPopupPoint] = useState<PropertyMapPoint | null>(null);
+
+  // ---------------- Dựng bản đồ (một lần) ----------------
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const start = searchCenter ?? { lat: defaultCenter[0], lng: defaultCenter[1] };
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      accessToken: MAPBOX_TOKEN,
+      style: GL_STYLES.streets,
+      language: "vi",
+      locale: GL_LOCALE_VI,
+      center: [start.lng, start.lat],
+      zoom: searchCenter ? 13.5 : 11.5,
+      // Không xoay, không nghiêng: trang tìm nhà cần một mặt phẳng dễ đọc, không cần 3D.
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+    });
+    mapRef.current = map;
+    map.touchZoomRotate.disableRotation();
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-left");
+
+    map.on("error", (e) => {
+      if (isFatalGlError(e as unknown as { error?: { status?: number; message?: string } })) {
+        cb.current.onFatalError?.();
+      }
+    });
+
+    map.on("load", () => {
+      map.addSource(RADIUS_SOURCE, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      map.addLayer({
+        id: `${RADIUS_SOURCE}-fill`,
+        type: "fill",
+        source: RADIUS_SOURCE,
+        paint: { "fill-color": "#1f2f6b", "fill-opacity": 0.06 },
+      });
+      map.addLayer({
+        id: `${RADIUS_SOURCE}-line`,
+        type: "line",
+        source: RADIUS_SOURCE,
+        paint: { "line-color": "#1f2f6b", "line-width": 1 },
+      });
+      setReady(true);
+      onMapReady?.({
+        getCenter: () => {
+          const c = map.getCenter();
+          return { lat: c.lat, lng: c.lng };
+        },
+        getViewRadiusMeters: () => {
+          const c = map.getCenter();
+          const ne = map.getBounds()?.getNorthEast();
+          return ne ? distanceMeters({ lat: c.lat, lng: c.lng }, { lat: ne.lat, lng: ne.lng }) : 0;
+        },
+      });
+    });
+
+    // Bấm vào bản đồ (không phải vào viên giá) → đổi tâm tìm kiếm.
+    map.on("click", (e) =>
+      cb.current.onSearchCenterChange?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }),
+    );
+
+    map.on("moveend", () => {
+      const { searchCenter: sc, onShowSearchAreaButtonChange: show } = cb.current;
+      if (!sc || !show) return;
+      const c = map.getCenter();
+      show(distanceMeters({ lat: c.lat, lng: c.lng }, sc) > MOVE_THRESHOLD_METERS);
+    });
+
+    // Khung bản đồ đổi cỡ (kéo thanh chia danh sách/bản đồ, sheet trên điện thoại) mà không
+    // đổi cỡ cửa sổ — GL chỉ tự nghe cửa sổ, nên theo dõi chính khung chứa.
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+
+    const host = document.createElement("div");
+    setPopupHost(host);
+    const popup = new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: true,
+      offset: 18,
+      maxWidth: "220px",
+    }).setDOMContent(host);
+    popup.on("close", () => setPopupPoint(null));
+    popupRef.current = popup;
+
+    const pills = pillsRef.current;
+    return () => {
+      ro.disconnect();
+      pills.forEach((p) => p.marker.remove());
+      pills.clear();
+      popup.remove();
+      map.remove();
+      mapRef.current = null;
+    };
+    // Dựng một lần; các thay đổi sau đi qua những effect bên dưới.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---------------- Viên giá ----------------
+  const validKey = points
+    .filter((p) => isValidLatLng(p.lat, p.lng))
+    .map((p) => `${p.id}:${p.price}:${p.type}`)
+    .join(",");
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const pills = pillsRef.current;
+    // Toạ độ hỏng bị bỏ qua thay vì làm sập bản đồ — cùng nguyên tắc với bản Leaflet.
+    const valid = points.filter((p) => isValidLatLng(p.lat, p.lng));
+    const keep = new Set(valid.map((p) => p.id));
+
+    for (const [id, entry] of pills) {
+      if (!keep.has(id)) {
+        entry.marker.remove();
+        pills.delete(id);
+      }
+    }
+
+    for (const p of valid) {
+      const existing = pills.get(p.id);
+      if (existing) {
+        existing.point = p;
+        existing.marker.setLngLat([p.lng, p.lat]);
+        existing.el.firstElementChild!.textContent = pillLabel(p);
+        continue;
+      }
+      const el = document.createElement("div");
+      el.className = "property-pill-marker";
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      el.setAttribute("aria-label", `Tin đăng giá ${pillLabel(p)}`);
+      const inner = document.createElement("div");
+      inner.style.cssText = pillStyle(p, false);
+      inner.textContent = pillLabel(p);
+      el.appendChild(inner);
+
+      el.addEventListener("mouseenter", () => cb.current.onHoverPoint(p.id));
+      el.addEventListener("mouseleave", () => cb.current.onHoverPoint(null));
+      const open = (e: Event) => {
+        // Chặn không cho cú bấm lọt xuống bản đồ — nếu lọt, bản đồ hiểu là "đổi tâm tìm kiếm".
+        e.stopPropagation();
+        const cur = pills.get(p.id)?.point ?? p;
+        cb.current.onClickPoint(cur.id);
+        if (cur.slug && cur.title && popupRef.current) {
+          setPopupPoint(cur);
+          popupRef.current.setLngLat([cur.lng, cur.lat]).addTo(map);
+        }
+      };
+      el.addEventListener("click", open);
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") open(e);
+      });
+
+      const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+        .setLngLat([p.lng, p.lat])
+        .addTo(map);
+      pills.set(p.id, { marker, el, point: p });
+    }
+    // validKey gói đủ thứ làm marker đổi; `points` đổi identity mỗi lần vẽ thì không.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validKey]);
+
+  // Hover: đổi style NGAY trên phần tử có sẵn, không dựng lại marker — dựng lại sẽ làm popup
+  // đang mở mất chỗ neo và gây nháy.
+  useEffect(() => {
+    for (const [id, { el, point }] of pillsRef.current) {
+      const hovered = id === hoveredId;
+      (el.firstElementChild as HTMLElement).style.cssText = pillStyle(point, hovered);
+      el.style.zIndex = hovered ? "10" : "";
+    }
+  }, [hoveredId, validKey]);
+
+  // ---------------- Căn khung theo các tin ----------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const valid = points.filter((p) => isValidLatLng(p.lat, p.lng));
+    const b = new mapboxgl.LngLatBounds();
+    // Đang tìm theo bán kính: khung phải thấy trọn ghim + vòng tròn, không chỉ vài tin bên
+    // trong — nếu không, còn 2 kết quả là bản đồ phóng sát vào chúng, ghim trôi ra ngoài,
+    // và tâm lệch khỏi ghim làm nút "Tìm trong khu vực này" bật lên dù người dùng chưa kéo.
+    const cur = cb.current.searchCenter;
+    if (cur && radiusMeters != null) {
+      for (const [lng, lat] of circlePolygon(cur, radiusMeters, 16).geometry.coordinates[0]) {
+        b.extend([lng, lat]);
+      }
+    } else if (valid.length === 0) {
+      return;
+    } else if (valid.length === 1) {
+      map.flyTo({ center: [valid[0].lng, valid[0].lat], zoom: 14, duration: 500 });
+      return;
+    }
+    valid.forEach((p) => b.extend([p.lng, p.lat]));
+    map.fitBounds(b, { padding: 40, maxZoom: 15, duration: 500 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, points.map((p) => p.id).join(",")]);
+
+  // ---------------- Tâm tìm kiếm: bay tới, ghim, vòng bán kính ----------------
+  const lastFlown = useRef<string | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !searchCenter) return;
+    const key = `${searchCenter.lat.toFixed(5)},${searchCenter.lng.toFixed(5)}`;
+    if (lastFlown.current === key) return;
+    lastFlown.current = key;
+    map.flyTo({
+      center: [searchCenter.lng, searchCenter.lat],
+      zoom: Math.max(map.getZoom(), 13.5),
+      duration: 700,
+    });
+  }, [searchCenter]);
+
+  const pinRef = useRef<mapboxgl.Marker | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!searchCenter) {
+      pinRef.current?.remove();
+      pinRef.current = null;
+      return;
+    }
+    if (!pinRef.current) {
+      const pin = new mapboxgl.Marker({ element: searchPin(), anchor: "bottom", draggable: true });
+      pin.on("dragend", () => {
+        const ll = pin.getLngLat();
+        cb.current.onSearchCenterChange?.({ lat: ll.lat, lng: ll.lng });
+      });
+      pinRef.current = pin;
+    }
+    pinRef.current.setLngLat([searchCenter.lng, searchCenter.lat]).addTo(map);
+  }, [searchCenter]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const src = map.getSource(RADIUS_SOURCE) as mapboxgl.GeoJSONSource | undefined;
+    src?.setData(
+      radiusMeters != null && searchCenter
+        ? circlePolygon(searchCenter, radiusMeters)
+        : { type: "FeatureCollection", features: [] },
+    );
+  }, [ready, radiusMeters, searchCenter]);
+
+  // ---------------- Chấm GPS ----------------
+  const dotRef = useRef<mapboxgl.Marker | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!userLocation) {
+      dotRef.current?.remove();
+      dotRef.current = null;
+      return;
+    }
+    if (!dotRef.current)
+      dotRef.current = new mapboxgl.Marker({ element: userDot(), anchor: "center" });
+    dotRef.current.setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+  }, [userLocation]);
+
+  return (
+    <div
+      className={className}
+      style={{
+        height: "100%",
+        width: "100%",
+        position: "relative",
+        isolation: "isolate",
+        zIndex: 0,
+      }}
+    >
+      <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
+      {/* Thẻ xem nhanh render bằng React qua portal vào khung popup của GL — nhờ vậy nó vẫn
+          nằm trong cây component và dùng được Link của router. */}
+      {popupHost && popupPoint && createPortal(<MiniPropertyCard point={popupPoint} />, popupHost)}
+    </div>
+  );
+}
