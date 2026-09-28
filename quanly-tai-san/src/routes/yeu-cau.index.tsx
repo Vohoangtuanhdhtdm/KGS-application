@@ -20,11 +20,18 @@ import { ENABLE_ASSET_MANAGEMENT } from "@/lib/features";
 
 export const Route = createFileRoute("/yeu-cau/")({
   head: () => ({ meta: [{ title: "Yêu cầu xem nhà — KGS" }] }),
+  // Tab nằm trên URL chứ không trong state của trang: người tìm nhà bấm "Yêu cầu đã gửi"
+  // phải mở thẳng tab đó, và không gian hiện trên khung (Tìm nhà hay Chủ nhà) đọc từ chính
+  // tham số này — xem resolveWorkspace() trong lib/workspace.ts.
+  validateSearch: (s: Record<string, unknown>): { tab?: "received" | "sent" } =>
+    s.tab === "sent" ? { tab: "sent" } : {},
   component: InquiriesPage,
 });
 
 /** `embedded` = đang render bên trong FeatureSheet: bỏ padding/tiêu đề trùng lặp. */
 function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const { tab = "received" } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   return (
     <div className={embedded ? "space-y-5" : "p-6 space-y-5 max-w-[1000px]"}>
       <div>
@@ -35,7 +42,12 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
         </p>
       </div>
 
-      <Tabs defaultValue="received">
+      <Tabs
+        value={tab}
+        onValueChange={(v) =>
+          navigate({ search: v === "sent" ? { tab: "sent" } : {}, replace: true })
+        }
+      >
         <TabsList>
           <TabsTrigger value="received">Nhận được</TabsTrigger>
           <TabsTrigger value="sent">Đã gửi</TabsTrigger>

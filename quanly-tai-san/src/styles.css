@@ -50,6 +50,16 @@
   --color-price: var(--price);
   --color-price-foreground: var(--price-foreground);
   --color-price-soft: var(--price-soft);
+  --color-ws-seeker: var(--ws-seeker);
+  --color-ws-owner: var(--ws-owner);
+  --color-ws-admin: var(--ws-admin);
+  --color-ws-foreground: var(--ws-foreground);
+  --color-ws-seeker-soft: var(--ws-seeker-soft);
+  --color-ws-owner-soft: var(--ws-owner-soft);
+  --color-ws-admin-soft: var(--ws-admin-soft);
+  --color-ws-admin-ink: var(--ws-admin-ink);
+  --color-ws-admin-ink-foreground: var(--ws-admin-ink-foreground);
+  --color-ws-admin-accent: var(--ws-admin-accent);
 
   /* Be Vietnam Pro thay Inter: bộ chữ thiết kế riêng cho tiếng Việt. Ở cỡ tiêu đề lớn,
      Inter dựng dấu bằng cách chồng lên thân chữ nên "ườ", "ẫ", "ặ" bị chật; Be Vietnam Pro
@@ -101,6 +111,23 @@
   --price: oklch(0.487 0.092 171.5);
   --price-foreground: oklch(0.985 0.004 91.4);
   --price-soft: oklch(0.944 0.016 177.1);
+
+  /* Màu định danh của ba không gian làm việc (xem lib/workspace.ts).
+     Ba sắc độ cách xa nhau trên vòng màu và cách xa màu giá (--price, xanh ngọc 171°):
+     navy 272° cho người tìm nhà, đồng thau 48° cho chủ nhà, mận 322° cho quản trị.
+     Cả ba đều đủ tối để chữ trắng đạt AA (tương phản > 7:1). */
+  --ws-seeker: oklch(0.302 0.103 272.1);
+  --ws-owner: oklch(0.46 0.115 48);
+  --ws-admin: oklch(0.4 0.13 322);
+  --ws-foreground: oklch(0.985 0.004 91.4);
+  --ws-seeker-soft: oklch(0.945 0.02 272);
+  --ws-owner-soft: oklch(0.955 0.03 60);
+  --ws-admin-soft: oklch(0.955 0.025 322);
+  /* Thanh bên của khu quản trị: nền mực tím sẫm ở CẢ HAI theme — khu quản trị luôn là
+     "phòng máy", tách hẳn khỏi phần sàn giao dịch sáng sủa. */
+  --ws-admin-ink: oklch(0.22 0.04 322);
+  --ws-admin-ink-foreground: oklch(0.95 0.012 322);
+  --ws-admin-accent: oklch(0.8 0.09 322);
 
   /* Ngữ nghĩa */
   --destructive: oklch(0.501 0.178 28.7);
@@ -170,6 +197,17 @@
   --price-foreground: oklch(0.191 0.006 271.1);
   --price-soft: oklch(0.258 0.035 163.9);
 
+  /* Nền tối: nâng sáng cả ba, chữ đổi sang tối — giữ nguyên sắc độ để một không gian vẫn
+     nhận ra được khi người dùng đổi theme. */
+  --ws-seeker: oklch(0.787 0.087 274.1);
+  --ws-owner: oklch(0.8 0.1 60);
+  --ws-admin: oklch(0.8 0.09 322);
+  --ws-foreground: oklch(0.191 0.006 271.1);
+  --ws-seeker-soft: oklch(0.28 0.04 272);
+  --ws-owner-soft: oklch(0.29 0.045 55);
+  --ws-admin-soft: oklch(0.29 0.04 322);
+  --ws-admin-ink: oklch(0.17 0.025 322);
+
   --destructive: oklch(0.710 0.153 26.9);
   --destructive-foreground: oklch(0.191 0.006 271.1);
   --success: oklch(0.779 0.115 172.9);
@@ -197,6 +235,22 @@
   --shadow-e1: 0 1px 2px oklch(0 0 0 / 0.4);
   --shadow-e2: 0 2px 8px -2px oklch(0 0 0 / 0.5);
   --shadow-e3: 0 12px 32px -12px oklch(0 0 0 / 0.7);
+}
+
+/* Khi vào một không gian, màu chính của CẢ TRANG đổi theo — nút, vòng focus, liên kết đang
+   chọn. Gắn lên <html> (AppShell đặt data-workspace) chứ không lên một thẻ bao: các menu thả,
+   hộp thoại và Select của Radix được portal ra thẳng <body>, nằm ngoài mọi thẻ bao, nên chỉ
+   gắn ở gốc mới phủ tới chúng.
+   Không có khối cho "seeker": đó là mặc định, --primary giữ nguyên navy. */
+:root[data-workspace="owner"] {
+  --primary: var(--ws-owner);
+  --primary-foreground: var(--ws-foreground);
+  --ring: var(--ws-owner);
+}
+:root[data-workspace="admin"] {
+  --primary: var(--ws-admin);
+  --primary-foreground: var(--ws-foreground);
+  --ring: var(--ws-admin);
 }
 
 @layer base {

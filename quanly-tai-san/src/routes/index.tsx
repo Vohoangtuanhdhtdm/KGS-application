@@ -19,7 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Megaphone, Search } from "lucide-react";
+import { ArrowRight, Building2, Calculator, Megaphone, Search } from "lucide-react";
+import SpotlightCard from "@/components/reactbits/SpotlightCard";
+import { WorkspaceBadge } from "@/components/workspace/WorkspaceBadge";
+import { WS_CLASS } from "@/components/workspace/wsStyles";
 
 /**
  * TRANG CHỦ MARKETPLACE — mặt tiền của sản phẩm.
@@ -82,13 +85,12 @@ function MarketplaceHome() {
           <div className="space-y-6">
             <div className="max-w-2xl space-y-3">
               <h1 className="text-3xl font-semibold text-balance lg:text-[2.75rem]">
-                Biết trước <span className="text-price">tổng chi phí mỗi tháng</span> trước
-                khi đi xem nhà
+                Biết trước <span className="text-price">tổng chi phí mỗi tháng</span> trước khi đi
+                xem nhà
               </h1>
               <p className="text-[15px] leading-relaxed text-muted-foreground">
-                Giá thuê chỉ là một phần. Mỗi tin trên KGS ghi rõ điện, nước, phí dịch vụ,
-                gửi xe, internet — và cả nội quy: nuôi thú cưng, giờ giấc, ở chung chủ hay
-                không.
+                Giá thuê chỉ là một phần. Mỗi tin trên KGS ghi rõ điện, nước, phí dịch vụ, gửi xe,
+                internet — và cả nội quy: nuôi thú cưng, giờ giấc, ở chung chủ hay không.
               </p>
             </div>
 
@@ -160,6 +162,7 @@ function MarketplaceHome() {
       </section>
 
       <AreaShortcuts />
+      <ActorPaths />
       <ValueProps />
 
       <div className="mx-auto max-w-[1200px] px-4 py-10 space-y-10">
@@ -167,6 +170,101 @@ function MarketplaceHome() {
         <PostCta />
       </div>
     </div>
+  );
+}
+
+/**
+ * "Bạn đến đây để làm gì?" — ba lối vào theo ACTOR.
+ *
+ * Trang chủ phục vụ ba nhóm người với ba mục đích khác hẳn nhau: người tìm nhà, người có
+ * nhà cần cho thuê hay bán, và người chỉ muốn biết giá. Trước đây cả ba bị dồn vào cùng một ô
+ * tìm kiếm — người có nhà phải tự đoán ra nút "Đăng tin" góc trên phải, còn người muốn tra
+ * giá thì không có lối nào cả.
+ *
+ * Mỗi thẻ mang đúng màu của không gian nó dẫn vào (navy Tìm nhà, đồng thau Chủ nhà), nên
+ * khi bấm sang, màu của cả trang đổi theo đúng màu thẻ vừa bấm — người dùng thấy mình vừa
+ * bước vào một không gian khác chứ không chỉ mở thêm một trang. Hiệu ứng đèn rọi (React
+ * Bits · SpotlightCard) cũng lấy màu của không gian đó.
+ */
+function ActorPaths() {
+  const cards = [
+    {
+      ws: "seeker" as const,
+      title: "Tôi đang tìm nhà",
+      body: "Lọc theo tổng chi phí thật, lưu tin, so sánh 2–3 căn cạnh nhau, gửi yêu cầu xem nhà.",
+      cta: { to: "/tin-dang", label: "Bắt đầu tìm" },
+      glow: "color-mix(in oklch, var(--ws-seeker) 16%, transparent)",
+    },
+    {
+      ws: "owner" as const,
+      title: "Tôi có nhà cho thuê hoặc bán",
+      body: "Đăng tin có giá tham khảo từ mô hình, nhận yêu cầu xem nhà qua email, theo dõi hiệu quả từng tin.",
+      cta: { to: "/dang-tin", label: "Đăng tin" },
+      glow: "color-mix(in oklch, var(--ws-owner) 18%, transparent)",
+    },
+  ];
+
+  return (
+    <section className="border-b" aria-labelledby="actor-paths">
+      <div className="mx-auto max-w-[1200px] px-4 py-12">
+        <h2 id="actor-paths" className="text-xl font-semibold tracking-tight">
+          Bạn đến KGS để làm gì?
+        </h2>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {cards.map((c) => (
+            <SpotlightCard key={c.ws} spotlightColor={c.glow} className="flex rounded-xl p-6">
+              <div className="flex h-full flex-col">
+                <WorkspaceBadge ws={c.ws} className="w-fit" />
+                <h3 className="mt-4 text-lg font-semibold leading-snug">{c.title}</h3>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                  {c.body}
+                </p>
+                <Link
+                  to={c.cta.to}
+                  className={`mt-5 inline-flex w-fit items-center gap-1.5 text-sm font-semibold hover:underline ${WS_CLASS[c.ws].text}`}
+                >
+                  {c.cta.label}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </SpotlightCard>
+          ))}
+
+          <SpotlightCard
+            spotlightColor="color-mix(in oklch, var(--price) 18%, transparent)"
+            className="flex rounded-xl p-6"
+          >
+            <div className="flex h-full flex-col">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-price-soft px-2.5 py-1 text-xs font-semibold text-price">
+                <Calculator className="h-3.5 w-3.5" aria-hidden="true" />
+                Không cần tài khoản
+              </span>
+              <h3 className="mt-4 text-lg font-semibold leading-snug">Tôi chỉ muốn tra giá</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                Một căn như vầy đáng giá bao nhiêu, và giá ở quận đó đang lên hay xuống — không phải
+                đăng tin, không phải đăng ký.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
+                <Link
+                  to="/dinh-gia"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-price hover:underline"
+                >
+                  Định giá
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/chi-so-gia"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-price hover:underline"
+                >
+                  Chỉ số giá
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </SpotlightCard>
+        </div>
+      </div>
+    </section>
   );
 }
 
