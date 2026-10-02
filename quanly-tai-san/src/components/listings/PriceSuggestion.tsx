@@ -61,9 +61,10 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
    *    do mô hình sai chứ không phải người dùng sai. Cảnh báo sai nhiều lần thì người dùng
    *    học được cách bỏ qua nó, kể cả lần nó đúng.
    *
-   * 2. Nó bỏ qua `confidence`, trong khi mô hình đã tự nói nó chắc chắn tới đâu: khoảng
-   *    ±12% khi tin cậy cao, ±32% khi thấp. Lệch 20% là chuyện đáng nói ở trường hợp đầu
-   *    và hoàn toàn bình thường ở trường hợp sau.
+   * 2. Nó bỏ qua `confidence`, trong khi mô hình đã tự nói nó chắc chắn tới đâu. Khoảng
+   *    trả về là khoảng 80% đã hiệu chỉnh bằng split conformal (ml-service/training/
+   *    calibrate_interval.py): khoảng -28%..+39% khi tin cậy cao, rộng hơn nhiều khi thấp.
+   *    Lệch 20% vì thế là chuyện bình thường — không đáng một lời cảnh báo.
    *
    * Ở đây dùng đúng khoảng đó làm ngưỡng. Vượt ra ngoài khoảng mới nói, và nói mạnh hơn khi
    * vượt xa. Mô hình tự nhận độ tin cậy THẤP thì im lặng — nó đang nói rằng nó không biết,

@@ -91,6 +91,12 @@ def model_info() -> ModelInfo:
     rep = model.report
     gbm = rep.get("results", {}).get("Gradient Boosting (LightGBM)", {})
 
+    # Độ phủ thực tế của khoảng 80% trên tập kiểm tra, gộp các mức tin cậy theo số tin.
+    cal = rep.get("interval_calibration", {})
+    buckets = cal.get("buckets", {}).values()
+    n = sum(b["n_test"] for b in buckets)
+    coverage = sum(b["coverage_80_test"] * b["n_test"] for b in buckets) / n if n else None
+
     return ModelInfo(
         loaded=True,
         trained_at=rep.get("trained_at"),
@@ -99,6 +105,7 @@ def model_info() -> ModelInfo:
         ppe10=gbm.get("ppe10"),
         ppe20=gbm.get("ppe20"),
         best_iteration=rep.get("best_iteration"),
+        interval_coverage_80=round(coverage, 4) if coverage is not None else None,
     )
 
 

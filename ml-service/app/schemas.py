@@ -38,6 +38,10 @@ class ValuationResponse(BaseModel):
     price: float = Field(description="Giá ước tính, đồng")
     price_low: float = Field(description="Cận dưới khoảng tin cậy, đồng")
     price_high: float = Field(description="Cận trên khoảng tin cậy, đồng")
+    interval_calibrated: bool = Field(
+        default=False,
+        description="Khoảng đã được hiệu chỉnh bằng split conformal (độ phủ đo trên tập kiểm tra).",
+    )
     price_per_m2: float
 
     confidence: str = Field(description="cao | trung bình | thấp")
@@ -64,6 +68,7 @@ class ModelInfo(BaseModel):
     ppe10: float | None = None
     ppe20: float | None = None
     best_iteration: int | None = None
+    interval_coverage_80: float | None = None
 
 # ---- Chỉ số giá theo tuần (nhiệm vụ 3.1 – 3.3) ----
 
