@@ -144,6 +144,11 @@
         // duy nhất chứng minh hệ thống kết nối thành công chủ nhà với người thuê.
         public enum InquiryStatus { New = 1, Contacted = 2, Viewed = 3, Converted = 4, Closed = 5 }
 
+        // Lời mời xem nhà chủ tin gửi tới một nhu cầu ẩn danh (ghép đôi hai chiều).
+        // Hết hạn KHÔNG phải một trạng thái lưu trong DB: lời mời Pending quá hạn được coi là
+        // hết hạn lúc đọc — không cần job dọn dẹp chỉ để đổi một cột.
+        public enum InvitationStatus { Pending = 1, Accepted = 2, Declined = 3 }
+
 
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)

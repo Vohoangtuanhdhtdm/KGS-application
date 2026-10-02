@@ -37,5 +37,20 @@ namespace kgs_api.Domain.Entity.SubEntity
         /// <summary>Lần gần nhất thực sự gửi được thông báo. Null = chưa từng có tin nào
         /// khớp kể từ lúc lưu.</summary>
         public DateTime? LastNotifiedAt { get; set; }
+
+        /// <summary>Người tìm cho phép chủ tin phù hợp thấy nhu cầu này (ẩn danh) và mời xem
+        /// nhà. Mặc định TẮT: nhu cầu tìm nhà là thông tin riêng tư, chỉ lộ ra khi chính người
+        /// tìm bật lên.
+        ///
+        /// Đây là chiều ngược lại của sàn đăng tin: thay vì người tìm đi gõ cửa từng tin, chủ
+        /// tin thấy ai đang cần đúng loại nhà mình có và chủ động mời.</summary>
+        public bool DiscoverableByOwners { get; set; }
+
+        /// <summary>Lời nhắn người tìm muốn chủ tin đọc ("2 người, đi làm ở Quận 1, cần dọn
+        /// vào trước 15/11"). Chủ tin thấy lời nhắn này, KHÔNG thấy tên, email hay số điện thoại.</summary>
+        [MaxLength(300)] public string? DemandNote { get; set; }
+
+        /// <summary>Lúc bật cho chủ tin thấy — "đang tìm từ 3 ngày trước".</summary>
+        public DateTime? DiscoverableSince { get; set; }
     }
 }

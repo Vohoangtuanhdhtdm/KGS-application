@@ -74,7 +74,8 @@ function matches(pathname: string, prefix: string) {
  */
 export function resolveWorkspace(pathname: string, tab?: string): Workspace {
   if (matches(pathname, "/admin")) return "admin";
-  if (matches(pathname, "/yeu-cau")) return tab === "sent" ? "seeker" : "owner";
+  if (matches(pathname, "/yeu-cau"))
+    return tab === "sent" || tab === "invites" ? "seeker" : "owner";
   if (OWNER_PREFIXES.some((p) => matches(pathname, p))) return "owner";
   return "seeker";
 }
