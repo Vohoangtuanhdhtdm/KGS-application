@@ -220,9 +220,7 @@ function PublicListingsPage() {
   const travelArea = travelEnabled ? (isoQ.data ?? null) : null;
   const travelOriginLabel = centerLabel ?? "Điểm xuất phát";
   const centerIsSavedPlace =
-    !!searchCenter &&
-    !!commute.place &&
-    distanceMeters(searchCenter, commute.place) < 30;
+    !!searchCenter && !!commute.place && distanceMeters(searchCenter, commute.place) < 30;
   useEffect(() => {
     if (!isoQ.isError || !travel) return;
     toast.error("Không tính được vùng đi lại lúc này — đang dùng lại bán kính.");
@@ -551,8 +549,8 @@ function PublicListingsPage() {
       label: travelArea
         ? `≤ ${travel!.minutes} phút ${profileLabel(travel!.profile)} tới ${travelOriginLabel.toLowerCase()}`
         : usingMyLocation
-        ? `Quanh tôi ${myLocationRadiusKm} km`
-        : `Trong bán kính ${Math.round((radiusMeters ?? DEFAULT_RADIUS_METERS) / 1000)} km`,
+          ? `Quanh tôi ${myLocationRadiusKm} km`
+          : `Trong bán kính ${Math.round((radiusMeters ?? DEFAULT_RADIUS_METERS) / 1000)} km`,
       clear: clearMyLocationSearch,
     });
 
@@ -605,11 +603,7 @@ function PublicListingsPage() {
     appliedFilters.length === 0 ? null : (
       <div className="flex flex-wrap items-center gap-1.5">
         {appliedFilters.map((f) => (
-          <Badge
-            key={f.key}
-            variant="secondary"
-            className="gap-1 pr-1 font-normal max-w-[220px]"
-          >
+          <Badge key={f.key} variant="secondary" className="gap-1 pr-1 font-normal max-w-[220px]">
             <span className="truncate">{f.label}</span>
             <button
               type="button"
@@ -646,37 +640,37 @@ function PublicListingsPage() {
         {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
       </p>
       <div className="flex items-center gap-1">
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-8 px-2 text-sm"
-        onClick={() => setDemandSheetOpen(true)}
-      >
-        <Target className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-        Tìm theo nhu cầu
-      </Button>
-      <SavedSearchesPopover
-        currentFilters={savedSearchFilters}
-        suggestedName={suggestedSearchName}
-        hasAnyFilter={appliedFilters.length > 0}
-        onApply={applySavedSearch}
-      />
-      <Select
-        value={String(sortBy)}
-        onValueChange={(v) => setSortBy(Number(v) as ListingSortCode)}
-      >
-        <SelectTrigger className="h-8 w-auto gap-1.5 border-none shadow-none px-2 text-sm">
-          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent align="end">
-          {sortOptions.map((code) => (
-            <SelectItem key={code} value={String(code)}>
-              {LISTING_SORT[code]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2 text-sm"
+          onClick={() => setDemandSheetOpen(true)}
+        >
+          <Target className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+          Tìm theo nhu cầu
+        </Button>
+        <SavedSearchesPopover
+          currentFilters={savedSearchFilters}
+          suggestedName={suggestedSearchName}
+          hasAnyFilter={appliedFilters.length > 0}
+          onApply={applySavedSearch}
+        />
+        <Select
+          value={String(sortBy)}
+          onValueChange={(v) => setSortBy(Number(v) as ListingSortCode)}
+        >
+          <SelectTrigger className="h-8 w-auto gap-1.5 border-none shadow-none px-2 text-sm">
+            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="end">
+            {sortOptions.map((code) => (
+              <SelectItem key={code} value={String(code)}>
+                {LISTING_SORT[code]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -697,28 +691,28 @@ function PublicListingsPage() {
      cỡ và cùng sức nặng với nút "Bộ lọc" và ô tìm kiếm, nên không có gì cho biết đây là
      lựa chọn cấp cao hơn. */
   const typeToggle = (
-      <div className="inline-flex rounded-md border bg-muted/60 p-0.5">
-        <Button
-          size="sm"
-          variant={type === 1 ? "default" : "ghost"}
-          className="h-9 rounded-sm px-4"
-          onClick={() => {
-            setType(1);
-          }}
-        >
-          Bán
-        </Button>
-        <Button
-          size="sm"
-          variant={type === 2 ? "default" : "ghost"}
-          className="h-9 rounded-sm px-4"
-          onClick={() => {
-            setType(2);
-          }}
-        >
-          Cho thuê
-        </Button>
-      </div>
+    <div className="inline-flex rounded-md border bg-muted/60 p-0.5">
+      <Button
+        size="sm"
+        variant={type === 1 ? "default" : "ghost"}
+        className="h-9 rounded-sm px-4"
+        onClick={() => {
+          setType(1);
+        }}
+      >
+        Bán
+      </Button>
+      <Button
+        size="sm"
+        variant={type === 2 ? "default" : "ghost"}
+        className="h-9 rounded-sm px-4"
+        onClick={() => {
+          setType(2);
+        }}
+      >
+        Cho thuê
+      </Button>
+    </div>
   );
 
   const secondaryFilters = (
@@ -851,18 +845,18 @@ function PublicListingsPage() {
   // sang 4 cột ngay trước mắt người dùng.
   const listContent = query.isLoading ? (
     <div className="@container">
-    <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <Card key={i} className="overflow-hidden py-0 gap-0">
-          <Skeleton className="aspect-[4/3] w-full rounded-none" />
-          <div className="p-4 space-y-2">
-            <Skeleton className="h-5 w-2/3" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        </Card>
-      ))}
-    </div>
+      <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Card key={i} className="overflow-hidden py-0 gap-0">
+            <Skeleton className="aspect-[4/3] w-full rounded-none" />
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   ) : query.isError ? (
     <Card className="p-8 text-center text-sm text-destructive space-y-3">
@@ -881,7 +875,9 @@ function PublicListingsPage() {
     <Card className="p-8 text-center space-y-4">
       <Home className="h-10 w-10 mx-auto text-muted-foreground/40" />
       <div className="space-y-1">
-        <p className="font-medium">Không có tin nào khớp {appliedFilters.length > 0 ? "các điều kiện này" : "tìm kiếm này"}</p>
+        <p className="font-medium">
+          Không có tin nào khớp {appliedFilters.length > 0 ? "các điều kiện này" : "tìm kiếm này"}
+        </p>
         <p className="text-sm text-muted-foreground">
           {appliedFilters.length > 0
             ? "Gỡ bớt một điều kiện bên dưới để mở rộng kết quả."
@@ -893,13 +889,7 @@ function PublicListingsPage() {
         <>
           <div className="flex flex-wrap justify-center gap-2">
             {appliedFilters.map((f) => (
-              <Button
-                key={f.key}
-                size="sm"
-                variant="outline"
-                className="h-8"
-                onClick={f.clear}
-              >
+              <Button key={f.key} size="sm" variant="outline" className="h-8" onClick={f.clear}>
                 {f.label}
                 <X className="ml-1.5 h-3.5 w-3.5" />
               </Button>
@@ -924,26 +914,26 @@ function PublicListingsPage() {
           Trước đây cứng grid-cols-2 ở mọi bề rộng: kéo rộng ra thì thẻ phình to vô ích, thu
           hẹp lại thì hai thẻ chen nhau không đọc được. */}
       <div className="@container">
-      <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
-        {items.map((p) => (
-          <PropertyListCard
-            key={p.id}
-            property={p}
-            ref={(el) => {
-              cardRefs.current[p.id] = el;
-            }}
-            hovered={hoveredId === p.id}
-            highlighted={highlightedId === p.id}
-            saved={savedIds.has(p.id)}
-            onToggleSave={handleToggleSave}
-            onHover={handleCardHover}
-            onLeave={handleCardLeave}
-            compareSelected={compareHas(p.id)}
-            compareFull={compareItems.length >= compareMax && !compareHas(p.id)}
-            onToggleCompare={compareToggle}
-          />
-        ))}
-      </div>
+        <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
+          {items.map((p) => (
+            <PropertyListCard
+              key={p.id}
+              property={p}
+              ref={(el) => {
+                cardRefs.current[p.id] = el;
+              }}
+              hovered={hoveredId === p.id}
+              highlighted={highlightedId === p.id}
+              saved={savedIds.has(p.id)}
+              onToggleSave={handleToggleSave}
+              onHover={handleCardHover}
+              onLeave={handleCardLeave}
+              compareSelected={compareHas(p.id)}
+              compareFull={compareItems.length >= compareMax && !compareHas(p.id)}
+              onToggleCompare={compareToggle}
+            />
+          ))}
+        </div>
       </div>
       {/* Cot moc cuon vo han. Van giu nut bam duoi day: IntersectionObserver khong
           chay khi nguoi dung dieu huong bang ban phim hoac trinh duyet chan no. */}

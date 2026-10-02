@@ -1,5 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactElement } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -345,9 +353,7 @@ function CreateListingPage() {
               ) : (
                 <Circle className="h-4 w-4 text-muted-foreground/50" />
               )}
-              <span className={m.xong ? "text-foreground" : "text-muted-foreground"}>
-                {m.nhan}
-              </span>
+              <span className={m.xong ? "text-foreground" : "text-muted-foreground"}>{m.nhan}</span>
               {!m.batBuoc && <span className="text-xs text-muted-foreground">(tuỳ chọn)</span>}
               {i < tienDo.length - 1 && (
                 <span aria-hidden="true" className="ml-1 text-muted-foreground/40">
@@ -378,9 +384,7 @@ function CreateListingPage() {
             <p className="text-sm font-medium">
               {status === 6 ? "Tin cần chỉnh sửa trước khi đăng" : "Tin đã bị từ chối"}
             </p>
-            {moderationNote && (
-              <p className="text-sm text-muted-foreground">{moderationNote}</p>
-            )}
+            {moderationNote && <p className="text-sm text-muted-foreground">{moderationNote}</p>}
             {status === 6 && (
               <p className="text-sm text-muted-foreground">
                 Tin không bị xoá. Sửa xong bấm Gửi duyệt lại ở cuối trang.
@@ -404,7 +408,10 @@ function CreateListingPage() {
             </Tabs>
           </Field>
 
-          <Field label="Tiêu đề" hint="Ít nhất 10 ký tự. Nêu rõ loại hình, khu vực và điểm nổi bật.">
+          <Field
+            label="Tiêu đề"
+            hint="Ít nhất 10 ký tự. Nêu rõ loại hình, khu vực và điểm nổi bật."
+          >
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -419,7 +426,10 @@ function CreateListingPage() {
             </Field>
             {type === 2 && (
               <Field label="Chu kỳ thanh toán">
-                <Select value={String(cycle)} onValueChange={(v) => setCycle(Number(v) as PaymentCycleCode)}>
+                <Select
+                  value={String(cycle)}
+                  onValueChange={(v) => setCycle(Number(v) as PaymentCycleCode)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -477,72 +487,99 @@ function CreateListingPage() {
 
           {!canEditProperty && (
             <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
-              Địa chỉ này còn tin đăng khác nên phần dưới đang khoá — sửa ở đây sẽ đổi
-              luôn nội dung của những tin kia.
+              Địa chỉ này còn tin đăng khác nên phần dưới đang khoá — sửa ở đây sẽ đổi luôn nội dung
+              của những tin kia.
             </div>
           )}
 
           <fieldset disabled={!canEditProperty} className="space-y-4 disabled:opacity-60">
-          <VietnamAddressPicker
-            city={city}
-            district={district}
-            ward={ward}
-            onChange={(v) => {
-              setCity(v.city);
-              setDistrict(v.district);
-              setWard(v.ward);
-            }}
-          />
-
-          <Field label="Địa chỉ chi tiết" hint="Số nhà, tên đường. Không bắt buộc.">
-            <Input
-              value={addressDetail}
-              onChange={(e) => setAddressDetail(e.target.value)}
-              placeholder="Ví dụ: 45/12 Điện Biên Phủ"
+            <VietnamAddressPicker
+              city={city}
+              district={district}
+              ward={ward}
+              onChange={(v) => {
+                setCity(v.city);
+                setDistrict(v.district);
+                setWard(v.ward);
+              }}
             />
-          </Field>
 
-          {/* Không bọc trong Field: Field nối nhãn bằng id của phần tử con, mà bản đồ không
+            <Field label="Địa chỉ chi tiết" hint="Số nhà, tên đường. Không bắt buộc.">
+              <Input
+                value={addressDetail}
+                onChange={(e) => setAddressDetail(e.target.value)}
+                placeholder="Ví dụ: 45/12 Điện Biên Phủ"
+              />
+            </Field>
+
+            {/* Không bọc trong Field: Field nối nhãn bằng id của phần tử con, mà bản đồ không
               phải ô nhập nên nhãn trỏ vào đó là sai ngữ nghĩa. */}
-          <section id="muc-vi-tri" aria-labelledby="muc-vi-tri-nhan" className="scroll-mt-28 space-y-1.5">
-            <p id="muc-vi-tri-nhan" className="text-sm font-medium leading-none">
-              Vị trí trên bản đồ{" "}
-              <span className="font-normal text-muted-foreground">(nên có)</span>
-            </p>
-            <LocationPinField value={pin} onChange={setPin} disabled={!canEditProperty} />
-          </section>
+            <section
+              id="muc-vi-tri"
+              aria-labelledby="muc-vi-tri-nhan"
+              className="scroll-mt-28 space-y-1.5"
+            >
+              <p id="muc-vi-tri-nhan" className="text-sm font-medium leading-none">
+                Vị trí trên bản đồ{" "}
+                <span className="font-normal text-muted-foreground">(nên có)</span>
+              </p>
+              <LocationPinField value={pin} onChange={setPin} disabled={!canEditProperty} />
+            </section>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Loại hình">
-              <Select value={String(propertyType)} onValueChange={(v) => setPropertyType(Number(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {enumOptions(ASSET_TYPE).map((o) => (
-                    <SelectItem key={o.value} value={String(o.value)}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Diện tích (m²)">
-              <Input type="number" min={0} value={area} onChange={(e) => setArea(e.target.value)} />
-            </Field>
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Loại hình">
+                <Select
+                  value={String(propertyType)}
+                  onValueChange={(v) => setPropertyType(Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enumOptions(ASSET_TYPE).map((o) => (
+                      <SelectItem key={o.value} value={String(o.value)}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Diện tích (m²)">
+                <Input
+                  type="number"
+                  min={0}
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                />
+              </Field>
+            </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Phòng ngủ">
-              <Input type="number" min={0} value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} />
-            </Field>
-            <Field label="Phòng tắm">
-              <Input type="number" min={0} value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} />
-            </Field>
-            <Field label="Số tầng">
-              <Input type="number" min={0} value={floors} onChange={(e) => setFloors(e.target.value)} />
-            </Field>
-          </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Phòng ngủ">
+                <Input
+                  type="number"
+                  min={0}
+                  value={bedrooms}
+                  onChange={(e) => setBedrooms(e.target.value)}
+                />
+              </Field>
+              <Field label="Phòng tắm">
+                <Input
+                  type="number"
+                  min={0}
+                  value={bathrooms}
+                  onChange={(e) => setBathrooms(e.target.value)}
+                />
+              </Field>
+              <Field label="Số tầng">
+                <Input
+                  type="number"
+                  min={0}
+                  value={floors}
+                  onChange={(e) => setFloors(e.target.value)}
+                />
+              </Field>
+            </div>
           </fieldset>
         </CardContent>
       </Card>
@@ -578,7 +615,9 @@ function CreateListingPage() {
                 variant="outline"
                 disabled={!contentReady || busy}
                 onClick={() => saveDraft.mutate()}
-              >  {/* eslint-disable-line */}
+              >
+                {" "}
+                {/* eslint-disable-line */}
                 {saveDraft.isPending ? (
                   <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 ) : (
@@ -588,7 +627,11 @@ function CreateListingPage() {
               </Button>
               {!contentReady && (
                 <p className="text-xs text-muted-foreground">
-                  Còn thiếu: {thieuDeGuiDuyet.filter((t) => t !== "lưu nháp một lần" && t !== "ít nhất 1 ảnh").join(", ")}.
+                  Còn thiếu:{" "}
+                  {thieuDeGuiDuyet
+                    .filter((t) => t !== "lưu nháp một lần" && t !== "ít nhất 1 ảnh")
+                    .join(", ")}
+                  .
                 </p>
               )}
             </div>
@@ -609,7 +652,10 @@ function CreateListingPage() {
 
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {images.map((img) => (
-                  <div key={img.id} className="relative aspect-square rounded-md overflow-hidden border group">
+                  <div
+                    key={img.id}
+                    className="relative aspect-square rounded-md overflow-hidden border group"
+                  >
                     <img src={img.url} alt="" className="h-full w-full object-cover" />
                     <button
                       type="button"
