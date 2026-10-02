@@ -354,9 +354,9 @@ namespace kgs_api.Services
                     Bedrooms = request.Bedrooms,
                     Bathrooms = request.Bathrooms,
                     Floors = request.Floors,
-                    HouseDirection = request.HouseDirection?.Trim(),
-                    LegalStatus = request.LegalStatus?.Trim(),
-                    FurnitureState = request.FurnitureState?.Trim()
+                    HouseDirection = PropertyVocabulary.NormalizeDirection(request.HouseDirection),
+                    LegalStatus = PropertyVocabulary.NormalizeLegal(request.LegalStatus),
+                    FurnitureState = PropertyVocabulary.NormalizeFurniture(request.FurnitureState)
                 };
                 await _assets.AddAsync(asset, ct);
             }
@@ -370,9 +370,9 @@ namespace kgs_api.Services
                 asset.Bedrooms ??= request.Bedrooms;
                 asset.Bathrooms ??= request.Bathrooms;
                 asset.Floors ??= request.Floors;
-                asset.HouseDirection ??= request.HouseDirection?.Trim();
-                asset.LegalStatus ??= request.LegalStatus?.Trim();
-                asset.FurnitureState ??= request.FurnitureState?.Trim();
+                asset.HouseDirection ??= PropertyVocabulary.NormalizeDirection(request.HouseDirection);
+                asset.LegalStatus ??= PropertyVocabulary.NormalizeLegal(request.LegalStatus);
+                asset.FurnitureState ??= PropertyVocabulary.NormalizeFurniture(request.FurnitureState);
 
                 if (asset.Location is null && request.Latitude is not null && request.Longitude is not null)
                     asset.Location = _geometryFactory.CreatePoint(
@@ -668,9 +668,9 @@ namespace kgs_api.Services
             if (request.Bedrooms is not null) asset.Bedrooms = request.Bedrooms;
             if (request.Bathrooms is not null) asset.Bathrooms = request.Bathrooms;
             if (request.Floors is not null) asset.Floors = request.Floors;
-            if (request.HouseDirection is not null) asset.HouseDirection = request.HouseDirection.Trim();
-            if (request.LegalStatus is not null) asset.LegalStatus = request.LegalStatus.Trim();
-            if (request.FurnitureState is not null) asset.FurnitureState = request.FurnitureState.Trim();
+            if (request.HouseDirection is not null) asset.HouseDirection = PropertyVocabulary.NormalizeDirection(request.HouseDirection);
+            if (request.LegalStatus is not null) asset.LegalStatus = PropertyVocabulary.NormalizeLegal(request.LegalStatus);
+            if (request.FurnitureState is not null) asset.FurnitureState = PropertyVocabulary.NormalizeFurniture(request.FurnitureState);
 
             // Toạ độ do chính người đăng bấm/kéo ghim trên bản đồ — không lấy từ kết quả
             // geocoding (loại geocoding miễn phí của Mapbox không cho lưu kết quả).
@@ -897,6 +897,9 @@ namespace kgs_api.Services
             AssetDomainType.Villa => "Biệt thự",
             AssetDomainType.Shophouse => "Nhà mặt phố",
             AssetDomainType.Office => "Văn phòng",
+            AssetDomainType.Room => "Phòng trọ",
+            AssetDomainType.CommercialSpace => "Mặt bằng kinh doanh",
+            AssetDomainType.Warehouse => "Kho, nhà xưởng",
             _ => "Khác"
         };
 
