@@ -16,6 +16,16 @@ import {
   type TravelMode,
 } from "@/lib/mapboxNav";
 import { TravelTimeControl } from "@/components/listings/TravelTimeControl";
+import { PropertyFiltersPanel } from "@/components/public/PropertyFiltersPanel";
+import {
+  EMPTY_PROPERTY_FILTERS,
+  countPropertyFilters,
+  fromCriteria,
+  propertyChips,
+  toSearchParams,
+  visibleFields,
+  type PropertyFilterState,
+} from "@/lib/propertyFilters";
 import { TravelTimeToOrigin } from "@/components/listings/TravelTimeToOrigin";
 import { useCommutePlace } from "@/hooks/useCommutePlace";
 import { distanceMeters } from "@/lib/mapEngine";
@@ -99,6 +109,8 @@ function PublicListingsPage() {
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [bedroomsMin, setBedroomsMin] = useState<number | null>(null);
+  // Đặc điểm bất động sản (loại hình, diện tích, pháp lý, hướng...) — mọi loại hình, mua lẫn thuê.
+  const [prop, setProp] = useState<PropertyFilterState>(EMPTY_PROPERTY_FILTERS);
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [sortBy, setSortBy] = useState<ListingSortCode>(1);
@@ -329,7 +341,6 @@ function PublicListingsPage() {
     district: district.trim(),
     priceMin: priceMin ?? "",
     priceMax: priceMax ?? "",
-    bedroomsMin: bedroomsMin ?? "",
     keyword,
     latitude: searchCenter?.lat ?? "",
     longitude: searchCenter?.lng ?? "",
@@ -341,6 +352,8 @@ function PublicListingsPage() {
         ? radiusMeters
         : "",
     within: travelArea ? encodeRing(travelArea.ring) : "",
+    ...toSearchParams(prop),
+    bedroomsMin: visibleFields(prop, type).rooms ? (bedroomsMin ?? "") : "",
     sortBy,
     pageSize: 20,
   };
@@ -497,7 +510,37 @@ function PublicListingsPage() {
     document.addEventListener("mouseup", onMouseUp);
   };
 
-  const activeFilterCount = (city.trim() ? 1 : 0) + (district.trim() ? 1 : 0);
+  const activeFilterCount =
+    (city.trim() ? 1 : 0) +
+    (district.trim() ? 1 : 0) +
+    (priceMin != null || priceMax != null ? 1 : 0) +
+    (bedroomsMin != null ? 1 : 0) +
+    countPropertyFilters(prop);
+
+  // Đổi mua/thuê hay loại hình làm một trường không còn áp dụng (chọn "Đất" thì không còn
+  // phòng tắm; sang "Cho thuê" thì không lọc sổ hồng) — gỡ luôn điều kiện của trường đó.
+  // Để lại thì nó vẫn âm thầm lọc dù người dùng không còn nhìn thấy nó ở đâu.
+  useEffect(() => {
+    const show = visibleFields(prop, type);
+    const next: PropertyFilterState = {
+      ...prop,
+      bathroomsMin: show.rooms ? prop.bathroomsMin : null,
+      floorsMin: show.floors ? prop.floorsMin : null,
+      frontageMin: show.frontage ? prop.frontageMin : null,
+      directions: show.direction ? prop.directions : [],
+      legal: show.legal ? prop.legal : [],
+      furniture: show.furniture ? prop.furniture : [],
+    };
+    const changed =
+      next.bathroomsMin !== prop.bathroomsMin ||
+      next.floorsMin !== prop.floorsMin ||
+      next.frontageMin !== prop.frontageMin ||
+      next.directions.length !== prop.directions.length ||
+      next.legal.length !== prop.legal.length ||
+      next.furniture.length !== prop.furniture.length;
+    if (changed) setProp(next);
+    if (!show.rooms && bedroomsMin != null) setBedroomsMin(null);
+  }, [prop, type, bedroomsMin]);
 
   // ---- Chip cho cac bo loc ĐANG ap dung ----
   //
@@ -543,6 +586,7 @@ function PublicListingsPage() {
       label: `Từ ${bedroomsMin} phòng ngủ`,
       clear: () => setBedroomsMin(null),
     });
+  appliedFilters.push(...propertyChips(prop, setProp));
   if (searchCenter)
     appliedFilters.push({
       key: "area",
@@ -568,6 +612,7 @@ function PublicListingsPage() {
     setBedroomsMin(c.bedroomsMin ?? null);
     setKeywordInput(c.keyword ?? "");
     setKeyword(c.keyword ?? "");
+    setProp(fromCriteria(c));
     setTravel(null);
     setTravelIntent(false);
     setCenterLabel(null);
@@ -747,33 +792,35 @@ function PublicListingsPage() {
         </PopoverContent>
       </Popover>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button size="sm" variant="outline" className="h-8">
-            Phòng ngủ
-            {bedroomsMin != null && <span className="ml-1 text-primary">•</span>}
-            <ChevronDown className="h-3.5 w-3.5 ml-1" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-56">
-          <Label className="text-xs">Tối thiểu</Label>
-          <div className="flex gap-1.5 mt-1.5">
-            {[null, 1, 2, 3, 4].map((n) => (
-              <Button
-                key={String(n)}
-                size="sm"
-                variant={bedroomsMin === n ? "default" : "outline"}
-                className="h-8 flex-1 px-0"
-                onClick={() => {
-                  setBedroomsMin(n);
-                }}
-              >
-                {n == null ? "Tất cả" : `${n}+`}
-              </Button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
+      {visibleFields(prop, type).rooms && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8">
+              Phòng ngủ
+              {bedroomsMin != null && <span className="ml-1 text-primary">•</span>}
+              <ChevronDown className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56">
+            <Label className="text-xs">Tối thiểu</Label>
+            <div className="flex gap-1.5 mt-1.5">
+              {[null, 1, 2, 3, 4].map((n) => (
+                <Button
+                  key={String(n)}
+                  size="sm"
+                  variant={bedroomsMin === n ? "default" : "outline"}
+                  className="h-8 flex-1 px-0"
+                  onClick={() => {
+                    setBedroomsMin(n);
+                  }}
+                >
+                  {n == null ? "Tất cả" : `${n}+`}
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
 
       {/* Popover "Thêm bộ lọc" đã gỡ.
           Nó chỉ chứa hai ô GÕ TAY cho thành phố và quận/huyện — người dùng phải gõ đúng
@@ -1113,11 +1160,18 @@ function PublicListingsPage() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-auto max-w-[520px]">
+            <PopoverContent
+              align="end"
+              className="w-[min(460px,calc(100vw-2rem))] max-h-[min(640px,75vh)] overflow-y-auto"
+            >
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Lọc thêm
               </p>
               <div className="flex flex-wrap gap-2">{secondaryFilters}</div>
+              <p className="mb-2 mt-4 border-t pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Đặc điểm bất động sản
+              </p>
+              <PropertyFiltersPanel value={prop} onChange={setProp} mode={type as 1 | 2} />
             </PopoverContent>
           </Popover>
         </div>
@@ -1167,6 +1221,10 @@ function PublicListingsPage() {
                 <div className="p-4 flex flex-col gap-3">
                   {keywordSearchBox()}
                   <div className="flex flex-wrap gap-2">{filterChips}</div>
+                  <p className="border-t pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Đặc điểm bất động sản
+                  </p>
+                  <PropertyFiltersPanel value={prop} onChange={setProp} mode={type as 1 | 2} />
                 </div>
               </SheetContent>
             </Sheet>

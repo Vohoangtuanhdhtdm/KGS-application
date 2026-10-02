@@ -9,6 +9,13 @@ export function toQuery(params: Record<string, unknown>): string {
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v === null || v === undefined || v === "") continue;
+    // Mảng gửi dạng lặp tham số (a=1&a=2) — dạng ASP.NET đọc ra List<>. String([1,2]) cho
+    // ra "1,2", phía máy chủ coi đó là MỘT giá trị lạ và bộ lọc im lặng không khớp gì.
+    if (Array.isArray(v)) {
+      for (const item of v)
+        if (item !== null && item !== undefined && item !== "") sp.append(k, String(item));
+      continue;
+    }
     sp.set(k, String(v));
   }
   const s = sp.toString();

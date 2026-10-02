@@ -25,6 +25,15 @@ export interface SavedSearchCriteria {
   sharedWithOwner?: boolean | null;
   availableBy?: string | null;
   amenities?: string[] | null;
+  propertyTypes?: number[] | null;
+  areaMin?: number | null;
+  areaMax?: number | null;
+  bathroomsMin?: number | null;
+  floorsMin?: number | null;
+  frontageMin?: number | null;
+  directions?: string[] | null;
+  legalStatuses?: string[] | null;
+  furnitureStates?: string[] | null;
 }
 
 export interface SavedSearchDto {
@@ -43,8 +52,7 @@ export interface SavedSearchDto {
 
 /** Đổi bộ lọc của trang tìm kiếm thành tiêu chí lưu được: `""` thành `null`. */
 export function toCriteria(f: PublicListingFilters): SavedSearchCriteria {
-  const val = <T>(v: T | "" | undefined): T | null =>
-    v === "" || v === undefined ? null : v;
+  const val = <T>(v: T | "" | undefined): T | null => (v === "" || v === undefined ? null : v);
 
   return {
     type: val(f.type),
@@ -63,6 +71,15 @@ export function toCriteria(f: PublicListingFilters): SavedSearchCriteria {
     sharedWithOwner: val(f.sharedWithOwner),
     availableBy: f.availableBy?.trim() ? f.availableBy.trim() : null,
     amenities: f.amenities?.length ? f.amenities : null,
+    propertyTypes: f.propertyTypes?.length ? f.propertyTypes : null,
+    areaMin: val(f.areaMin),
+    areaMax: val(f.areaMax),
+    bathroomsMin: val(f.bathroomsMin),
+    floorsMin: val(f.floorsMin),
+    frontageMin: val(f.frontageMin),
+    directions: f.directions?.length ? f.directions : null,
+    legalStatuses: f.legalStatuses?.length ? f.legalStatuses : null,
+    furnitureStates: f.furnitureStates?.length ? f.furnitureStates : null,
   };
 }
 

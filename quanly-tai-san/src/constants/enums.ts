@@ -7,9 +7,62 @@ export const ASSET_TYPE = {
   4: "Biệt thự",
   5: "Nhà mặt phố",
   6: "Văn phòng",
+  7: "Phòng trọ",
+  8: "Mặt bằng kinh doanh",
+  9: "Kho, nhà xưởng",
   99: "Khác",
 } as const;
 export type AssetTypeCode = keyof typeof ASSET_TYPE;
+
+/**
+ * Loại hình nào có ý nghĩa với trường nào — để biểu mẫu và bộ lọc chỉ hỏi những gì đáng hỏi.
+ * Đất không có phòng ngủ; phòng trọ không có mặt tiền hay sổ hồng riêng; kho xưởng không có
+ * nội thất. Hỏi thừa làm biểu mẫu dài vô ích, lọc thừa thì loại oan những tin bỏ trống trường
+ * vốn không áp dụng cho chúng.
+ */
+export const TYPE_FIELDS: Record<
+  AssetTypeCode,
+  {
+    rooms: boolean;
+    floors: boolean;
+    frontage: boolean;
+    direction: boolean;
+    legal: boolean;
+    furniture: boolean;
+  }
+> = {
+  1: { rooms: true, floors: true, frontage: true, direction: true, legal: true, furniture: true },
+  2: { rooms: true, floors: false, frontage: false, direction: true, legal: true, furniture: true },
+  3: {
+    rooms: false,
+    floors: false,
+    frontage: true,
+    direction: true,
+    legal: true,
+    furniture: false,
+  },
+  4: { rooms: true, floors: true, frontage: true, direction: true, legal: true, furniture: true },
+  5: { rooms: true, floors: true, frontage: true, direction: true, legal: true, furniture: true },
+  6: { rooms: false, floors: true, frontage: false, direction: true, legal: true, furniture: true },
+  7: {
+    rooms: false,
+    floors: false,
+    frontage: false,
+    direction: false,
+    legal: false,
+    furniture: true,
+  },
+  8: { rooms: false, floors: true, frontage: true, direction: true, legal: true, furniture: false },
+  9: {
+    rooms: false,
+    floors: false,
+    frontage: true,
+    direction: false,
+    legal: true,
+    furniture: false,
+  },
+  99: { rooms: true, floors: true, frontage: true, direction: true, legal: true, furniture: true },
+};
 
 export const OWNERSHIP_TYPE = { 1: "Sở hữu", 2: "Đi thuê" } as const;
 export type OwnershipTypeCode = keyof typeof OWNERSHIP_TYPE;
@@ -235,6 +288,7 @@ export const HOUSE_DIRECTIONS = [
 export const LEGAL_STATUS_OPTIONS = [
   "Sổ hồng riêng",
   "Sổ hồng chung",
+  "Sổ đỏ",
   "Đang chờ sổ",
   "Hợp đồng mua bán",
   "Khác",

@@ -20,6 +20,11 @@ import {
 import { getErrorMessage } from "@/lib/api/errors";
 import {
   ASSET_TYPE,
+  FURNITURE_STATE_OPTIONS,
+  HOUSE_DIRECTIONS,
+  LEGAL_STATUS_OPTIONS,
+  TYPE_FIELDS,
+  type AssetTypeCode,
   MODERATION_ACTION,
   MODERATION_REASON,
   PAYMENT_CYCLE,
@@ -93,6 +98,11 @@ function CreateListingPage() {
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [floors, setFloors] = useState("");
+  // Đặc điểm theo loại hình — để người tìm lọc được theo mặt tiền, hướng, pháp lý, nội thất.
+  const [frontage, setFrontage] = useState("");
+  const [houseDirection, setHouseDirection] = useState("");
+  const [legalStatus, setLegalStatus] = useState("");
+  const [furnitureState, setFurnitureState] = useState("");
   const [pin, setPin] = useState<LatLngValue | null>(null);
 
   // Bước 3 — điều kiện thuê
@@ -139,6 +149,10 @@ function CreateListingPage() {
     setBedrooms(d.bedrooms?.toString() ?? "");
     setBathrooms(d.bathrooms?.toString() ?? "");
     setFloors(d.floors?.toString() ?? "");
+    setFrontage(d.frontage?.toString() ?? "");
+    setHouseDirection(d.houseDirection ?? "");
+    setLegalStatus(d.legalStatus ?? "");
+    setFurnitureState(d.furnitureState ?? "");
     if (d.latitude != null && d.longitude != null) setPin({ lat: d.latitude, lng: d.longitude });
     setTerms(d.terms);
     setAmenities(d.amenities);
@@ -149,6 +163,14 @@ function CreateListingPage() {
   }, [existingQ.data]);
 
   const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
+
+  /* Trường nào có nghĩa với loại hình đang chọn. Đất không có phòng ngủ, phòng trọ không có
+     mặt tiền hay sổ riêng. Trường bị ẩn thì KHÔNG gửi lên — giá trị cũ còn sót trong state
+     (chọn nhà phố, gõ mặt tiền, rồi đổi sang phòng trọ) không được lọt vào tin. Pháp lý chỉ
+     hỏi với tin BÁN: người thuê gần như không bao giờ lọc theo sổ hồng. */
+  const fields = TYPE_FIELDS[(propertyType in TYPE_FIELDS ? propertyType : 99) as AssetTypeCode];
+  const showLegal = fields.legal && type === 1;
+  const shown = <T,>(on: boolean, v: T): T | null => (on ? v : null);
 
   const buildBody = (): CreateListingDirectInput => ({
     type,
@@ -162,9 +184,13 @@ function CreateListingPage() {
     addressDetail: addressDetail.trim() || null,
     propertyType,
     area: num(area),
-    bedrooms: num(bedrooms),
-    bathrooms: num(bathrooms),
-    floors: num(floors),
+    bedrooms: shown(fields.rooms, num(bedrooms)),
+    bathrooms: shown(fields.rooms, num(bathrooms)),
+    floors: shown(fields.floors, num(floors)),
+    frontage: shown(fields.frontage, num(frontage)),
+    houseDirection: shown(fields.direction, houseDirection || null),
+    legalStatus: shown(showLegal, legalStatus || null),
+    furnitureState: shown(fields.furniture, furnitureState || null),
     latitude: pin?.lat ?? null,
     longitude: pin?.lng ?? null,
     terms,
@@ -195,6 +221,10 @@ function CreateListingPage() {
                 bedrooms: b.bedrooms,
                 bathrooms: b.bathrooms,
                 floors: b.floors,
+                frontage: b.frontage,
+                houseDirection: b.houseDirection,
+                legalStatus: b.legalStatus,
+                furnitureState: b.furnitureState,
                 // Chưa ghim thì không gửi: null ở đây nghĩa là "giữ nguyên", không phải "xoá".
                 ...(pin ? { latitude: pin.lat, longitude: pin.lng } : {}),
               }
@@ -554,32 +584,83 @@ function CreateListingPage() {
               </Field>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Phòng ngủ">
-                <Input
-                  type="number"
-                  min={0}
-                  value={bedrooms}
-                  onChange={(e) => setBedrooms(e.target.value)}
-                />
-              </Field>
-              <Field label="Phòng tắm">
-                <Input
-                  type="number"
-                  min={0}
-                  value={bathrooms}
-                  onChange={(e) => setBathrooms(e.target.value)}
-                />
-              </Field>
-              <Field label="Số tầng">
-                <Input
-                  type="number"
-                  min={0}
-                  value={floors}
-                  onChange={(e) => setFloors(e.target.value)}
-                />
-              </Field>
-            </div>
+            {(fields.rooms || fields.floors || fields.frontage) && (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {fields.rooms && (
+                  <Field label="Phòng ngủ">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={bedrooms}
+                      onChange={(e) => setBedrooms(e.target.value)}
+                    />
+                  </Field>
+                )}
+                {fields.rooms && (
+                  <Field label="Phòng tắm">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={bathrooms}
+                      onChange={(e) => setBathrooms(e.target.value)}
+                    />
+                  </Field>
+                )}
+                {fields.floors && (
+                  <Field label="Số tầng">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={floors}
+                      onChange={(e) => setFloors(e.target.value)}
+                    />
+                  </Field>
+                )}
+                {fields.frontage && (
+                  <Field label="Mặt tiền (m)">
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      value={frontage}
+                      onChange={(e) => setFrontage(e.target.value)}
+                    />
+                  </Field>
+                )}
+              </div>
+            )}
+
+            {(fields.direction || showLegal || fields.furniture) && (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {fields.direction && (
+                  <Field label="Hướng">
+                    <OptionSelect
+                      value={houseDirection}
+                      onChange={setHouseDirection}
+                      options={HOUSE_DIRECTIONS}
+                    />
+                  </Field>
+                )}
+                {showLegal && (
+                  <Field label="Pháp lý">
+                    <OptionSelect
+                      value={legalStatus}
+                      onChange={setLegalStatus}
+                      options={LEGAL_STATUS_OPTIONS.filter((x) => x !== "Khác")}
+                    />
+                  </Field>
+                )}
+                {fields.furniture && (
+                  <Field label="Nội thất">
+                    <OptionSelect
+                      value={furnitureState}
+                      onChange={setFurnitureState}
+                      options={FURNITURE_STATE_OPTIONS.filter((x) => x !== "Khác")}
+                    />
+                  </Field>
+                )}
+              </div>
+            )}
           </fieldset>
         </CardContent>
       </Card>
@@ -836,5 +917,36 @@ function LichSuKiemDuyet({ listingId }: { listingId: string }) {
         ))}
       </ol>
     </details>
+  );
+}
+
+const NONE = "__none";
+
+/** Chọn một giá trị trong bộ chuẩn (khớp PropertyVocabulary phía máy chủ), hoặc bỏ trống. */
+function OptionSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+}) {
+  // Giá trị cũ ngoài bộ chuẩn (nhập tay từ trước) vẫn phải hiện ra, không được biến mất im lặng.
+  const all = value && !options.includes(value) ? [...options, value] : options;
+  return (
+    <Select value={value || NONE} onValueChange={(v) => onChange(v === NONE ? "" : v)}>
+      <SelectTrigger>
+        <SelectValue placeholder="Chưa chọn" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NONE}>Chưa chọn</SelectItem>
+        {all.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -287,6 +287,16 @@ export interface PublicListingFilters {
   radiusMeters?: number | "";
   /** Vùng đi lại (Isochrone) "lng,lat;lng,lat;..." — gửi kèm vòng tròn bao ngoài ở trên. */
   within?: string;
+  // Đặc điểm bất động sản — mọi loại hình, cả bán lẫn thuê
+  propertyTypes?: number[];
+  areaMin?: number | "";
+  areaMax?: number | "";
+  bathroomsMin?: number | "";
+  floorsMin?: number | "";
+  frontageMin?: number | "";
+  directions?: string[];
+  legalStatuses?: string[];
+  furnitureStates?: string[];
   // Bộ lọc điều kiện thuê — cũng là các hard filter AI Agent sẽ sinh ra
   totalCostMax?: number | "";
   petsAllowed?: boolean | "";
@@ -408,6 +418,5 @@ export const listingsApi = {
     api<OwnerListingDto>(`/listings/${listingId}/bump`, { method: "POST" }),
   reopen: (listingId: string) =>
     api<OwnerListingDto>(`/listings/${listingId}/reopen`, { method: "POST" }),
-  deleteDraft: (listingId: string) =>
-    api<void>(`/listings/${listingId}`, { method: "DELETE" }),
+  deleteDraft: (listingId: string) => api<void>(`/listings/${listingId}`, { method: "DELETE" }),
 };
