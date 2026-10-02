@@ -12,6 +12,7 @@ namespace kgs_api.Interfaces
 
         /// <summary>Bật/tắt báo tin mới cho một bộ lọc.</summary>
         Task<SavedSearchDto> SetNotifyAsync(Guid id, bool enabled, CancellationToken ct = default);
+        Task<SavedSearchDto> SetDiscoverableAsync(Guid id, SetDiscoverableRequest request, CancellationToken ct = default);
 
         /// <summary>Đánh dấu đã xem — đưa mốc "tin mới" về hiện tại, huy hiệu về 0.</summary>
         Task MarkSeenAsync(Guid id, CancellationToken ct = default);

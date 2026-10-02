@@ -40,6 +40,12 @@ namespace kgs_api.Controllers
             Guid id, [FromQuery] bool enabled, CancellationToken ct)
             => Ok(await _service.SetNotifyAsync(id, enabled, ct));
 
+        /// <summary>Bật/tắt cho chủ tin phù hợp thấy nhu cầu này (ẩn danh) và mời xem nhà.</summary>
+        [HttpPatch("{id:guid}/discoverable")]
+        public async Task<ActionResult<SavedSearchDto>> SetDiscoverable(
+            Guid id, [FromBody] SetDiscoverableRequest request, CancellationToken ct)
+            => Ok(await _service.SetDiscoverableAsync(id, request, ct));
+
         /// <summary>Đánh dấu đã xem hết tin mới của bộ lọc này — huy hiệu về 0.</summary>
         [HttpPost("{id:guid}/seen")]
         public async Task<IActionResult> MarkSeen(Guid id, CancellationToken ct)

@@ -92,6 +92,18 @@ namespace kgs_api.Services
             return await ToDtoAsync(entity, ct);
         }
 
+        public async Task<SavedSearchDto> SetDiscoverableAsync(
+            Guid id, SetDiscoverableRequest request, CancellationToken ct = default)
+        {
+            var entity = await GetOwnedAsync(id, ct);
+            if (request.Enabled && !entity.DiscoverableByOwners)
+                entity.DiscoverableSince = DateTime.UtcNow;
+            entity.DiscoverableByOwners = request.Enabled;
+            entity.DemandNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
+            await _uow.SaveChangesAsync(ct);
+            return await ToDtoAsync(entity, ct);
+        }
+
         public async Task MarkSeenAsync(Guid id, CancellationToken ct = default)
         {
             var entity = await GetOwnedAsync(id, ct);
@@ -131,7 +143,8 @@ namespace kgs_api.Services
                 .CountAsync(ct);
 
             return new SavedSearchDto(
-                s.Id, s.Name, criteria, s.NotifyEnabled, s.CreatedAt, s.LastNotifiedAt, newCount);
+                s.Id, s.Name, criteria, s.NotifyEnabled, s.CreatedAt, s.LastNotifiedAt, newCount,
+                s.DiscoverableByOwners, s.DemandNote);
         }
 
         /// <summary>Dựng truy vấn "tin khớp bộ lọc này". Dùng chung với job đối chiếu để hai

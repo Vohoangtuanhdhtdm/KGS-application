@@ -18,5 +18,8 @@ namespace kgs_api.Dtos
         DateTime? LastNotifiedAt,
         /// <summary>Số tin khớp bộ lọc và được duyệt SAU lần đối chiếu gần nhất.
         /// Đây là con số hiện trên huy hiệu "3 tin mới" cạnh bộ lọc đã lưu.</summary>
-        int NewCount);
+        int NewCount,
+        /// <summary>Đang cho chủ tin phù hợp thấy nhu cầu này (ẩn danh).</summary>
+        bool DiscoverableByOwners,
+        string? DemandNote);
 }
