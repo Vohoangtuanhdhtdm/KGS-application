@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Calculator, Heart, Inbox, LineChart, LogIn, User, X } from "lucide-react";
+import { Calculator, Handshake, Heart, Inbox, LineChart, LogIn, User, X } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { WORKSPACES } from "@/lib/workspace";
 import { WS_CLASS, useAvailableWorkspaces } from "@/components/workspace/wsStyles";
@@ -60,6 +60,7 @@ export function AccountSheet({
       items: [
         { label: "Tin đã lưu", icon: Heart, path: "/da-luu" },
         { label: "Yêu cầu xem nhà đã gửi", icon: Inbox, path: "/yeu-cau", search: { tab: "sent" } },
+        { label: "Lời mời xem nhà", icon: Handshake, path: "/yeu-cau", search: { tab: "invites" } },
       ],
     });
   }

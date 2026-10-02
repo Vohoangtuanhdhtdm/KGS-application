@@ -9,6 +9,8 @@ import { getErrorMessage } from "@/lib/api/errors";
 import { api } from "@/lib/auth/api";
 import type { AuthUser } from "@/lib/auth/types";
 import { formatDate } from "@/lib/format";
+import { matchmakingApi } from "@/lib/api/matchmaking";
+import { ListingDemandsSheet } from "@/components/matchmaking/ListingDemandsSheet";
 import { LISTING_TYPE, LISTING_STATUS, LISTING_STATUS_CLASS } from "@/constants/enums";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +36,7 @@ import {
   Search,
   Trash2,
   XCircle,
+  Users,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -196,6 +199,44 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
 
   const visible = rows.slice(0, limit);
 
+  // ---- Ghép đôi hai chiều: ai đang tìm đúng loại nhà của tôi ----
+  // Đây là chiều ngược lại của sàn: thay vì chờ người tìm gõ cửa, chủ tin thấy những người
+  // đã cho phép được mời (ẩn danh) và chủ động mời họ xem nhà.
+  const demandQ = useQuery({
+    queryKey: ["demand-counts"],
+    queryFn: matchmakingApi.demandCounts,
+    enabled: all.some((l) => l.status === 2),
+    staleTime: 60_000,
+    retry: 1,
+  });
+  const demandCount = useMemo(
+    () => new Map((demandQ.data ?? []).map((d) => [d.listingId, d.count])),
+    [demandQ.data],
+  );
+  const demandTotal = useMemo(
+    () => (demandQ.data ?? []).reduce((n, d) => n + d.count, 0),
+    [demandQ.data],
+  );
+  const [demandListing, setDemandListing] = useState<OwnerListingDto | null>(null);
+
+  const demandBadge = (l: OwnerListingDto) => {
+    const n = demandCount.get(l.id) ?? 0;
+    if (l.status !== 2 || n === 0) return null;
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setDemandListing(l);
+        }}
+        className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/15"
+      >
+        <Users className="h-3.5 w-3.5" />
+        {n} người đang tìm nhà như tin này
+      </button>
+    );
+  };
+
   const openListing = (l: OwnerListingDto) => {
     // Chỉ tin đã duyệt mới có trang công khai; tin khác không điều hướng
     if (l.status === 2 && l.slug) navigate({ to: "/tin-dang/$slug", params: { slug: l.slug } });
@@ -232,6 +273,34 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
             <Link to="/profile">Thêm số điện thoại</Link>
           </Button>
         </div>
+      )}
+
+      {demandTotal > 0 && (
+        <div className="flex flex-wrap items-start gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-3">
+          <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-sm font-medium">
+              Có {demandTotal} lượt người đang tìm đúng loại nhà bạn đăng
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Họ đã cho phép chủ nhà phù hợp mời xem nhà. Bấm dòng “… người đang tìm” dưới tin
+              để xem nhu cầu (ẩn danh) và gửi lời mời.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {demandListing && (
+        <ListingDemandsSheet
+          listing={demandListing}
+          open={!!demandListing}
+          onOpenChange={(o) => {
+            if (!o) {
+              setDemandListing(null);
+              void demandQ.refetch();
+            }
+          }}
+        />
       )}
 
       {all.length > 0 && (
@@ -312,14 +381,17 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
                 {visible.map((l) => (
                   <li key={l.id} className="p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openListing(l)}
-                        disabled={l.status !== 2}
-                        className="min-w-0 flex-1 text-left text-sm font-medium leading-snug disabled:cursor-default"
-                      >
-                        {l.title}
-                      </button>
+                      <div className="min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => openListing(l)}
+                          disabled={l.status !== 2}
+                          className="block text-left text-sm font-medium leading-snug disabled:cursor-default"
+                        >
+                          {l.title}
+                        </button>
+                        {demandBadge(l)}
+                      </div>
                       <RowActions
                         listing={l}
                         busy={busy}
@@ -376,7 +448,10 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
                         className={approved ? "cursor-pointer" : "cursor-default"}
                         onClick={() => openListing(l)}
                       >
-                        <TableCell className="font-medium">{l.title}</TableCell>
+                        <TableCell className="font-medium">
+                          {l.title}
+                          {demandBadge(l) && <div>{demandBadge(l)}</div>}
+                        </TableCell>
                         <TableCell className="text-sm">{LISTING_TYPE[l.type]}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={LISTING_STATUS_CLASS[l.status]}>

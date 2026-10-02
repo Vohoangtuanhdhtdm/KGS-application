@@ -36,6 +36,9 @@ export interface SavedSearchDto {
   lastNotifiedAt: string | null;
   /** Số tin khớp bộ lọc được duyệt sau lần xem gần nhất — huy hiệu "3 tin mới". */
   newCount: number;
+  /** Đang cho chủ tin phù hợp thấy nhu cầu này (ẩn danh) và mời xem nhà. */
+  discoverableByOwners: boolean;
+  demandNote: string | null;
 }
 
 /** Đổi bộ lọc của trang tìm kiếm thành tiêu chí lưu được: `""` thành `null`. */
@@ -74,6 +77,12 @@ export const savedSearchesApi = {
 
   setNotify: (id: string, enabled: boolean) =>
     api<SavedSearchDto>(`/saved-searches/${id}/notify?enabled=${enabled}`, { method: "PATCH" }),
+
+  setDiscoverable: (id: string, enabled: boolean, note: string | null) =>
+    api<SavedSearchDto>(`/saved-searches/${id}/discoverable`, {
+      method: "PATCH",
+      body: { enabled, note },
+    }),
 
   markSeen: (id: string) => api<void>(`/saved-searches/${id}/seen`, { method: "POST" }),
 

@@ -17,14 +17,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarClock, Inbox, Mail, Phone, Send, UserPlus } from "lucide-react";
 import { ENABLE_ASSET_MANAGEMENT } from "@/lib/features";
+import { InvitationsList } from "@/components/matchmaking/InvitationsList";
 
 export const Route = createFileRoute("/yeu-cau/")({
   head: () => ({ meta: [{ title: "Yêu cầu xem nhà — KGS" }] }),
   // Tab nằm trên URL chứ không trong state của trang: người tìm nhà bấm "Yêu cầu đã gửi"
   // phải mở thẳng tab đó, và không gian hiện trên khung (Tìm nhà hay Chủ nhà) đọc từ chính
   // tham số này — xem resolveWorkspace() trong lib/workspace.ts.
-  validateSearch: (s: Record<string, unknown>): { tab?: "received" | "sent" } =>
-    s.tab === "sent" ? { tab: "sent" } : {},
+  validateSearch: (s: Record<string, unknown>): { tab?: "received" | "sent" | "invites" } =>
+    s.tab === "sent" || s.tab === "invites" ? { tab: s.tab } : {},
   component: InquiriesPage,
 });
 
@@ -45,12 +46,16 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
       <Tabs
         value={tab}
         onValueChange={(v) =>
-          navigate({ search: v === "sent" ? { tab: "sent" } : {}, replace: true })
+          navigate({
+            search: v === "sent" || v === "invites" ? { tab: v } : {},
+            replace: true,
+          })
         }
       >
         <TabsList>
           <TabsTrigger value="received">Nhận được</TabsTrigger>
           <TabsTrigger value="sent">Đã gửi</TabsTrigger>
+          <TabsTrigger value="invites">Lời mời xem nhà</TabsTrigger>
         </TabsList>
 
         <TabsContent value="received" className="pt-4">
@@ -58,6 +63,9 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
         </TabsContent>
         <TabsContent value="sent" className="pt-4">
           <SentList />
+        </TabsContent>
+        <TabsContent value="invites" className="pt-4">
+          <InvitationsList />
         </TabsContent>
       </Tabs>
     </div>
