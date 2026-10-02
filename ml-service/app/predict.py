@@ -23,8 +23,10 @@ from .normalize import norm_district, norm_province
 
 MODEL_DIR = Path(__file__).resolve().parents[1] / "models"
 
-# Nhân tử khoảng tin cậy, suy từ MdAPE đo được trên tập kiểm tra. Ba mức ứng với lượng
-# thông tin người dùng khai: khai càng đủ, mô hình càng ít phải đoán.
+# Độ rộng khoảng ĐẶT TAY ban đầu — chỉ còn là đường lui khi mô hình chưa được hiệu chỉnh.
+# Đo lại bằng training/calibrate_interval.py thì "khoảng 80%" này thực tế chỉ phủ 40–53% giá
+# thật trên tập kiểm tra: hẹp hơn thực tế gần một nửa. Khi avm.report.json có khoá
+# interval_calibration, độ rộng đã hiệu chỉnh (split conformal) được dùng thay.
 _SPREAD = {
     "cao": 0.12,
     "trung bình": 0.20,
@@ -50,6 +52,8 @@ class Model:
     def __init__(self, name: str = "avm") -> None:
         self.name = name
         self._loaded: Loaded | None = None
+        self._spreads = dict(_SPREAD)
+        self.calibrated = False
 
     # ---------- Nạp ----------
 
@@ -64,6 +68,12 @@ class Model:
 
         report_path = MODEL_DIR / f"{self.name}.report.json"
         report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else {}
+
+        # Độ rộng khoảng 80% đã hiệu chỉnh theo từng mức tin cậy. Thiếu mức nào thì mức đó
+        # dùng độ rộng đặt tay.
+        cal = report.get("interval_calibration", {}).get("buckets", {})
+        self._spreads = {k: cal.get(k, {}).get("spread_80", v) for k, v in _SPREAD.items()}
+        self.calibrated = bool(cal)
 
         stats_path = MODEL_DIR / f"{self.name}.area_stats.parquet"
         area_stats = pd.read_parquet(stats_path) if stats_path.exists() else None
@@ -104,7 +114,7 @@ class Model:
 
         area_ppm2, area_n = self._area_stats(payload)
         confidence, notes = self._confidence(payload, area_n)
-        spread = _SPREAD[confidence]
+        spread = self._spreads[confidence]
 
         # Khoảng tính trên thang log rồi đổi ngược, nên nó bất đối xứng quanh giá trị dự
         # đoán — đúng với thực tế: giá không thể âm, và phần đuôi trên dài hơn phần dưới.
@@ -115,6 +125,7 @@ class Model:
             "price": _round_vnd(price),
             "price_low": _round_vnd(low),
             "price_high": _round_vnd(high),
+            "interval_calibrated": self.calibrated,
             "price_per_m2": _round_vnd(price / max(payload["area"], 1)),
             "confidence": confidence,
             "area_median_price_per_m2": _round_vnd(area_ppm2) if area_ppm2 else None,
