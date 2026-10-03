@@ -28,6 +28,8 @@ export interface PropertyMapPoint {
   title?: string;
   thumbnailUrl?: string | null;
   rentPaymentCycle?: PaymentCycleCode | null;
+  /** Tên căn/phòng khi tin đăng riêng một căn — phân biệt các tin trong viên giá gộp. */
+  unitName?: string | null;
 }
 
 /** Toạ độ dùng được: có thật, hữu hạn, và nằm trong dải hợp lệ của Trái Đất. */
@@ -63,4 +65,43 @@ export function pillStyle(point: PropertyMapPoint, hovered: boolean): string {
 
 export function pillLabel(point: PropertyMapPoint): string {
   return formatCurrency(point.price, { compact: true });
+}
+
+/**
+ * Các tin chung một toạ độ — thường là các căn/phòng của CÙNG một toà nhà (tin đăng theo
+ * căn dùng vị trí của tài sản). Vẽ riêng từng viên thì chúng chồng khít lên nhau: chỉ thấy
+ * viên trên cùng, không bấm được viên dưới, và che luôn khối toà nhà 3D. Gộp thành một viên
+ * "11 tin · từ 5,4 triệu", bấm vào thì liệt kê đủ.
+ */
+export interface PillGroup {
+  key: string;
+  lat: number;
+  lng: number;
+  /** Rẻ nhất trước — viên giá ghi "từ" giá của tin đầu tiên. */
+  points: PropertyMapPoint[];
+}
+
+export function groupPoints(points: PropertyMapPoint[]): PillGroup[] {
+  const map = new Map<string, PillGroup>();
+  for (const p of points) {
+    if (!isValidLatLng(p.lat, p.lng)) continue;
+    // 6 chữ số thập phân ≈ 0,1 m: chỉ gộp những tin thật sự chung một điểm, không gộp hai
+    // căn nhà sát vách.
+    const key = `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+    const g = map.get(key);
+    if (g) g.points.push(p);
+    else map.set(key, { key, lat: p.lat, lng: p.lng, points: [p] });
+  }
+  for (const g of map.values()) g.points.sort((a, b) => a.price - b.price);
+  return [...map.values()];
+}
+
+export function groupLabel(g: PillGroup): string {
+  return g.points.length === 1
+    ? pillLabel(g.points[0])
+    : `${g.points.length} tin · từ ${pillLabel(g.points[0])}`;
+}
+
+export function groupHovered(g: PillGroup, hoveredId: string | null): boolean {
+  return hoveredId != null && g.points.some((p) => p.id === hoveredId);
 }
