@@ -19,6 +19,7 @@ namespace kgs_api.Data.Configurations
                 addr.Property(x => x.Detail).HasColumnName("AddressDetail").HasMaxLength(500);
             });
             b.Property(a => a.Location).HasColumnType("geography (point, 4326)");
+            b.Property(a => a.FootprintJson).HasColumnType("jsonb");
             b.HasIndex(a => a.Location).HasMethod("gist");
             b.Navigation(a => a.Address).IsRequired();
 

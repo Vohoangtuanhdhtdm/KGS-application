@@ -17,6 +17,7 @@ import { RelatedListings } from "@/components/public/RelatedListings";
 import { MarketTrendCard } from "@/components/public/MarketTrendCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ListingLocationMap } from "@/components/listings/ListingLocationMap";
+import { ListingBuilding3D } from "@/components/building/ListingBuilding3D";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -293,6 +294,10 @@ function PublicListingDetailPage() {
                   />
                 </CardContent>
               </Card>
+            )}
+
+            {p.latitude != null && p.longitude != null && (
+              <ListingBuilding3D slug={p.slug} lat={p.latitude} lng={p.longitude} />
             )}
 
             <MarketTrendCard city={p.city} district={p.district} />
