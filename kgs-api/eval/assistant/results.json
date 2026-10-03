@@ -1,0 +1,10518 @@
+{
+ "summaries": [
+  {
+   "model": "openai/gpt-oss-120b",
+   "n": 43,
+   "errors": 0,
+   "exact": 0.9069767441860465,
+   "precision": 0.9787234042553191,
+   "recall": 0.9787234042553191,
+   "prefs_recall": 1.0,
+   "anchor_acc": 1.0,
+   "unrec_acc": 1.0,
+   "p50_ms": 1304,
+   "p95_ms": 1587,
+   "avg_tokens": 1827.1860465116279
+  },
+  {
+   "model": "qwen/qwen3.8-27b",
+   "n": 43,
+   "errors": 0,
+   "exact": 0.8837209302325582,
+   "precision": 0.9689119170984456,
+   "recall": 0.9946808510638298,
+   "prefs_recall": 0.9,
+   "anchor_acc": 0.9767441860465116,
+   "unrec_acc": 1.0,
+   "p50_ms": 675,
+   "p95_ms": 791,
+   "avg_tokens": 1140.5813953488373
+  }
+ ],
+ "details": {
+  "openai/gpt-oss-120b": [
+   {
+    "id": 1,
+    "q": "Thuê phòng trọ ở Bình Thạnh dưới 4 triệu, có nuôi mèo, không chung chủ, yên tĩnh",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Bình Thạnh",
+      "got": "Quận Bình Thạnh",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": false,
+      "got": false,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 4000000,
+      "got": 4000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 1587,
+    "tokens": 1847,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 2,
+    "q": "Tìm phòng trọ quận Gò Vấp tầm 3 triệu, giờ giấc tự do",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Gò Vấp",
+      "got": "Quận Gò Vấp",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 2700000,
+      "got": null,
+      "ok": false
+     },
+     "priceMax": {
+      "exp": 3300000,
+      "got": 3000000,
+      "ok": false
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1403,
+    "tokens": 1852,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 3,
+    "q": "Cho thuê căn hộ 2 phòng ngủ Quận 7 dưới 15 triệu, đầy đủ nội thất",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 15000000,
+      "got": 15000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": [
+       "Đầy đủ"
+      ],
+      "got": [
+       "Đầy đủ"
+      ],
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1310,
+    "tokens": 1892,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 4,
+    "q": "Thuê chung cư 3PN 2WC ở Thủ Đức, tối đa 20tr",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "TP. Thủ Đức",
+      "got": "TP. Thủ Đức",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 20000000,
+      "got": 20000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1374,
+    "tokens": 1822,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 5,
+    "q": "Cần thuê văn phòng 50-80m2 quận 1",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 1",
+      "got": "Quận 1",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 50,
+      "got": 50,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": 80,
+      "got": 80,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       6
+      ],
+      "got": [
+       6
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1186,
+    "tokens": 1786,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 6,
+    "q": "Thuê mặt bằng kinh doanh mặt tiền 6m ở Quận 10",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 6,
+      "got": 6,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       8
+      ],
+      "got": [
+       8
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1261,
+    "tokens": 1793,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 7,
+    "q": "Thuê kho xưởng 300m2 trở lên",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 300,
+      "got": 300,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       9
+      ],
+      "got": [
+       9
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 986,
+    "tokens": 1816,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 8,
+    "q": "Phòng trọ ở Tân Bình, tổng chi phí dưới 5 triệu bao gồm phí dịch vụ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Tân Bình",
+      "got": "Quận Tân Bình",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": 5000000,
+      "got": 5000000,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1326,
+    "tokens": 1840,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 9,
+    "q": "Thuê phòng có máy lạnh, wifi, gần chợ, Phú Nhuận, tầm 4tr",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Phú Nhuận",
+      "got": "Quận Phú Nhuận",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 3600000,
+      "got": 3600000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 4400000,
+      "got": 4400000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     3,
+     3
+    ],
+    "anchor_ok": true,
+    "latency": 1403,
+    "tokens": 1873,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 10,
+    "q": "Thuê phòng bắt buộc phải có WC riêng và chỗ để xe, quận 3",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 3",
+      "got": "Quận 3",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": 1,
+      "ok": false
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": [
+       "parking",
+       "private_bathroom"
+      ],
+      "got": [
+       "parking",
+       "private_bathroom"
+      ],
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1313,
+    "tokens": 1883,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 11,
+    "q": "Mình nuôi chó, cần thuê nhà riêng nguyên căn ở Quận 4",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 4",
+      "got": "Quận 4",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1257,
+    "tokens": 1803,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 12,
+    "q": "Thuê phòng trọ Quận 10 dưới 6 triệu, phải dọn vào được trước ngày 2026-11-01",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": "2026-11-01",
+      "got": "2026-11-01",
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 6000000,
+      "got": 6000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1380,
+    "tokens": 1856,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 13,
+    "q": "Thuê nhà riêng 2 tầng ở Gò Vấp khoảng 10 triệu, hẻm xe hơi",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Gò Vấp",
+      "got": "Quận Gò Vấp",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 9000000,
+      "got": null,
+      "ok": false
+     },
+     "priceMax": {
+      "exp": 11000000,
+      "got": 10000000,
+      "ok": false
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 1402,
+    "tokens": 1849,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 14,
+    "q": "Cho thuê phòng trọ có gác lửng giá rẻ dưới 2tr5",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2500000,
+      "got": 2500000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 909,
+    "tokens": 1802,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 15,
+    "q": "Thuê căn hộ có ban công view sông ở Bình Thạnh",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Bình Thạnh",
+      "got": "Quận Bình Thạnh",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     2,
+     2
+    ],
+    "anchor_ok": true,
+    "latency": 1264,
+    "tokens": 1814,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 16,
+    "q": "Mua đất nền 80-120m2 có sổ hồng ở Thủ Đức, khoảng 2 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "TP. Thủ Đức",
+      "got": "TP. Thủ Đức",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 1800000000,
+      "got": 1800000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2200000000,
+      "got": 2200000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 80,
+      "got": 80,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": 120,
+      "got": 120,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1347,
+    "tokens": 1864,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 17,
+    "q": "mua nhà phố hướng Đông Nam mặt tiền 5m trở lên, 3 lầu, quận 3",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 3",
+      "got": "Quận 3",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 5,
+      "got": 5,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       5
+      ],
+      "got": [
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": [
+       "Đông Nam"
+      ],
+      "got": [
+       "Đông Nam"
+      ],
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1356,
+    "tokens": 1880,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 18,
+    "q": "Bán căn hộ 2PN dưới 3 tỷ quận 7 sổ hồng riêng",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3000000000,
+      "got": 3000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng riêng"
+      ],
+      "got": [
+       "Sổ hồng riêng"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1304,
+    "tokens": 1827,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 19,
+    "q": "Mua biệt thự trên 20 tỷ ở Thủ Đức",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "TP. Thủ Đức",
+      "got": "TP. Thủ Đức",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 20000000000,
+      "got": 20000000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       4
+      ],
+      "got": [
+       4
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1294,
+    "tokens": 1797,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 20,
+    "q": "Cần mua nhà riêng hướng Nam hoặc Đông, 4 phòng ngủ, Tân Bình, dưới 8 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Tân Bình",
+      "got": "Quận Tân Bình",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 8000000000,
+      "got": 8000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 4,
+      "got": 4,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": [
+       "Nam",
+       "Đông"
+      ],
+      "got": [
+       "Nam",
+       "Đông"
+      ],
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1360,
+    "tokens": 1923,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 21,
+    "q": "Mua nhà ở Phú Nhuận từ 5 đến 7 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Phú Nhuận",
+      "got": "Quận Phú Nhuận",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 5000000000,
+      "got": 5000000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 7000000000,
+      "got": 7000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1140,
+    "tokens": 1806,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 22,
+    "q": "Tìm mua văn phòng trên 100m2 quận 1",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 1",
+      "got": "Quận 1",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 100,
+      "got": 100,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       6
+      ],
+      "got": [
+       6
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1303,
+    "tokens": 1761,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 23,
+    "q": "Mua nhà có sổ đỏ, 3 tỷ 5 trở xuống, Gò Vấp",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Gò Vấp",
+      "got": "Quận Gò Vấp",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3500000000,
+      "got": 3500000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 998,
+    "tokens": 1820,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 24,
+    "q": "Mua đất mặt tiền 10m hướng Tây Bắc",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 10,
+      "got": 10,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": [
+       "Tây Bắc"
+      ],
+      "got": [
+       "Tây Bắc"
+      ],
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1439,
+    "tokens": 1757,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 25,
+    "q": "Mua shophouse quận 10 khoảng 15 tỏi",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 13500000000,
+      "got": 13500000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 16500000000,
+      "got": 16500000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       5
+      ],
+      "got": [
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1230,
+    "tokens": 1794,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 26,
+    "q": "Mua căn hộ 70m2 trở lên đầy đủ nội thất quận 4 dưới 4 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 4",
+      "got": "Quận 4",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 4000000000,
+      "got": 4000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 70,
+      "got": 70,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": [
+       "Đầy đủ"
+      ],
+      "got": [
+       "Đầy đủ"
+      ],
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1602,
+    "tokens": 1875,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 27,
+    "q": "Mua nhà khoảng 2 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 1800000000,
+      "got": 1800000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2200000000,
+      "got": 2200000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1045,
+    "tokens": 1758,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 28,
+    "q": "Mua nhà 5 tầng 3WC quận 10",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 5,
+      "got": 5,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1079,
+    "tokens": 1753,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 29,
+    "q": "Mua kho xưởng có sổ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       9
+      ],
+      "got": [
+       9
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1354,
+    "tokens": 1861,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 30,
+    "q": "mua đất dưới 1 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 1000000000,
+      "got": 1000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 2147,
+    "tokens": 1737,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 31,
+    "q": "Cần căn hộ 2PN cho thuê, làm ở đường Hàm Nghi, đi xe máy tối đa 20 phút, tổng chi phí dưới 12tr, có ban công",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": "Quận 1",
+      "ok": false
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": 12000000,
+      "got": 12000000,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 1572,
+    "tokens": 1979,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 32,
+    "q": "Thuê phòng trọ gần Đại học Bách Khoa, đi bộ 10 phút",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1276,
+    "tokens": 1798,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 33,
+    "q": "Tìm phòng trọ gần chợ Bến Thành dưới 5 triệu",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 5000000,
+      "got": 5000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1435,
+    "tokens": 1865,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 34,
+    "q": "Mua căn hộ trong bán kính 5km quanh sân bay Tân Sơn Nhất",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1478,
+    "tokens": 1806,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 35,
+    "q": "Thuê nhà riêng gần Trường Quốc tế Úc, đạp xe 15 phút",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1142,
+    "tokens": 1794,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 36,
+    "q": "Thuê phòng trọ ở Đà Lạt dưới 3 triệu",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3000000,
+      "got": 3000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "unrec_ok": true,
+    "latency": 1226,
+    "tokens": 1763,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 37,
+    "q": "Mua đất ở Thủ Dầu Một Bình Dương",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "unrec_ok": true,
+    "latency": 1084,
+    "tokens": 1770,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 38,
+    "q": "rẻ hơn chút",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Bình Thạnh",
+      "got": "Quận Bình Thạnh",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": false,
+      "got": false,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3500000,
+      "got": 3600000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 1130,
+    "tokens": 1880,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 39,
+    "q": "thêm điều kiện cho nuôi thú cưng",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 15000000,
+      "got": 15000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": [
+       "Đầy đủ"
+      ],
+      "got": [
+       "Đầy đủ"
+      ],
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1678,
+    "tokens": 1989,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 40,
+    "q": "bỏ điều kiện hướng",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 3",
+      "got": "Quận 3",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 5,
+      "got": 5,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       5
+      ],
+      "got": [
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1165,
+    "tokens": 1843,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 41,
+    "q": "đổi sang Quận 7",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 1800000000,
+      "got": 1800000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2200000000,
+      "got": 2200000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 80,
+      "got": 80,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": 120,
+      "got": 120,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1385,
+    "tokens": 1921,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 42,
+    "q": "Xin chào",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1051,
+    "tokens": 1686,
+    "model_used": "openai/gpt-oss-120b"
+   },
+   {
+    "id": 43,
+    "q": "Cho mình xem vài căn nhà đẹp",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 1172,
+    "tokens": 1734,
+    "model_used": "openai/gpt-oss-120b"
+   }
+  ],
+  "qwen/qwen3.8-27b": [
+   {
+    "id": 1,
+    "q": "Thuê phòng trọ ở Bình Thạnh dưới 4 triệu, có nuôi mèo, không chung chủ, yên tĩnh",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Bình Thạnh",
+      "got": "Quận Bình Thạnh",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": false,
+      "got": false,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 4000000,
+      "got": 4000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 901,
+    "tokens": 1139,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 2,
+    "q": "Tìm phòng trọ quận Gò Vấp tầm 3 triệu, giờ giấc tự do",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Gò Vấp",
+      "got": "Quận Gò Vấp",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 2700000,
+      "got": 2700000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3300000,
+      "got": 3300000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 678,
+    "tokens": 1128,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 3,
+    "q": "Cho thuê căn hộ 2 phòng ngủ Quận 7 dưới 15 triệu, đầy đủ nội thất",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 15000000,
+      "got": 15000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": [
+       "Đầy đủ"
+      ],
+      "got": [
+       "Đầy đủ"
+      ],
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 664,
+    "tokens": 1140,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 4,
+    "q": "Thuê chung cư 3PN 2WC ở Thủ Đức, tối đa 20tr",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "TP. Thủ Đức",
+      "got": "TP. Thủ Đức",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 20000000,
+      "got": 20000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 660,
+    "tokens": 1136,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 5,
+    "q": "Cần thuê văn phòng 50-80m2 quận 1",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 1",
+      "got": "Quận 1",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 50,
+      "got": 50,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": 80,
+      "got": 80,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       6
+      ],
+      "got": [
+       6
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 645,
+    "tokens": 1126,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 6,
+    "q": "Thuê mặt bằng kinh doanh mặt tiền 6m ở Quận 10",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 6,
+      "got": 6,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       8
+      ],
+      "got": [
+       8
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 640,
+    "tokens": 1124,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 7,
+    "q": "Thuê kho xưởng 300m2 trở lên",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 300,
+      "got": 300,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       9
+      ],
+      "got": [
+       9
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 654,
+    "tokens": 1112,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 8,
+    "q": "Phòng trọ ở Tân Bình, tổng chi phí dưới 5 triệu bao gồm phí dịch vụ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Tân Bình",
+      "got": "Quận Tân Bình",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": 5000000,
+      "ok": false
+     },
+     "totalCostMax": {
+      "exp": 5000000,
+      "got": 5000000,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 686,
+    "tokens": 1138,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 9,
+    "q": "Thuê phòng có máy lạnh, wifi, gần chợ, Phú Nhuận, tầm 4tr",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Phú Nhuận",
+      "got": "Quận Phú Nhuận",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 3600000,
+      "got": 3600000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 4400000,
+      "got": 4400000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     3,
+     3
+    ],
+    "anchor_ok": false,
+    "latency": 697,
+    "tokens": 1146,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 10,
+    "q": "Thuê phòng bắt buộc phải có WC riêng và chỗ để xe, quận 3",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 3",
+      "got": "Quận 3",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": [
+       "parking",
+       "private_bathroom"
+      ],
+      "got": [
+       "parking",
+       "private_bathroom"
+      ],
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 665,
+    "tokens": 1131,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 11,
+    "q": "Mình nuôi chó, cần thuê nhà riêng nguyên căn ở Quận 4",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 4",
+      "got": "Quận 4",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 675,
+    "tokens": 1121,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 12,
+    "q": "Thuê phòng trọ Quận 10 dưới 6 triệu, phải dọn vào được trước ngày 2026-11-01",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": "2026-11-01",
+      "got": "2026-11-01",
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 6000000,
+      "got": 6000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 704,
+    "tokens": 1154,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 13,
+    "q": "Thuê nhà riêng 2 tầng ở Gò Vấp khoảng 10 triệu, hẻm xe hơi",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Gò Vấp",
+      "got": "Quận Gò Vấp",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 9000000,
+      "got": 9000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 11000000,
+      "got": 11000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 859,
+    "tokens": 1140,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 14,
+    "q": "Cho thuê phòng trọ có gác lửng giá rẻ dưới 2tr5",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2500000,
+      "got": 2500000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 645,
+    "tokens": 1124,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 15,
+    "q": "Thuê căn hộ có ban công view sông ở Bình Thạnh",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Bình Thạnh",
+      "got": "Quận Bình Thạnh",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     2
+    ],
+    "anchor_ok": true,
+    "latency": 642,
+    "tokens": 1121,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 16,
+    "q": "Mua đất nền 80-120m2 có sổ hồng ở Thủ Đức, khoảng 2 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "TP. Thủ Đức",
+      "got": "TP. Thủ Đức",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 1800000000,
+      "got": 1800000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2200000000,
+      "got": 2200000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 80,
+      "got": 80,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": 120,
+      "got": 120,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 991,
+    "tokens": 1155,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 17,
+    "q": "mua nhà phố hướng Đông Nam mặt tiền 5m trở lên, 3 lầu, quận 3",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 3",
+      "got": "Quận 3",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 5,
+      "got": 5,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       5
+      ],
+      "got": [
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": [
+       "Đông Nam"
+      ],
+      "got": [
+       "Đông Nam"
+      ],
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 669,
+    "tokens": 1134,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 18,
+    "q": "Bán căn hộ 2PN dưới 3 tỷ quận 7 sổ hồng riêng",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3000000000,
+      "got": 3000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng riêng"
+      ],
+      "got": [
+       "Sổ hồng riêng"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 741,
+    "tokens": 1139,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 19,
+    "q": "Mua biệt thự trên 20 tỷ ở Thủ Đức",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "TP. Thủ Đức",
+      "got": "TP. Thủ Đức",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 20000000000,
+      "got": 2000000000,
+      "ok": false
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       4
+      ],
+      "got": [
+       4
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 681,
+    "tokens": 1127,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 20,
+    "q": "Cần mua nhà riêng hướng Nam hoặc Đông, 4 phòng ngủ, Tân Bình, dưới 8 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Tân Bình",
+      "got": "Quận Tân Bình",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 8000000000,
+      "got": 8000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 4,
+      "got": 4,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": [
+       "Nam",
+       "Đông"
+      ],
+      "got": [
+       "Nam",
+       "Đông"
+      ],
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 790,
+    "tokens": 1145,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 21,
+    "q": "Mua nhà ở Phú Nhuận từ 5 đến 7 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Phú Nhuận",
+      "got": "Quận Phú Nhuận",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 5000000000,
+      "got": 5000000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 7000000000,
+      "got": 7000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 711,
+    "tokens": 1144,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 22,
+    "q": "Tìm mua văn phòng trên 100m2 quận 1",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 1",
+      "got": "Quận 1",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": 100000000,
+      "ok": false
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 100,
+      "got": 100,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       6
+      ],
+      "got": [
+       6
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 669,
+    "tokens": 1132,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 23,
+    "q": "Mua nhà có sổ đỏ, 3 tỷ 5 trở xuống, Gò Vấp",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Gò Vấp",
+      "got": "Quận Gò Vấp",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3500000000,
+      "got": 3500000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 687,
+    "tokens": 1142,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 24,
+    "q": "Mua đất mặt tiền 10m hướng Tây Bắc",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 10,
+      "got": 10,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": [
+       "Tây Bắc"
+      ],
+      "got": [
+       "Tây Bắc"
+      ],
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 791,
+    "tokens": 1114,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 25,
+    "q": "Mua shophouse quận 10 khoảng 15 tỏi",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 13500000000,
+      "got": 13500000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 16500000000,
+      "got": 16500000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       5
+      ],
+      "got": [
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 700,
+    "tokens": 1131,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 26,
+    "q": "Mua căn hộ 70m2 trở lên đầy đủ nội thất quận 4 dưới 4 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 4",
+      "got": "Quận 4",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 4000000000,
+      "got": 4000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 70,
+      "got": 70,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": [
+       "Đầy đủ"
+      ],
+      "got": [
+       "Đầy đủ"
+      ],
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 677,
+    "tokens": 1143,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 27,
+    "q": "Mua nhà khoảng 2 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 1800000000,
+      "got": 1800000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2200000000,
+      "got": 2200000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 658,
+    "tokens": 1119,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 28,
+    "q": "Mua nhà 5 tầng 3WC quận 10",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 10",
+      "got": "Quận 10",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 5,
+      "got": 5,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1,
+       4,
+       5
+      ],
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 678,
+    "tokens": 1127,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 29,
+    "q": "Mua kho xưởng có sổ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       9
+      ],
+      "got": [
+       9
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 645,
+    "tokens": 1118,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 30,
+    "q": "mua đất dưới 1 tỷ",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 1000000000,
+      "got": 1000000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 627,
+    "tokens": 1114,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 31,
+    "q": "Cần căn hộ 2PN cho thuê, làm ở đường Hàm Nghi, đi xe máy tối đa 20 phút, tổng chi phí dưới 12tr, có ban công",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": 12000000,
+      "ok": false
+     },
+     "totalCostMax": {
+      "exp": 12000000,
+      "got": 12000000,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 709,
+    "tokens": 1169,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 32,
+    "q": "Thuê phòng trọ gần Đại học Bách Khoa, đi bộ 10 phút",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 669,
+    "tokens": 1125,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 33,
+    "q": "Tìm phòng trọ gần chợ Bến Thành dưới 5 triệu",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 5000000,
+      "got": 5000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 664,
+    "tokens": 1125,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 34,
+    "q": "Mua căn hộ trong bán kính 5km quanh sân bay Tân Sơn Nhất",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 760,
+    "tokens": 1124,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 35,
+    "q": "Thuê nhà riêng gần Trường Quốc tế Úc, đạp xe 15 phút",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       1
+      ],
+      "got": [
+       1
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 691,
+    "tokens": 1121,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 36,
+    "q": "Thuê phòng trọ ở Đà Lạt dưới 3 triệu",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3000000,
+      "got": 3000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "unrec_ok": true,
+    "latency": 651,
+    "tokens": 1118,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 37,
+    "q": "Mua đất ở Thủ Dầu Một Bình Dương",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "unrec_ok": true,
+    "latency": 665,
+    "tokens": 1111,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 38,
+    "q": "rẻ hơn chút",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận Bình Thạnh",
+      "got": "Quận Bình Thạnh",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": false,
+      "got": false,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 3500000,
+      "got": 3500000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       7
+      ],
+      "got": [
+       7
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     1,
+     1
+    ],
+    "anchor_ok": true,
+    "latency": 663,
+    "tokens": 1215,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 39,
+    "q": "thêm điều kiện cho nuôi thú cưng",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": true,
+      "got": true,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 15000000,
+      "got": 15000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": 2,
+      "got": 2,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       2
+      ],
+      "got": [
+       2
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": [
+       "Đầy đủ"
+      ],
+      "got": [
+       "Đầy đủ"
+      ],
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 680,
+    "tokens": 1236,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 40,
+    "q": "bỏ điều kiện hướng",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 3",
+      "got": "Quận 3",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": 3,
+      "got": 3,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": 5,
+      "got": 5,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       5
+      ],
+      "got": [
+       5
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 671,
+    "tokens": 1207,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 41,
+    "q": "đổi sang Quận 7",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": 1,
+      "got": 1,
+      "ok": true
+     },
+     "district": {
+      "exp": "Quận 7",
+      "got": "Quận 7",
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": 1800000000,
+      "got": 1800000000,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": 2200000000,
+      "got": 2200000000,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": 80,
+      "got": 80,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": 120,
+      "got": 120,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": [
+       3
+      ],
+      "got": [
+       3
+      ],
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "got": [
+       "Sổ hồng chung",
+       "Sổ hồng riêng",
+       "Sổ đỏ"
+      ],
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 736,
+    "tokens": 1320,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 42,
+    "q": "Xin chào",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": true,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 625,
+    "tokens": 1097,
+    "model_used": "qwen/qwen3.8-27b"
+   },
+   {
+    "id": 43,
+    "q": "Cho mình xem vài căn nhà đẹp",
+    "error": null,
+    "fields": {
+     "type": {
+      "exp": null,
+      "got": 1,
+      "ok": false
+     },
+     "district": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "petsAllowed": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "curfewFree": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "sharedWithOwner": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "availableBy": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "priceMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "totalCostMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "areaMax": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bedroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "bathroomsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "floorsMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "frontageMin": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "propertyTypes": {
+      "exp": null,
+      "got": [
+       1,
+       4,
+       5
+      ],
+      "ok": false
+     },
+     "directions": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "legalStatuses": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "furnitureStates": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     },
+     "amenities": {
+      "exp": null,
+      "got": null,
+      "ok": true
+     }
+    },
+    "exact": false,
+    "prefs": [
+     0,
+     0
+    ],
+    "anchor_ok": true,
+    "latency": 675,
+    "tokens": 1113,
+    "model_used": "qwen/qwen3.8-27b"
+   }
+  ]
+ }
+}
