@@ -52,7 +52,7 @@ namespace kgs_api.Controllers
             ("Quận Phú Nhuận",  10.7994, 106.6797, 1.25),
             ("Quận Gò Vấp",     10.8386, 106.6653, 0.95),
             ("Quận Tân Bình",   10.8014, 106.6528, 1.05),
-            ("TP. Thủ Đức",     10.8506, 106.7719, 0.85),
+            ("Thành phố Thủ Đức",     10.8506, 106.7719, 0.85),
             ("Quận Bình Tân",   10.7654, 106.6027, 0.80),
         };
 
@@ -144,7 +144,7 @@ namespace kgs_api.Controllers
                     Status = AssetStatus.RentedOut,
                     Address = new Address
                     {
-                        City = "TP. Hồ Chí Minh",
+                        City = "Thành phố Hồ Chí Minh",
                         District = d.Name,
                         Ward = $"Phường {rnd.Next(1, 16)}",
                         Detail = $"{rnd.Next(10, 400)}/{rnd.Next(1, 40)} đường số {rnd.Next(1, 60)}"

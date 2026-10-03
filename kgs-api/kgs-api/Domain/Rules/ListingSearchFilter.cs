@@ -28,8 +28,12 @@ namespace kgs_api.Domain.Rules
             var q = source.Where(l => l.Status == ListingStatus.Approved);
 
             if (query.Type is not null) q = q.Where(l => l.Type == query.Type);
-            if (!string.IsNullOrWhiteSpace(query.City)) q = q.Where(l => l.Asset.Address.City == query.City);
-            if (!string.IsNullOrWhiteSpace(query.District)) q = q.Where(l => l.Asset.Address.District == query.District);
+            // Đưa tên khu vực người tìm gửi lên về cùng dạng chuẩn với dữ liệu đã lưu — "TP. HCM",
+            // "Hồ Chí Minh", "Q.3" đều khớp. Xem AdministrativeNames.
+            var city = AdministrativeNames.CanonicalCity(query.City);
+            var district = AdministrativeNames.CanonicalDistrict(city, query.District);
+            if (!string.IsNullOrWhiteSpace(city)) q = q.Where(l => l.Asset.Address.City == city);
+            if (!string.IsNullOrWhiteSpace(district)) q = q.Where(l => l.Asset.Address.District == district);
             if (query.PriceMin is not null) q = q.Where(l => l.Price >= query.PriceMin);
             if (query.PriceMax is not null) q = q.Where(l => l.Price <= query.PriceMax);
             if (query.BedroomsMin is not null) q = q.Where(l => l.Asset.Bedrooms >= query.BedroomsMin);

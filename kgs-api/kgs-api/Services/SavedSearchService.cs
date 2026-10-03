@@ -162,8 +162,9 @@ namespace kgs_api.Services
 
         private static PublicListingSearchQuery Sanitize(PublicListingSearchQuery c) => c with
         {
-            City = string.IsNullOrWhiteSpace(c.City) ? null : c.City.Trim(),
-            District = string.IsNullOrWhiteSpace(c.District) ? null : c.District.Trim(),
+            City = string.IsNullOrWhiteSpace(c.City) ? null : AdministrativeNames.CanonicalCity(c.City),
+            District = string.IsNullOrWhiteSpace(c.District) ? null
+                : AdministrativeNames.CanonicalDistrict(AdministrativeNames.CanonicalCity(c.City), c.District),
             Keyword = string.IsNullOrWhiteSpace(c.Keyword) ? null : c.Keyword.Trim(),
             Amenities = ListingSearchFilter.NormalizeAmenities(c.Amenities),
             // Vùng Isochrone không được lưu: điều khoản Mapbox chỉ cho hiển thị nó trên bản đồ,

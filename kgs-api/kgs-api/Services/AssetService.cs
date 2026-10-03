@@ -181,7 +181,11 @@ namespace kgs_api.Services
             if (query.TypeProperty is not null) q = q.Where(a => a.TypeProperty == query.TypeProperty);
             if (query.Status is not null) q = q.Where(a => a.Status == query.Status);
             if (query.OwnershipType is not null) q = q.Where(a => a.OwnershipType == query.OwnershipType);
-            if (!string.IsNullOrWhiteSpace(query.City)) q = q.Where(a => a.Address.City == query.City);
+            if (!string.IsNullOrWhiteSpace(query.City))
+            {
+                var city = AdministrativeNames.CanonicalCity(query.City);
+                q = q.Where(a => a.Address.City == city);
+            }
 
             var total = await q.CountAsync(ct);
             var pageSize = Math.Clamp(query.PageSize, 1, 100);
@@ -277,8 +281,8 @@ namespace kgs_api.Services
 
         private static Address MapAddress(AddressDto dto) => new()
         {
-            City = dto.City.Trim(),
-            District = dto.District.Trim(),
+            City = AdministrativeNames.CanonicalCity(dto.City)!,
+            District = AdministrativeNames.CanonicalDistrict(AdministrativeNames.CanonicalCity(dto.City), dto.District)!,
             Ward = dto.Ward.Trim(),
             Detail = dto.Detail?.Trim() ?? string.Empty
         };

@@ -341,10 +341,13 @@ namespace kgs_api.Services
             if (request.Type == ListingType.Rent && request.RentPaymentCycle is null)
                 throw new ValidationFailedException("Tin cho thuê bắt buộc phải chọn chu kỳ thanh toán.");
 
+            // Tên tỉnh/quận về dạng chính thức — để "TP. HCM" và "Thành phố Hồ Chí Minh" không
+            // thành hai nơi khác nhau trong bộ lọc. Xem AdministrativeNames.
+            var city = AdministrativeNames.CanonicalCity(request.City)!;
             var address = new Address
             {
-                City = request.City.Trim(),
-                District = request.District.Trim(),
+                City = city,
+                District = AdministrativeNames.CanonicalDistrict(city, request.District)!,
                 Ward = request.Ward.Trim(),
                 Detail = request.AddressDetail?.Trim() ?? string.Empty
             };
@@ -683,8 +686,9 @@ namespace kgs_api.Services
                 .FirstOrDefaultAsync(a => a.Id == listing.AssetId, ct);
             if (asset is null) return;
 
-            if (!string.IsNullOrWhiteSpace(request.City)) asset.Address.City = request.City.Trim();
-            if (!string.IsNullOrWhiteSpace(request.District)) asset.Address.District = request.District.Trim();
+            if (!string.IsNullOrWhiteSpace(request.City)) asset.Address.City = AdministrativeNames.CanonicalCity(request.City)!;
+            if (!string.IsNullOrWhiteSpace(request.District))
+                asset.Address.District = AdministrativeNames.CanonicalDistrict(asset.Address.City, request.District)!;
             if (!string.IsNullOrWhiteSpace(request.Ward)) asset.Address.Ward = request.Ward.Trim();
             if (request.AddressDetail is not null) asset.Address.Detail = request.AddressDetail.Trim();
 
