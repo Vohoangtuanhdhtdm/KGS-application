@@ -42,6 +42,7 @@ import { AssetUnitsTab } from "@/components/units/AssetUnitsTab";
 import { AssetContractsTab } from "@/components/contracts/AssetContractsTab";
 import { AssetDocumentsTab } from "@/components/assets/AssetDocumentsTab";
 import { ClientMap } from "@/components/map/ClientMap";
+import { BuildingStudio } from "@/components/building/BuildingStudio";
 
 export const Route = createFileRoute("/quan-ly/tai-san/$id")({
   validateSearch: (s: Record<string, unknown>): { tab?: string } =>
@@ -181,6 +182,7 @@ function AssetDetail() {
         <TabsList>
           <TabsTrigger value="overview">Tổng quan</TabsTrigger>
           <TabsTrigger value="units">Tầng/Phòng ({a.unitCount})</TabsTrigger>
+          <TabsTrigger value="model3d">Mô hình 3D</TabsTrigger>
           <TabsTrigger value="contracts">Hợp đồng ({a.activeContractCount})</TabsTrigger>
           <TabsTrigger value="media">Ảnh</TabsTrigger>
           <TabsTrigger value="listing">Tin đăng</TabsTrigger>
@@ -263,6 +265,9 @@ function AssetDetail() {
 
         <TabsContent value="units">
           <AssetUnitsTab assetId={id} />
+        </TabsContent>
+        <TabsContent value="model3d">
+          {tab === "model3d" && <BuildingStudio assetId={id} />}
         </TabsContent>
         <TabsContent value="contracts">
           <AssetContractsTab assetId={id} />
