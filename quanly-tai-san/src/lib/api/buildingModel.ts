@@ -61,3 +61,40 @@ export const buildingModelApi = {
     }
   },
 };
+
+export interface BuildingListingPreview {
+  slug: string;
+  title: string;
+  price: number;
+  type: 1 | 2;
+  rentPaymentCycle: 1 | 2 | 3 | 4 | null;
+  unitName: string | null;
+}
+
+/** Toà nhà có mô hình công khai trong khung nhìn bản đồ tìm kiếm. */
+export interface MapBuilding {
+  assetId: string;
+  address: string;
+  footprint: LngLat[];
+  floors: number;
+  floorHeightMeters: number;
+  unitCount: number;
+  vacantCount: number;
+  listingCount: number;
+  listings: BuildingListingPreview[];
+}
+
+/** Khung nhìn rộng hơn mức này thì máy chủ từ chối — cùng giá trị với MaxViewSpanDegrees. */
+export const MAX_VIEW_SPAN_DEG = 0.2;
+
+export const mapBuildingsApi = {
+  inView: (
+    b: { west: number; south: number; east: number; north: number },
+    type: 1 | 2 | null,
+    signal?: AbortSignal,
+  ) =>
+    api<MapBuilding[]>(
+      `/listings/buildings?west=${b.west}&south=${b.south}&east=${b.east}&north=${b.north}${type ? `&type=${type}` : ""}`,
+      { skipAuth: true, signal },
+    ),
+};

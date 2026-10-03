@@ -17,6 +17,8 @@ type Props = ComponentProps<typeof PropertyMap> & {
   popupExtra?: (point: PropertyMapPoint) => ReactNode;
   /** Báo động cơ đang dùng, để trang bật/tắt các tính năng chỉ chạy được trên GL. */
   onEngine?: (engine: MapEngine) => void;
+  /** Loại tin đang tìm — cho khối toà nhà 3D (chỉ bản GL). */
+  listingType?: 1 | 2 | null;
 };
 
 export function PropertyMapClient({
@@ -24,6 +26,7 @@ export function PropertyMapClient({
   searchCenterLabel,
   popupExtra,
   onEngine,
+  listingType,
   ...props
 }: Props) {
   const { engine, fallBack } = useMapEngine();
@@ -40,6 +43,7 @@ export function PropertyMapClient({
           areaPolygon={areaPolygon}
           searchCenterLabel={searchCenterLabel}
           popupExtra={popupExtra}
+          listingType={listingType}
           onFatalError={fallBack}
         />
       ) : (

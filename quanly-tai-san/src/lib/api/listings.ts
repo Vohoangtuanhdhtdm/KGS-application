@@ -81,6 +81,8 @@ export interface PublicListingSummaryDto {
   amenities: string[];
   /** Những mong muốn mềm (prefer) mà tin nhắc tới — chỉ có khi tìm qua trợ lý. */
   matchedPreferences?: string[] | null;
+  /** Toà nhà của tin có mô hình 3D công khai. */
+  hasBuildingModel?: boolean;
 }
 
 export interface PublicListingDetailDto {
@@ -300,6 +302,8 @@ export interface PublicListingFilters {
   directions?: string[];
   legalStatuses?: string[];
   furnitureStates?: string[];
+  /** Chỉ tin thuộc toà nhà có mô hình 3D. */
+  has3D?: boolean | "";
   /** Mong muốn mềm, phân cách bằng ";" — chỉ ảnh hưởng thứ tự (sắp "Phù hợp nhất"). */
   prefer?: string;
   // Bộ lọc điều kiện thuê — cũng là các hard filter AI Agent sẽ sinh ra
