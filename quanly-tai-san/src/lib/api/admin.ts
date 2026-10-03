@@ -140,7 +140,12 @@ export const adminReportsApi = {
 
   /** confirmed = true nghĩa là có vi phạm thật; false nghĩa là tin không sai.
    *  action: cách xử lý tin khi có vi phạm — bỏ trống thì máy chủ chọn theo lý do báo. */
-  resolve: (id: string, confirmed: boolean, note: string | null, action?: ReportActionCode | null) =>
+  resolve: (
+    id: string,
+    confirmed: boolean,
+    note: string | null,
+    action?: ReportActionCode | null,
+  ) =>
     api<ResolveReportResult>(`/admin/listing-reports/${id}/resolve`, {
       method: "POST",
       body: { confirmed, note, action: confirmed ? (action ?? null) : null },
@@ -153,3 +158,112 @@ export interface ResolveReportResult {
   appliedAction: ReportActionCode | null;
   listingStatus: ListingStatusCode;
 }
+
+// ============================================================
+// Quản trị mọi tin đăng (A2) và người dùng (A3)
+// ============================================================
+
+export interface AdminListingRow {
+  id: string;
+  slug: string | null;
+  title: string;
+  type: ListingTypeCode;
+  status: ListingStatusCode;
+  price: number;
+  rentPaymentCycle: 1 | 2 | 3 | 4 | null;
+  assetType: number;
+  city: string;
+  district: string;
+  unitName: string | null;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerLocked: boolean;
+  createdAt: string;
+  publishedAt: string | null;
+  viewCount: number;
+  pendingReports: number;
+  confirmedReports: number;
+  moderationNote: string | null;
+  /** Tin do quản trị gỡ/đóng — khôi phục được. */
+  canRestore: boolean;
+}
+
+export interface PagedAdmin<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+export interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  createdAt: string;
+  emailConfirmed: boolean;
+  isAdmin: boolean;
+  isLocked: boolean;
+  lockedUntil: string | null;
+  lockReason: string | null;
+  listingCount: number;
+  liveListingCount: number;
+  confirmedViolations: number;
+  pendingReports: number;
+}
+
+export interface AdminUserDetail {
+  user: AdminUserRow;
+  lockedAt: string | null;
+  lockedByName: string | null;
+  listings: AdminListingRow[];
+}
+
+export interface AdminActionResult {
+  message: string;
+  affectedListings: number;
+}
+
+export interface AdminListingQuery {
+  q?: string;
+  status?: ListingStatusCode | "";
+  type?: ListingTypeCode | "";
+  assetType?: number | "";
+  ownerId?: string;
+  reportedOnly?: boolean;
+  sort?: "newest" | "reports" | "views" | "price";
+  page?: number;
+  pageSize?: number;
+}
+
+export const adminManageApi = {
+  listings: (f: AdminListingQuery) =>
+    api<PagedAdmin<AdminListingRow>>(`/admin/all-listings${toQuery(f as Record<string, unknown>)}`),
+  takeDown: (id: string, reasons: ModerationReasonCode[], note: string | null) =>
+    api<AdminActionResult>(`/admin/all-listings/${id}/take-down`, {
+      method: "POST",
+      body: { reasons, note },
+    }),
+  restore: (id: string, note: string | null) =>
+    api<AdminActionResult>(`/admin/all-listings/${id}/restore`, { method: "POST", body: { note } }),
+
+  users: (f: { q?: string; filter?: string; sort?: string; page?: number; pageSize?: number }) =>
+    api<PagedAdmin<AdminUserRow>>(`/admin/users${toQuery(f)}`),
+  user: (id: string) => api<AdminUserDetail>(`/admin/users/${encodeURIComponent(id)}`),
+  lock: (id: string, reason: string, days: number | null, hideListings: boolean) =>
+    api<AdminActionResult>(`/admin/users/${encodeURIComponent(id)}/lock`, {
+      method: "POST",
+      body: { reason, days, hideListings },
+    }),
+  unlock: (id: string, restoreListings: boolean) =>
+    api<AdminActionResult>(`/admin/users/${encodeURIComponent(id)}/unlock`, {
+      method: "POST",
+      body: { restoreListings },
+    }),
+  setAdmin: (id: string, admin: boolean) =>
+    api<AdminActionResult>(`/admin/users/${encodeURIComponent(id)}/admin-role`, {
+      method: "PUT",
+      body: { admin },
+    }),
+};

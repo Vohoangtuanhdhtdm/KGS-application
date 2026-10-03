@@ -90,7 +90,7 @@ namespace kgs_api.Services
                 throw new ValidationFailedException("Email hoặc mật khẩu không đúng.");
 
             if (await _userManager.IsLockedOutAsync(user))
-                throw new ConflictException("Tài khoản đang bị tạm khoá do đăng nhập sai nhiều lần. Vui lòng thử lại sau.");
+                throw new ConflictException(LockedMessage(user));
 
             if (_settings.RequireConfirmedEmail && !user.EmailConfirmed)
                 throw new ConflictException("Vui lòng xác thực email trước khi đăng nhập.");
@@ -98,6 +98,18 @@ namespace kgs_api.Services
             await _userManager.ResetAccessFailedCountAsync(user);
 
             return await BuildAuthResponseAsync(user, ip, ct);
+        }
+
+        /// <summary>Khoá do quản trị viên thì nói rõ lý do và thời hạn — người bị khoá cần biết vì sao.
+        /// Khoá tạm do đăng nhập sai thì giữ câu cũ.</summary>
+        private static string LockedMessage(ApplicationUser user)
+        {
+            if (user.AdminLockedAt is null)
+                return "Tài khoản đang bị tạm khoá do đăng nhập sai nhiều lần. Vui lòng thử lại sau.";
+            var until = user.LockoutEnd is { } end && end < DateTimeOffset.MaxValue.AddYears(-1)
+                ? $" tới {end.ToOffset(TimeSpan.FromHours(7)):dd/MM/yyyy}"
+                : "";
+            return $"Tài khoản đã bị quản trị viên khoá{until}. Lý do: {user.AdminLockReason}";
         }
 
         // ==================== REFRESH TOKEN (có rotation) ====================
@@ -123,6 +135,11 @@ namespace kgs_api.Services
 
             if (stored.IsExpired)
                 throw new ValidationFailedException("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+
+            // Tài khoản bị khoá giữa phiên: không cấp token mới (refresh token đã bị thu hồi
+            // lúc khoá, đây là lớp chặn thứ hai cho token phát ra sau đó).
+            if (await _userManager.IsLockedOutAsync(stored.User))
+                throw new ConflictException(LockedMessage(stored.User));
 
             // Rotation: thu hồi token cũ, cấp token mới
             var newRefreshToken = _tokenService.GenerateRefreshToken();
