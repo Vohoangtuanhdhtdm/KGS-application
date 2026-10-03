@@ -42,6 +42,7 @@ namespace kgs_api.Services
         private readonly ICurrentUserService _currentUser;
         private readonly GeometryFactory _geometryFactory;
         private readonly IListingViewTracker _views;
+        private readonly IRepository<ListingInquiry> _inquiries;
 
         /// <summary>Số tin mỗi dải gợi ý dưới trang chi tiết. Đủ lấp một hàng cuộn ngang
         /// mà không biến trang chi tiết thành một trang tìm kiếm thứ hai.</summary>
@@ -59,12 +60,13 @@ namespace kgs_api.Services
             ICurrentUserService currentUser,
             GeometryFactory geometryFactory,
             IListingViewTracker views,
-            IRepository<ListingModerationEvent> moderationEvents)
+            IRepository<ListingModerationEvent> moderationEvents,
+            IRepository<ListingInquiry> inquiries)
         {
             _assets = assets; _units = units; _listings = listings; _images = images;
             _media = media; _files = files;
             _uow = uow; _currentUser = currentUser; _geometryFactory = geometryFactory;
-            _views = views; _moderationEvents = moderationEvents;
+            _views = views; _moderationEvents = moderationEvents; _inquiries = inquiries;
         }
 
         // ==================== ĐĂNG TIN ====================
@@ -328,7 +330,52 @@ namespace kgs_api.Services
                 listing.ViewCount + (isNewView ? 1 : 0), listing.PublishedAt,
                 ToTermsDto(listing.Terms), listing.Amenities, TotalMonthlyCost(listing),
                 owner.Name, owner.PhoneNumber,
-                owner.AvatarUrl, owner.CreatedAt, ownerActiveCount);
+                owner.AvatarUrl, owner.CreatedAt, ownerActiveCount)
+            {
+                OwnerId = owner.UserId,
+            };
+        }
+
+        public async Task<OwnerProfileDto> GetOwnerProfileAsync(string ownerId, CancellationToken ct = default)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var user = await _assets.Query().AsNoTracking()
+                .Select(a => a.User).Where(u => u.Id == ownerId)
+                .Select(u => new
+                {
+                    u.Id, u.Name, u.AvatarUrl, u.Bio, u.CreatedAt, u.EmailConfirmed, u.PhoneNumber,
+                    Locked = u.AdminLockedAt != null && u.LockoutEnd > now,
+                })
+                .FirstOrDefaultAsync(ct);
+            // Không có tài sản nào = chưa từng đăng tin: không có gì để hiện, và không cho dò
+            // xem một id bất kỳ có phải tài khoản hay không. Tài khoản bị khoá thì hồ sơ ẩn
+            // cùng với tin của họ.
+            if (user is null || user.Locked) throw new NotFoundException("Không tìm thấy người đăng.");
+
+            var mine = _listings.Query().AsNoTracking().Where(l => l.Asset.UserId == ownerId);
+            var active = await mine.CountAsync(l => l.Status == ListingStatus.Approved, ct);
+            var published = await mine.CountAsync(l => l.Status == ListingStatus.Approved || l.Status == ListingStatus.Closed, ct);
+
+            var since = DateTime.UtcNow.AddDays(-180);
+            var inquiries = await _inquiries.Query().AsNoTracking()
+                .Where(i => i.ToUserId == ownerId && i.CreatedAt >= since)
+                .Select(i => new { i.Status, i.CreatedAt, i.UpdatedAt })
+                .ToListAsync(ct);
+            var answered = inquiries.Where(i => i.Status != InquiryStatus.New).ToList();
+            var hours = answered.Where(i => i.UpdatedAt != null && i.UpdatedAt > i.CreatedAt)
+                .Select(i => (i.UpdatedAt!.Value - i.CreatedAt).TotalHours).Order().ToList();
+            double? median = hours.Count == 0 ? null : Math.Round(hours[hours.Count / 2], 1);
+
+            var listings = await ToSummariesAsync(
+                mine.Where(l => l.Status == ListingStatus.Approved)
+                    .OrderByDescending(l => l.BumpedAt ?? l.PublishedAt ?? l.CreatedAt).ThenBy(l => l.Id)
+                    .Take(60),
+                null, ct);
+
+            return new OwnerProfileDto(
+                user.Id, user.Name, user.AvatarUrl, user.Bio, user.CreatedAt, user.EmailConfirmed,
+                !string.IsNullOrWhiteSpace(user.PhoneNumber), active, published,
+                inquiries.Count, answered.Count, median, listings);
         }
 
         // ==================== ĐĂNG TIN TRỰC TIẾP (Giai đoạn 1) ====================

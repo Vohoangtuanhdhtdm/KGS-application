@@ -252,7 +252,36 @@ namespace kgs_api.Dtos
         string? OwnerPhone,
         string? OwnerAvatarUrl,
         DateTime OwnerJoinedAt,
-        int OwnerActiveListingCount);
+        int OwnerActiveListingCount)
+    {
+        /// <summary>Để trang tin dẫn tới hồ sơ công khai của người đăng (/nguoi-dang/{id}).</summary>
+        public string? OwnerId { get; init; }
+    }
+
+    /// <summary>Hồ sơ công khai của người đăng — để người tìm nhà quyết định có liên hệ hay không.
+    ///
+    /// Chỉ những gì hệ thống THẬT SỰ kiểm chứng được: email đã xác thực, có số điện thoại,
+    /// tham gia bao lâu, đã đăng bao nhiêu tin, trả lời yêu cầu xem nhà thế nào. KHÔNG có dấu
+    /// "đã xác minh danh tính" — hệ thống không kiểm tra giấy tờ, ghi như vậy là nói sai.
+    /// Không lộ email.</summary>
+    public sealed record OwnerProfileDto(
+        string Id,
+        string Name,
+        string? AvatarUrl,
+        string? Bio,
+        DateTime JoinedAt,
+        bool EmailVerified,
+        bool HasPhone,
+        int ActiveListingCount,
+        /// <summary>Số tin từng được duyệt lên trang (đang hiển thị + đã đóng).</summary>
+        int PublishedListingCount,
+        /// <summary>Yêu cầu xem nhà nhận được trong 180 ngày gần đây.</summary>
+        int InquiriesReceived,
+        /// <summary>Số yêu cầu đã được phản hồi (không còn ở trạng thái "Mới").</summary>
+        int InquiriesAnswered,
+        /// <summary>Thời gian phản hồi trung vị (giờ); null khi chưa đủ dữ liệu.</summary>
+        double? MedianResponseHours,
+        IReadOnlyList<PublicListingSummaryDto> Listings);
 
     /// <summary>Một khu vực đang có tin đăng, dùng cho ô gợi ý tìm khu vực.
     ///

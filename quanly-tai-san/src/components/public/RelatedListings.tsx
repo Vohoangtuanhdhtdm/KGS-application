@@ -1,11 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ImageIcon } from "lucide-react";
-import {
-  listingsApi,
-  formatListingPrice,
-  type PublicListingSummaryDto,
-} from "@/lib/api/listings";
+import { listingsApi, formatListingPrice, type PublicListingSummaryDto } from "@/lib/api/listings";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,7 +15,15 @@ import { Skeleton } from "@/components/ui/skeleton";
  * Tải tách khỏi nội dung chính: phần này nằm dưới màn hình đầu, không đáng để tin đăng
  * phải chờ nó mới hiện được.
  */
-export function RelatedListings({ slug, ownerName }: { slug: string; ownerName: string }) {
+export function RelatedListings({
+  slug,
+  ownerName,
+  ownerId,
+}: {
+  slug: string;
+  ownerName: string;
+  ownerId?: string | null;
+}) {
   const query = useQuery({
     queryKey: ["listing-related", slug],
     queryFn: () => listingsApi.related(slug),
@@ -51,16 +55,41 @@ export function RelatedListings({ slug, ownerName }: { slug: string; ownerName: 
     <div className="space-y-6">
       {similar.length > 0 && <Rail title="Tin tương tự trong khu vực" items={similar} />}
       {fromOwner.length > 0 && (
-        <Rail title={`Tin khác của ${ownerName}`} items={fromOwner} />
+        <Rail
+          title={`Tin khác của ${ownerName}`}
+          items={fromOwner}
+          action={
+            ownerId ? (
+              <Link
+                to="/nguoi-dang/$id"
+                params={{ id: ownerId }}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Xem hồ sơ người đăng →
+              </Link>
+            ) : null
+          }
+        />
       )}
     </div>
   );
 }
 
-function Rail({ title, items }: { title: string; items: PublicListingSummaryDto[] }) {
+function Rail({
+  title,
+  items,
+  action,
+}: {
+  title: string;
+  items: PublicListingSummaryDto[];
+  action?: React.ReactNode;
+}) {
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {action}
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {items.map((p) => (
           <CompactCard key={p.id} listing={p} />
@@ -70,7 +99,7 @@ function Rail({ title, items }: { title: string; items: PublicListingSummaryDto[
   );
 }
 
-function CompactCard({ listing: p }: { listing: PublicListingSummaryDto }) {
+export function CompactCard({ listing: p }: { listing: PublicListingSummaryDto }) {
   return (
     <Link to="/tin-dang/$slug" params={{ slug: p.slug }} className="block group">
       <Card className="overflow-hidden py-0 gap-0 h-full transition-shadow group-hover:shadow-md">

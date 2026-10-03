@@ -122,6 +122,8 @@ export interface PublicListingDetailDto {
   ownerAvatarUrl: string | null;
   ownerJoinedAt: string;
   ownerActiveListingCount: number;
+  /** Để dẫn tới hồ sơ công khai /nguoi-dang/{id}. */
+  ownerId?: string | null;
 }
 
 /** Hai dải gợi ý dưới trang chi tiết. */
@@ -428,4 +430,25 @@ export const listingsApi = {
   reopen: (listingId: string) =>
     api<OwnerListingDto>(`/listings/${listingId}/reopen`, { method: "POST" }),
   deleteDraft: (listingId: string) => api<void>(`/listings/${listingId}`, { method: "DELETE" }),
+};
+
+/** Hồ sơ công khai của người đăng — chỉ những gì hệ thống kiểm chứng được. */
+export interface OwnerProfile {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  bio: string | null;
+  joinedAt: string;
+  emailVerified: boolean;
+  hasPhone: boolean;
+  activeListingCount: number;
+  publishedListingCount: number;
+  inquiriesReceived: number;
+  inquiriesAnswered: number;
+  medianResponseHours: number | null;
+  listings: PublicListingSummaryDto[];
+}
+
+export const ownersApi = {
+  profile: (id: string) => api<OwnerProfile>(`/owners/${encodeURIComponent(id)}`, { skipAuth: true }),
 };

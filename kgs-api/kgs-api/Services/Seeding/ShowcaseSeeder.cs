@@ -89,22 +89,58 @@ namespace kgs_api.Services.Seeding
             _db.Set<AssetUnit>().AddRange(units);
             _db.Set<Listing>().AddRange(listings);
 
-            // Lịch sử kiểm duyệt cho tin bị trả về / từ chối — chủ tin mở tin ra là thấy
-            // vòng gửi duyệt và lý do, đúng như tin bị xử lý thật.
-            foreach (var l in listings.Where(l => l.Status is ListingStatus.ChangesRequested or ListingStatus.Rejected))
+            // Mốc thời gian và lịch sử kiểm duyệt như dữ liệu thật: tin được tạo, gửi duyệt rồi
+            // mới được duyệt/trả về — trang tổng quan quản trị đo thời gian duyệt và tỉ lệ duyệt
+            // vòng đầu từ chính những sự kiện này. Bộ sinh ngẫu nhiên RIÊNG để nội dung tin
+            // (vốn sinh từ rnd) giữ nguyên qua mọi lần chạy.
+            var tr = new Random(RandomSeed + 1);
+            void Ev(Listing l, ModerationAction a, int round, DateTime at, string? note = null, List<ModerationReason>? reasons = null)
+                => _db.Set<ListingModerationEvent>().Add(new ListingModerationEvent
+                {
+                    Listing = l, Action = a, Round = round, CreatedAt = at, Note = note, Reasons = reasons ?? new(),
+                });
+            foreach (var l in listings)
             {
-                _db.Set<ListingModerationEvent>().Add(new ListingModerationEvent
+                var wait = TimeSpan.FromHours(1 + tr.NextDouble() * (tr.NextDouble() < 0.8 ? 10 : 40));
+                switch (l.Status)
                 {
-                    Listing = l, Action = ModerationAction.Submitted, Round = 1, CreatedAt = now.AddDays(-4),
-                });
-                _db.Set<ListingModerationEvent>().Add(new ListingModerationEvent
-                {
-                    Listing = l, Round = 2, CreatedAt = now.AddDays(-3), Note = l.ModerationNote,
-                    Action = l.Status == ListingStatus.Rejected ? ModerationAction.Rejected : ModerationAction.ChangesRequested,
-                    Reasons = l.Status == ListingStatus.Rejected
-                        ? new List<ModerationReason> { ModerationReason.MissingOrBadPhotos }
-                        : new List<ModerationReason> { ModerationReason.MissingTerms, ModerationReason.ThinDescription },
-                });
+                    case ListingStatus.Approved or ListingStatus.Closed when l.PublishedAt is { } pub:
+                        l.CreatedAt = pub - wait - TimeSpan.FromMinutes(tr.Next(5, 90));
+                        // ~15% tin từng bị trả về một lần rồi mới được duyệt — tỉ lệ duyệt vòng đầu
+                        // không phải 100% như một bộ dữ liệu "quá sạch".
+                        if (l.AssetUnit == null && tr.NextDouble() < 0.15)
+                        {
+                            Ev(l, ModerationAction.Submitted, 1, l.CreatedAt);
+                            Ev(l, ModerationAction.ChangesRequested, 2, l.CreatedAt + wait / 2,
+                                "Bổ sung giá điện nước và ảnh thật của phòng.",
+                                new() { tr.NextDouble() < 0.5 ? ModerationReason.MissingTerms : ModerationReason.MissingOrBadPhotos });
+                            Ev(l, ModerationAction.Submitted, 3, pub - wait / 2);
+                            Ev(l, ModerationAction.Approved, 4, pub);
+                        }
+                        else
+                        {
+                            Ev(l, ModerationAction.Submitted, 1, pub - wait);
+                            Ev(l, ModerationAction.Approved, 2, pub);
+                        }
+                        break;
+                    case ListingStatus.Pending:
+                        l.CreatedAt = now.AddHours(-(2 + tr.Next(0, 40)));
+                        Ev(l, ModerationAction.Submitted, 1, l.CreatedAt);
+                        break;
+                    case ListingStatus.ChangesRequested or ListingStatus.Rejected:
+                        l.CreatedAt = now.AddDays(-4).AddHours(-tr.Next(0, 24));
+                        Ev(l, ModerationAction.Submitted, 1, l.CreatedAt);
+                        Ev(l, l.Status == ListingStatus.Rejected ? ModerationAction.Rejected : ModerationAction.ChangesRequested,
+                            2, l.CreatedAt + wait, l.ModerationNote,
+                            l.Status == ListingStatus.Rejected
+                                ? new() { ModerationReason.MissingOrBadPhotos }
+                                : new() { ModerationReason.MissingTerms, ModerationReason.ThinDescription });
+                        break;
+                    default: // bản nháp
+                        l.CreatedAt = now.AddDays(-tr.Next(1, 10));
+                        break;
+                }
+                l.Asset.CreatedAt = l.Asset.CreatedAt == default || l.CreatedAt < l.Asset.CreatedAt ? l.CreatedAt : l.Asset.CreatedAt;
             }
             await _db.SaveChangesAsync(ct);
 
@@ -570,6 +606,9 @@ namespace kgs_api.Services.Seeding
                     ListingId = l.Id, FromUserId = people[who], ToUserId = l.Asset.UserId,
                     Message = msg, PreferredViewingAt = now.AddDays(2 + daysAgo % 4).Date.AddHours(17),
                     Status = st, CreatedAt = now.AddDays(-daysAgo),
+                    // Đã phản hồi thì có mốc phản hồi — hồ sơ người đăng tính "thường trả lời
+                    // trong khoảng" từ đây.
+                    UpdatedAt = st == InquiryStatus.New ? null : now.AddDays(-daysAgo).AddHours(2 + daysAgo * 1.5),
                 });
             }
             Ask("khoa", khoaPicks.ElementAtOrDefault(0), "Chào chị, phòng còn trống không ạ? Em đi làm ở Quận 1, muốn xem phòng chiều thứ Bảy.", InquiryStatus.New, 1);

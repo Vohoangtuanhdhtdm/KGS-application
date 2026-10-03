@@ -83,6 +83,7 @@ namespace kgs_api.Extensions
             services.AddMemoryCache();
             services.AddSingleton<kgs_api.Services.Admin.UserAccessGuard>();
             services.AddScoped<kgs_api.Services.Admin.AdminManagementService>();
+            services.AddScoped<kgs_api.Services.Admin.AdminOverviewService>();
             services.AddScoped<kgs_api.Services.Seeding.ShowcaseSeeder>();
 
             // Trợ lý tìm nhà (Groq). Thiếu khoá thì endpoint trả 503, phần còn lại chạy bình thường.

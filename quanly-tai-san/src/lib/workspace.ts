@@ -51,9 +51,9 @@ export const WORKSPACES: Record<Workspace, WorkspaceMeta> = {
   admin: {
     id: "admin",
     label: "Quản trị",
-    tagline: "Duyệt tin đăng và xử lý báo vi phạm",
+    tagline: "Duyệt tin, xử lý vi phạm, quản lý người dùng",
     icon: ShieldCheck,
-    home: "/admin/listings",
+    home: "/admin/overview",
     colorVar: "--ws-admin",
   },
 };
