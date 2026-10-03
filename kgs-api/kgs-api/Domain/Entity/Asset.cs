@@ -39,6 +39,18 @@ namespace kgs_api.Domain.Entity
 
         public Point? Location { get; set; }
 
+        // ---- Mô hình toà nhà 3D ("Toà nhà → Tầng → Căn") ----
+        // Không lưu tệp 3D nào: toà nhà được DỰNG từ chính dữ liệu đã có — khung (đường viền
+        // trên bản đồ), số tầng (Floors) và các căn đã khai (Units theo FloorNumber). Lưu ở đây
+        // chỉ là khung và chiều cao tầng; phần chia căn tính lại ở trình duyệt mỗi lần xem.
+
+        /// <summary>Đường viền toà nhà: mảng [lng, lat] (vòng ngoài, không cần khép kín).</summary>
+        public string? FootprintJson { get; set; }
+        /// <summary>Chiều cao một tầng (m). Null = mặc định 3,2 m.</summary>
+        public double? FloorHeightMeters { get; set; }
+        /// <summary>Chủ nhà đã xem trước và cho phép người tìm nhà xem mô hình.</summary>
+        public bool BuildingModelPublished { get; set; }
+
         // Navigations
         public ICollection<AssetUnit> Units { get; set; } = new List<AssetUnit>();
         public ICollection<AssetMedia> Media { get; set; } = new List<AssetMedia>();

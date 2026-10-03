@@ -241,11 +241,126 @@ namespace kgs_api.Controllers
         {
             if (!_env.IsDevelopment()) return NotFound();
 
-            var demo = await _db.Assets.Where(a => a.Notes == DemoTag).ToListAsync(ct);
+            var demo = await _db.Assets.Where(a => a.Notes == DemoTag || a.Notes == BuildingTag).ToListAsync(ct);
             _db.Assets.RemoveRange(demo);   // Listings, Images, Views, Reports cascade theo
             await _db.SaveChangesAsync(ct);
 
             return Ok(new { message = "Đã xoá dữ liệu demo.", removed = demo.Count });
+        }
+
+        /// <summary>Nhãn của toà nhà demo cho mô hình 3D — tách khỏi DemoTag để dựng lại toà
+        /// nhà không xoá mất bộ 120 tin kia và ngược lại.</summary>
+        private const string BuildingTag = "[demo-3d]";
+
+        /// <summary>Dựng một toà nhà demo cho chức năng "Toà nhà → Tầng → Căn": 8 tầng, tầng
+        /// trệt 2 ki-ốt, tầng 2–8 mỗi tầng 4 căn hộ dịch vụ; khoảng 1/3 số căn còn trống và có
+        /// tin đăng đã duyệt. Mô hình đã công khai, nên mở tin bất kỳ của toà nhà là thấy 3D.
+        /// Gọi lại sẽ xoá toà nhà demo cũ của người gọi rồi dựng mới.</summary>
+        [HttpPost("building")]
+        public async Task<IActionResult> GenerateBuilding(CancellationToken ct)
+        {
+            if (!_env.IsDevelopment()) return NotFound();
+
+            var callerId = _currentUser.UserId;
+            var old = await _db.Assets.Where(a => a.UserId == callerId && a.Notes == BuildingTag).ToListAsync(ct);
+            _db.Assets.RemoveRange(old);
+            await _db.SaveChangesAsync(ct);
+
+            var rnd = new Random(20261003);
+            var now = DateTime.UtcNow;
+
+            // Khối 26 m × 16 m, xoay nhẹ cho giống thực tế, cạnh đường Xô Viết Nghệ Tĩnh.
+            const double lat = 10.80395, lng = 106.71106;
+            const double mLat = 111_320.0;
+            var mLng = mLat * Math.Cos(lat * Math.PI / 180);
+            var rot = 18 * Math.PI / 180;
+            var corners = new[] { (-13.0, -8.0), (13.0, -8.0), (13.0, 8.0), (-13.0, 8.0) };
+            var footprint = corners.Select(c =>
+            {
+                var x = c.Item1 * Math.Cos(rot) - c.Item2 * Math.Sin(rot);
+                var y = c.Item1 * Math.Sin(rot) + c.Item2 * Math.Cos(rot);
+                return new[] { Math.Round(lng + x / mLng, 7), Math.Round(lat + y / mLat, 7) };
+            }).ToList();
+
+            var asset = new Asset
+            {
+                UserId = callerId,
+                Name = "Toà căn hộ dịch vụ Xô Viết Nghệ Tĩnh (demo 3D)",
+                TypeProperty = AssetDomainType.Apartment,
+                OwnershipType = AssetOwnershipType.Owned,
+                Status = AssetStatus.InUse,
+                Address = new Address
+                {
+                    City = "Thành phố Hồ Chí Minh",
+                    District = "Quận Bình Thạnh",
+                    Ward = "Phường 25",
+                    Detail = "120 Xô Viết Nghệ Tĩnh",
+                },
+                Location = _geometryFactory.CreatePoint(new Coordinate(lng, lat)),
+                Area = 416,
+                Floors = 8,
+                Bathrooms = 1,
+                Bedrooms = 1,
+                LegalStatus = "Sổ hồng riêng",
+                FurnitureState = "Đầy đủ",
+                Notes = BuildingTag,
+                FootprintJson = System.Text.Json.JsonSerializer.Serialize(footprint),
+                FloorHeightMeters = 3.3,
+                BuildingModelPublished = true,
+            };
+
+            var units = new List<AssetUnit>();
+            var listings = new List<Listing>();
+            for (var floor = 1; floor <= 8; floor++)
+            {
+                var perFloor = floor == 1 ? 2 : 4;
+                for (var k = 1; k <= perFloor; k++)
+                {
+                    var vacant = floor > 1 && rnd.NextDouble() < 0.33;
+                    var unit = new AssetUnit
+                    {
+                        Asset = asset,
+                        Name = floor == 1 ? $"Ki-ốt {k}" : $"P.{floor}0{k}",
+                        FloorNumber = floor,
+                        Area = floor == 1 ? 48 : (k is 1 or 4 ? 38 : 30),
+                        Status = vacant ? UnitStatus.Vacant : UnitStatus.Occupied,
+                    };
+                    units.Add(unit);
+                    if (!vacant) continue;
+
+                    var amenities = BuildAmenities(rnd, false);
+                    listings.Add(new Listing
+                    {
+                        Asset = asset,
+                        AssetUnit = unit,
+                        Title = $"Căn hộ dịch vụ {unit.Area:0} m² tầng {floor}, Xô Viết Nghệ Tĩnh, Bình Thạnh",
+                        Description = $"Căn {unit.Name} trong toà căn hộ dịch vụ 8 tầng, có thang máy, bảo vệ 24/7. "
+                                    + "Nội thất đầy đủ, vào ở ngay. Gần chợ Bà Chiểu, đi Quận 1 khoảng 10 phút.",
+                        Price = (k is 1 or 4 ? 6_500_000m : 5_200_000m) + floor * 100_000m,
+                        Type = ListingType.Rent,
+                        RentPaymentCycle = PaymentCycle.Monthly,
+                        Status = ListingStatus.Approved,
+                        Slug = $"thue-can-ho-dich-vu-binh-thanh-{unit.Name.Replace(".", "").ToLowerInvariant()}-{Guid.NewGuid().ToString("N")[..6]}",
+                        PublishedAt = now.AddDays(-rnd.Next(1, 20)),
+                        Amenities = amenities,
+                        Terms = BuildTerms(rnd, amenities, now),
+                        Images = BuildImages(rnd, ListingStatus.Approved),
+                    });
+                }
+            }
+
+            _db.Assets.Add(asset);
+            _db.Set<AssetUnit>().AddRange(units);
+            _db.Set<Listing>().AddRange(listings);
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(new
+            {
+                message = "Đã dựng toà nhà demo cho mô hình 3D.",
+                assetId = asset.Id,
+                units = units.Count,
+                listings = listings.Select(l => l.Slug).ToList(),
+            });
         }
 
         // ==================== Nội bộ ====================
