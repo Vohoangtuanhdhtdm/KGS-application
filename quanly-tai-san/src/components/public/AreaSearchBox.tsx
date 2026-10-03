@@ -25,12 +25,10 @@ import type { ListingTypeCode } from "@/constants/enums";
  * Bản này lấy danh sách khu vực từ CHÍNH tin đăng (`/listings/areas`), tải một lần rồi lọc
  * tại chỗ, khớp không phụ thuộc dấu tiếng Việt.
  *
- * Vì sao không dùng danh mục hành chính `vietnam-provinces` mà ứng dụng đã đóng gói sẵn:
- * danh mục ghi "Thành phố Hồ Chí Minh", còn dữ liệu tin đăng ghi "TP. Hồ Chí Minh", mà bộ
- * lọc so khớp chuỗi CHÍNH XÁC — lấy tên từ danh mục thì mọi lượt tìm đều trả về 0 kết quả.
- * Lấy từ dữ liệu thật thì tên khớp đúng theo định nghĩa. Được thêm một điều nữa: danh sách
+ * Vì sao lấy từ dữ liệu tin đăng thay vì danh mục hành chính `vietnam-provinces`: danh sách
  * chỉ chứa khu vực CÓ tin, nên không bao giờ gợi ý người dùng vào một chỗ trống, và hiện
- * được luôn số tin của từng khu vực.
+ * được luôn số tin của từng khu vực. (Tên thì hai nguồn nay đã giống nhau: máy chủ quy mọi
+ * cách viết về tên chính thức của danh mục khi lưu và khi lọc — xem AdministrativeNames.)
  */
 
 export interface AreaPick {
