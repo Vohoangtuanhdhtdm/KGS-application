@@ -1,5 +1,6 @@
 ﻿using kgs_api.Domain.Entity;
 using kgs_api.Domain.ValueObjects;
+using kgs_api.Domain.Rules;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
@@ -55,9 +56,9 @@ namespace kgs_api.Services
                 Floors = request.Floors,
                 Bedrooms = request.Bedrooms,
                 Bathrooms = request.Bathrooms,
-                HouseDirection = request.HouseDirection?.Trim(),
-                LegalStatus = request.LegalStatus?.Trim(),
-                FurnitureState = request.FurnitureState?.Trim(),
+                HouseDirection = PropertyVocabulary.NormalizeDirection(request.HouseDirection),
+                LegalStatus = PropertyVocabulary.NormalizeLegal(request.LegalStatus),
+                FurnitureState = PropertyVocabulary.NormalizeFurniture(request.FurnitureState),
                 Frontage = request.Frontage
             };
 
@@ -83,9 +84,9 @@ namespace kgs_api.Services
             asset.Floors = request.Floors;
             asset.Bedrooms = request.Bedrooms;
             asset.Bathrooms = request.Bathrooms;
-            asset.HouseDirection = request.HouseDirection?.Trim();
-            asset.LegalStatus = request.LegalStatus?.Trim();
-            asset.FurnitureState = request.FurnitureState?.Trim();
+            asset.HouseDirection = PropertyVocabulary.NormalizeDirection(request.HouseDirection);
+            asset.LegalStatus = PropertyVocabulary.NormalizeLegal(request.LegalStatus);
+            asset.FurnitureState = PropertyVocabulary.NormalizeFurniture(request.FurnitureState);
             asset.Frontage = request.Frontage;
 
             await _uow.SaveChangesAsync(ct);

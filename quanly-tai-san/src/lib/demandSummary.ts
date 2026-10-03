@@ -1,4 +1,4 @@
-import { AMENITIES, type AmenityKey } from "@/constants/enums";
+import { AMENITIES, ASSET_TYPE, type AmenityKey, type AssetTypeCode } from "@/constants/enums";
 import type { SavedSearchCriteria } from "@/lib/api/savedSearches";
 import { formatCurrency } from "@/lib/format";
 
@@ -17,6 +17,9 @@ export function describeDemand(
   const out: string[] = [];
   if (c.type === 1) out.push("Mua");
   if (c.type === 2) out.push("Thuê");
+
+  const types = (c.propertyTypes ?? []).map((t) => ASSET_TYPE[t as AssetTypeCode]).filter(Boolean);
+  if (types.length) out.push(types.join(" / "));
 
   const area = [c.district, c.city].filter(Boolean).join(", ");
   if (area) out.push(area);
@@ -43,7 +46,17 @@ export function describeDemand(
   else if (c.priceMin != null) out.push(`Giá từ ${short(c.priceMin)}`);
 
   if (c.totalCostMax != null) out.push(`Tổng chi phí ≤ ${short(c.totalCostMax)}/tháng`);
+  if (c.areaMin != null && c.areaMax != null) out.push(`${c.areaMin}–${c.areaMax} m²`);
+  else if (c.areaMin != null) out.push(`Từ ${c.areaMin} m²`);
+  else if (c.areaMax != null) out.push(`Đến ${c.areaMax} m²`);
   if (c.bedroomsMin != null) out.push(`Từ ${c.bedroomsMin} phòng ngủ`);
+  if (c.bathroomsMin != null) out.push(`Từ ${c.bathroomsMin} phòng tắm`);
+  if (c.floorsMin != null) out.push(`Từ ${c.floorsMin} tầng`);
+  if (c.frontageMin != null) out.push(`Mặt tiền từ ${c.frontageMin} m`);
+  if (c.directions?.length) out.push(`Hướng ${c.directions.join(", ")}`);
+  if (c.legalStatuses?.length) out.push(c.legalStatuses.join(" / "));
+  if (c.furnitureStates?.length)
+    out.push(`Nội thất: ${c.furnitureStates.join(", ").toLowerCase()}`);
   if (c.petsAllowed === true) out.push("Có nuôi thú cưng");
   if (c.curfewFree === true) out.push("Cần giờ giấc tự do");
   if (c.sharedWithOwner === false) out.push("Không ở chung chủ");

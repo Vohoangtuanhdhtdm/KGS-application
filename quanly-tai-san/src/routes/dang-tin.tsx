@@ -1,5 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactElement } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -12,6 +20,11 @@ import {
 import { getErrorMessage } from "@/lib/api/errors";
 import {
   ASSET_TYPE,
+  FURNITURE_STATE_OPTIONS,
+  HOUSE_DIRECTIONS,
+  LEGAL_STATUS_OPTIONS,
+  TYPE_FIELDS,
+  type AssetTypeCode,
   MODERATION_ACTION,
   MODERATION_REASON,
   PAYMENT_CYCLE,
@@ -85,6 +98,11 @@ function CreateListingPage() {
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [floors, setFloors] = useState("");
+  // Đặc điểm theo loại hình — để người tìm lọc được theo mặt tiền, hướng, pháp lý, nội thất.
+  const [frontage, setFrontage] = useState("");
+  const [houseDirection, setHouseDirection] = useState("");
+  const [legalStatus, setLegalStatus] = useState("");
+  const [furnitureState, setFurnitureState] = useState("");
   const [pin, setPin] = useState<LatLngValue | null>(null);
 
   // Bước 3 — điều kiện thuê
@@ -131,6 +149,10 @@ function CreateListingPage() {
     setBedrooms(d.bedrooms?.toString() ?? "");
     setBathrooms(d.bathrooms?.toString() ?? "");
     setFloors(d.floors?.toString() ?? "");
+    setFrontage(d.frontage?.toString() ?? "");
+    setHouseDirection(d.houseDirection ?? "");
+    setLegalStatus(d.legalStatus ?? "");
+    setFurnitureState(d.furnitureState ?? "");
     if (d.latitude != null && d.longitude != null) setPin({ lat: d.latitude, lng: d.longitude });
     setTerms(d.terms);
     setAmenities(d.amenities);
@@ -141,6 +163,14 @@ function CreateListingPage() {
   }, [existingQ.data]);
 
   const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
+
+  /* Trường nào có nghĩa với loại hình đang chọn. Đất không có phòng ngủ, phòng trọ không có
+     mặt tiền hay sổ riêng. Trường bị ẩn thì KHÔNG gửi lên — giá trị cũ còn sót trong state
+     (chọn nhà phố, gõ mặt tiền, rồi đổi sang phòng trọ) không được lọt vào tin. Pháp lý chỉ
+     hỏi với tin BÁN: người thuê gần như không bao giờ lọc theo sổ hồng. */
+  const fields = TYPE_FIELDS[(propertyType in TYPE_FIELDS ? propertyType : 99) as AssetTypeCode];
+  const showLegal = fields.legal && type === 1;
+  const shown = <T,>(on: boolean, v: T): T | null => (on ? v : null);
 
   const buildBody = (): CreateListingDirectInput => ({
     type,
@@ -154,9 +184,13 @@ function CreateListingPage() {
     addressDetail: addressDetail.trim() || null,
     propertyType,
     area: num(area),
-    bedrooms: num(bedrooms),
-    bathrooms: num(bathrooms),
-    floors: num(floors),
+    bedrooms: shown(fields.rooms, num(bedrooms)),
+    bathrooms: shown(fields.rooms, num(bathrooms)),
+    floors: shown(fields.floors, num(floors)),
+    frontage: shown(fields.frontage, num(frontage)),
+    houseDirection: shown(fields.direction, houseDirection || null),
+    legalStatus: shown(showLegal, legalStatus || null),
+    furnitureState: shown(fields.furniture, furnitureState || null),
     latitude: pin?.lat ?? null,
     longitude: pin?.lng ?? null,
     terms,
@@ -187,6 +221,10 @@ function CreateListingPage() {
                 bedrooms: b.bedrooms,
                 bathrooms: b.bathrooms,
                 floors: b.floors,
+                frontage: b.frontage,
+                houseDirection: b.houseDirection,
+                legalStatus: b.legalStatus,
+                furnitureState: b.furnitureState,
                 // Chưa ghim thì không gửi: null ở đây nghĩa là "giữ nguyên", không phải "xoá".
                 ...(pin ? { latitude: pin.lat, longitude: pin.lng } : {}),
               }
@@ -345,9 +383,7 @@ function CreateListingPage() {
               ) : (
                 <Circle className="h-4 w-4 text-muted-foreground/50" />
               )}
-              <span className={m.xong ? "text-foreground" : "text-muted-foreground"}>
-                {m.nhan}
-              </span>
+              <span className={m.xong ? "text-foreground" : "text-muted-foreground"}>{m.nhan}</span>
               {!m.batBuoc && <span className="text-xs text-muted-foreground">(tuỳ chọn)</span>}
               {i < tienDo.length - 1 && (
                 <span aria-hidden="true" className="ml-1 text-muted-foreground/40">
@@ -378,9 +414,7 @@ function CreateListingPage() {
             <p className="text-sm font-medium">
               {status === 6 ? "Tin cần chỉnh sửa trước khi đăng" : "Tin đã bị từ chối"}
             </p>
-            {moderationNote && (
-              <p className="text-sm text-muted-foreground">{moderationNote}</p>
-            )}
+            {moderationNote && <p className="text-sm text-muted-foreground">{moderationNote}</p>}
             {status === 6 && (
               <p className="text-sm text-muted-foreground">
                 Tin không bị xoá. Sửa xong bấm Gửi duyệt lại ở cuối trang.
@@ -404,7 +438,10 @@ function CreateListingPage() {
             </Tabs>
           </Field>
 
-          <Field label="Tiêu đề" hint="Ít nhất 10 ký tự. Nêu rõ loại hình, khu vực và điểm nổi bật.">
+          <Field
+            label="Tiêu đề"
+            hint="Ít nhất 10 ký tự. Nêu rõ loại hình, khu vực và điểm nổi bật."
+          >
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -419,7 +456,10 @@ function CreateListingPage() {
             </Field>
             {type === 2 && (
               <Field label="Chu kỳ thanh toán">
-                <Select value={String(cycle)} onValueChange={(v) => setCycle(Number(v) as PaymentCycleCode)}>
+                <Select
+                  value={String(cycle)}
+                  onValueChange={(v) => setCycle(Number(v) as PaymentCycleCode)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -477,72 +517,150 @@ function CreateListingPage() {
 
           {!canEditProperty && (
             <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
-              Địa chỉ này còn tin đăng khác nên phần dưới đang khoá — sửa ở đây sẽ đổi
-              luôn nội dung của những tin kia.
+              Địa chỉ này còn tin đăng khác nên phần dưới đang khoá — sửa ở đây sẽ đổi luôn nội dung
+              của những tin kia.
             </div>
           )}
 
           <fieldset disabled={!canEditProperty} className="space-y-4 disabled:opacity-60">
-          <VietnamAddressPicker
-            city={city}
-            district={district}
-            ward={ward}
-            onChange={(v) => {
-              setCity(v.city);
-              setDistrict(v.district);
-              setWard(v.ward);
-            }}
-          />
-
-          <Field label="Địa chỉ chi tiết" hint="Số nhà, tên đường. Không bắt buộc.">
-            <Input
-              value={addressDetail}
-              onChange={(e) => setAddressDetail(e.target.value)}
-              placeholder="Ví dụ: 45/12 Điện Biên Phủ"
+            <VietnamAddressPicker
+              city={city}
+              district={district}
+              ward={ward}
+              onChange={(v) => {
+                setCity(v.city);
+                setDistrict(v.district);
+                setWard(v.ward);
+              }}
             />
-          </Field>
 
-          {/* Không bọc trong Field: Field nối nhãn bằng id của phần tử con, mà bản đồ không
+            <Field label="Địa chỉ chi tiết" hint="Số nhà, tên đường. Không bắt buộc.">
+              <Input
+                value={addressDetail}
+                onChange={(e) => setAddressDetail(e.target.value)}
+                placeholder="Ví dụ: 45/12 Điện Biên Phủ"
+              />
+            </Field>
+
+            {/* Không bọc trong Field: Field nối nhãn bằng id của phần tử con, mà bản đồ không
               phải ô nhập nên nhãn trỏ vào đó là sai ngữ nghĩa. */}
-          <section id="muc-vi-tri" aria-labelledby="muc-vi-tri-nhan" className="scroll-mt-28 space-y-1.5">
-            <p id="muc-vi-tri-nhan" className="text-sm font-medium leading-none">
-              Vị trí trên bản đồ{" "}
-              <span className="font-normal text-muted-foreground">(nên có)</span>
-            </p>
-            <LocationPinField value={pin} onChange={setPin} disabled={!canEditProperty} />
-          </section>
+            <section
+              id="muc-vi-tri"
+              aria-labelledby="muc-vi-tri-nhan"
+              className="scroll-mt-28 space-y-1.5"
+            >
+              <p id="muc-vi-tri-nhan" className="text-sm font-medium leading-none">
+                Vị trí trên bản đồ{" "}
+                <span className="font-normal text-muted-foreground">(nên có)</span>
+              </p>
+              <LocationPinField value={pin} onChange={setPin} disabled={!canEditProperty} />
+            </section>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Loại hình">
-              <Select value={String(propertyType)} onValueChange={(v) => setPropertyType(Number(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {enumOptions(ASSET_TYPE).map((o) => (
-                    <SelectItem key={o.value} value={String(o.value)}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Diện tích (m²)">
-              <Input type="number" min={0} value={area} onChange={(e) => setArea(e.target.value)} />
-            </Field>
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Loại hình">
+                <Select
+                  value={String(propertyType)}
+                  onValueChange={(v) => setPropertyType(Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {enumOptions(ASSET_TYPE).map((o) => (
+                      <SelectItem key={o.value} value={String(o.value)}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Diện tích (m²)">
+                <Input
+                  type="number"
+                  min={0}
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                />
+              </Field>
+            </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Phòng ngủ">
-              <Input type="number" min={0} value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} />
-            </Field>
-            <Field label="Phòng tắm">
-              <Input type="number" min={0} value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} />
-            </Field>
-            <Field label="Số tầng">
-              <Input type="number" min={0} value={floors} onChange={(e) => setFloors(e.target.value)} />
-            </Field>
-          </div>
+            {(fields.rooms || fields.floors || fields.frontage) && (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {fields.rooms && (
+                  <Field label="Phòng ngủ">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={bedrooms}
+                      onChange={(e) => setBedrooms(e.target.value)}
+                    />
+                  </Field>
+                )}
+                {fields.rooms && (
+                  <Field label="Phòng tắm">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={bathrooms}
+                      onChange={(e) => setBathrooms(e.target.value)}
+                    />
+                  </Field>
+                )}
+                {fields.floors && (
+                  <Field label="Số tầng">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={floors}
+                      onChange={(e) => setFloors(e.target.value)}
+                    />
+                  </Field>
+                )}
+                {fields.frontage && (
+                  <Field label="Mặt tiền (m)">
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      value={frontage}
+                      onChange={(e) => setFrontage(e.target.value)}
+                    />
+                  </Field>
+                )}
+              </div>
+            )}
+
+            {(fields.direction || showLegal || fields.furniture) && (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {fields.direction && (
+                  <Field label="Hướng">
+                    <OptionSelect
+                      value={houseDirection}
+                      onChange={setHouseDirection}
+                      options={HOUSE_DIRECTIONS}
+                    />
+                  </Field>
+                )}
+                {showLegal && (
+                  <Field label="Pháp lý">
+                    <OptionSelect
+                      value={legalStatus}
+                      onChange={setLegalStatus}
+                      options={LEGAL_STATUS_OPTIONS.filter((x) => x !== "Khác")}
+                    />
+                  </Field>
+                )}
+                {fields.furniture && (
+                  <Field label="Nội thất">
+                    <OptionSelect
+                      value={furnitureState}
+                      onChange={setFurnitureState}
+                      options={FURNITURE_STATE_OPTIONS.filter((x) => x !== "Khác")}
+                    />
+                  </Field>
+                )}
+              </div>
+            )}
           </fieldset>
         </CardContent>
       </Card>
@@ -578,7 +696,9 @@ function CreateListingPage() {
                 variant="outline"
                 disabled={!contentReady || busy}
                 onClick={() => saveDraft.mutate()}
-              >  {/* eslint-disable-line */}
+              >
+                {" "}
+                {/* eslint-disable-line */}
                 {saveDraft.isPending ? (
                   <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 ) : (
@@ -588,7 +708,11 @@ function CreateListingPage() {
               </Button>
               {!contentReady && (
                 <p className="text-xs text-muted-foreground">
-                  Còn thiếu: {thieuDeGuiDuyet.filter((t) => t !== "lưu nháp một lần" && t !== "ít nhất 1 ảnh").join(", ")}.
+                  Còn thiếu:{" "}
+                  {thieuDeGuiDuyet
+                    .filter((t) => t !== "lưu nháp một lần" && t !== "ít nhất 1 ảnh")
+                    .join(", ")}
+                  .
                 </p>
               )}
             </div>
@@ -609,7 +733,10 @@ function CreateListingPage() {
 
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {images.map((img) => (
-                  <div key={img.id} className="relative aspect-square rounded-md overflow-hidden border group">
+                  <div
+                    key={img.id}
+                    className="relative aspect-square rounded-md overflow-hidden border group"
+                  >
                     <img src={img.url} alt="" className="h-full w-full object-cover" />
                     <button
                       type="button"
@@ -790,5 +917,36 @@ function LichSuKiemDuyet({ listingId }: { listingId: string }) {
         ))}
       </ol>
     </details>
+  );
+}
+
+const NONE = "__none";
+
+/** Chọn một giá trị trong bộ chuẩn (khớp PropertyVocabulary phía máy chủ), hoặc bỏ trống. */
+function OptionSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+}) {
+  // Giá trị cũ ngoài bộ chuẩn (nhập tay từ trước) vẫn phải hiện ra, không được biến mất im lặng.
+  const all = value && !options.includes(value) ? [...options, value] : options;
+  return (
+    <Select value={value || NONE} onValueChange={(v) => onChange(v === NONE ? "" : v)}>
+      <SelectTrigger>
+        <SelectValue placeholder="Chưa chọn" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NONE}>Chưa chọn</SelectItem>
+        {all.map((o) => (
+          <SelectItem key={o} value={o}>
+            {o}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

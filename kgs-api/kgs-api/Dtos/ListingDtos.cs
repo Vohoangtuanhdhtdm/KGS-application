@@ -177,7 +177,28 @@ namespace kgs_api.Dtos
         /// <c>lng,lat;lng,lat;...</c>. Gửi kèm Latitude/Longitude/RadiusMeters là vòng tròn
         /// bao ngoài vùng: vòng tròn đi qua GiST index để loại nhanh, đa giác lọc chính xác,
         /// và tâm vẫn dùng để sắp "gần nhất". Không bao giờ được lưu (xem TravelArea).</summary>
-        [MaxLength(8000)] string? Within = null);
+        [MaxLength(8000)] string? Within = null,
+
+        // ---- Đặc điểm bất động sản — phủ MỌI loại hình, cả bán lẫn thuê ----
+        // Trước đây bộ lọc chỉ có các điều kiện của thuê phòng (tổng chi phí, nội quy...);
+        // người mua không lọc được loại hình, diện tích, pháp lý hay hướng — dù dữ liệu đã
+        // nằm sẵn trong Asset. Thêm vào CUỐI và đều có mặc định null, nên bộ lọc đã lưu cũ
+        // (jsonb) vẫn đọc được nguyên vẹn.
+
+        /// <summary>Loại hình — khớp BẤT KỲ loại nào trong danh sách (phép OR).</summary>
+        List<AssetDomainType>? PropertyTypes = null,
+        /// <summary>Diện tích (m²) — của căn/phòng nếu tin đăng riêng một căn, ngược lại của cả tài sản.</summary>
+        [Range(0, double.MaxValue)] double? AreaMin = null,
+        [Range(0, double.MaxValue)] double? AreaMax = null,
+        [Range(0, 100)] int? BathroomsMin = null,
+        [Range(0, 200)] int? FloorsMin = null,
+        /// <summary>Mặt tiền tối thiểu (m) — quan trọng với nhà phố, mặt bằng kinh doanh, đất.</summary>
+        [Range(0, 1000)] double? FrontageMin = null,
+        /// <summary>Hướng nhà — khớp bất kỳ hướng nào trong danh sách. Giá trị theo PropertyVocabulary.</summary>
+        List<string>? Directions = null,
+        /// <summary>Pháp lý — khớp bất kỳ. "Có sổ" = [Sổ hồng riêng, Sổ hồng chung, Sổ đỏ].</summary>
+        List<string>? LegalStatuses = null,
+        List<string>? FurnitureStates = null);
 
     public sealed record PublicListingSummaryDto(
         Guid Id, string Slug, string Title, ListingType Type, decimal Price,

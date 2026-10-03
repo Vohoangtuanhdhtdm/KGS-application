@@ -132,7 +132,7 @@ namespace kgs_api.Controllers
 
                 var assetType = isSale
                     ? (rnd.NextDouble() < 0.5 ? AssetDomainType.PrivateHouse : AssetDomainType.Apartment)
-                    : AssetDomainType.PrivateHouse;
+                    : AssetDomainType.Room;   // tin thuê ở đây đều là phòng trọ
 
                 var area = isSale ? rnd.Next(45, 160) : rnd.Next(18, 45);
                 var bedrooms = isSale ? rnd.Next(2, 5) : 1;
@@ -162,7 +162,7 @@ namespace kgs_api.Controllers
                     Frontage = isSale ? rnd.Next(3, 9) : null,
                     HouseDirection = isSale ? new[] { "Đông", "Tây", "Nam", "Bắc", "Đông Nam" }[rnd.Next(5)] : null,
                     LegalStatus = isSale ? "Sổ hồng riêng" : null,
-                    FurnitureState = rnd.NextDouble() < 0.6 ? "Đầy đủ nội thất" : "Cơ bản",
+                    FurnitureState = rnd.NextDouble() < 0.6 ? "Đầy đủ" : "Cơ bản",
                     Notes = DemoTag,
                 };
 

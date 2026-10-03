@@ -34,6 +34,32 @@ namespace kgs_api.Domain.Rules
             if (query.PriceMax is not null) q = q.Where(l => l.Price <= query.PriceMax);
             if (query.BedroomsMin is not null) q = q.Where(l => l.Asset.Bedrooms >= query.BedroomsMin);
 
+            // ---- Đặc điểm bất động sản (mọi loại hình) ----
+            if (query.PropertyTypes is { Count: > 0 })
+            {
+                var types = query.PropertyTypes;
+                q = q.Where(l => types.Contains(l.Asset.TypeProperty));
+            }
+            // Diện tích lấy theo cùng quy tắc với sắp xếp "diện tích lớn nhất": tin đăng riêng
+            // một căn/phòng thì là diện tích căn đó, không phải cả toà nhà.
+            if (query.AreaMin is not null)
+                q = q.Where(l => (l.AssetUnit != null ? l.AssetUnit.Area : l.Asset.Area) >= query.AreaMin);
+            if (query.AreaMax is not null)
+                q = q.Where(l => (l.AssetUnit != null ? l.AssetUnit.Area : l.Asset.Area) <= query.AreaMax);
+            if (query.BathroomsMin is not null) q = q.Where(l => l.Asset.Bathrooms >= query.BathroomsMin);
+            if (query.FloorsMin is not null) q = q.Where(l => l.Asset.Floors >= query.FloorsMin);
+            if (query.FrontageMin is not null) q = q.Where(l => l.Asset.Frontage >= query.FrontageMin);
+
+            var directions = PropertyVocabulary.NormalizeFilter(
+                query.Directions, PropertyVocabulary.NormalizeDirection, PropertyVocabulary.Directions);
+            if (directions is not null) q = q.Where(l => directions.Contains(l.Asset.HouseDirection!));
+            var legal = PropertyVocabulary.NormalizeFilter(
+                query.LegalStatuses, PropertyVocabulary.NormalizeLegal, PropertyVocabulary.LegalStatuses);
+            if (legal is not null) q = q.Where(l => legal.Contains(l.Asset.LegalStatus!));
+            var furniture = PropertyVocabulary.NormalizeFilter(
+                query.FurnitureStates, PropertyVocabulary.NormalizeFurniture, PropertyVocabulary.FurnitureStates);
+            if (furniture is not null) q = q.Where(l => furniture.Contains(l.Asset.FurnitureState!));
+
             // ---- Bộ lọc điều kiện thuê (cũng là hard filter của AI Agent) ----
             // So sánh trên TỔNG chi phí cố định chứ không phải giá thuê trần trụi: một phòng
             // 7 triệu kèm 500k phí dịch vụ đắt hơn phòng 7,2 triệu đã bao trọn gói.

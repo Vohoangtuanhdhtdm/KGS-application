@@ -170,6 +170,13 @@ namespace kgs_api.Services
             // không cho cất giữ để dùng lại (job gửi thông báo sẽ dùng nó khi không có bản đồ
             // nào). Bộ lọc lưu lại giữ vòng tròn bao ngoài vùng — rộng hơn một chút, không hẹp hơn.
             Within = null,
+            PropertyTypes = c.PropertyTypes is { Count: > 0 } ? c.PropertyTypes.Distinct().Order().ToList() : null,
+            Directions = PropertyVocabulary.NormalizeFilter(
+                c.Directions, PropertyVocabulary.NormalizeDirection, PropertyVocabulary.Directions),
+            LegalStatuses = PropertyVocabulary.NormalizeFilter(
+                c.LegalStatuses, PropertyVocabulary.NormalizeLegal, PropertyVocabulary.LegalStatuses),
+            FurnitureStates = PropertyVocabulary.NormalizeFilter(
+                c.FurnitureStates, PropertyVocabulary.NormalizeFurniture, PropertyVocabulary.FurnitureStates),
             SortBy = null,
             Page = 1,
             PageSize = 20

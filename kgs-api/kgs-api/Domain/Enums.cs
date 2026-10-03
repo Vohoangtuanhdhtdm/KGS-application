@@ -67,7 +67,15 @@
             Rejected = 4,
         }
 
-        public enum AssetDomainType { PrivateHouse = 1, Apartment = 2, Land = 3, Villa = 4, Shophouse = 5, Office = 6, Other = 99 }
+        // 7–9 thêm khi mở rộng tìm kiếm cho MỌI loại hình (bán lẫn thuê): trước đó phòng trọ,
+        // mặt bằng kinh doanh và kho xưởng — ba loại rất phổ biến — phải khai thành "Nhà riêng"
+        // hay "Khác", nên không ai lọc ra được. Cột lưu dạng số nên dữ liệu cũ không phải đổi.
+        public enum AssetDomainType
+        {
+            PrivateHouse = 1, Apartment = 2, Land = 3, Villa = 4, Shophouse = 5, Office = 6,
+            Room = 7, CommercialSpace = 8, Warehouse = 9,
+            Other = 99
+        }
 
         public enum AssetOwnershipType { Owned = 1, Leasehold = 2 }        // Sở hữu / Đi thuê
 
