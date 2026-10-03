@@ -23,8 +23,10 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SoSanhRouteImport } from './routes/so-sanh'
 import { Route as ThongKeTinRouteImport } from './routes/thong-ke-tin'
 import { Route as TinCuaToiRouteImport } from './routes/tin-cua-toi'
+import { Route as AdminAllListingsRouteImport } from './routes/admin.all-listings'
 import { Route as AdminListingsRouteImport } from './routes/admin.listings'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as DaLuuIndexRouteImport } from './routes/da-luu.index'
 import { Route as QuanLyIndexRouteImport } from './routes/quan-ly.index'
 import { Route as TinDangIndexRouteImport } from './routes/tin-dang.index'
@@ -112,6 +114,11 @@ const TinCuaToiRoute = TinCuaToiRouteImport.update({
   path: '/tin-cua-toi',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAllListingsRoute = AdminAllListingsRouteImport.update({
+  id: '/admin/all-listings',
+  path: '/admin/all-listings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminListingsRoute = AdminListingsRouteImport.update({
   id: '/admin/listings',
   path: '/admin/listings',
@@ -120,6 +127,11 @@ const AdminListingsRoute = AdminListingsRouteImport.update({
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/admin/reports',
   path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DaLuuIndexRoute = DaLuuIndexRouteImport.update({
@@ -218,8 +230,10 @@ export interface FileRoutesByFullPath {
   '/so-sanh': typeof SoSanhRoute
   '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
+  '/admin/all-listings': typeof AdminAllListingsRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/da-luu/': typeof DaLuuIndexRoute
   '/quan-ly/': typeof QuanLyIndexRoute
@@ -252,8 +266,10 @@ export interface FileRoutesByTo {
   '/so-sanh': typeof SoSanhRoute
   '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
+  '/admin/all-listings': typeof AdminAllListingsRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/da-luu': typeof DaLuuIndexRoute
   '/quan-ly': typeof QuanLyIndexRoute
@@ -287,8 +303,10 @@ export interface FileRoutesById {
   '/so-sanh': typeof SoSanhRoute
   '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
+  '/admin/all-listings': typeof AdminAllListingsRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/da-luu/': typeof DaLuuIndexRoute
   '/quan-ly/': typeof QuanLyIndexRoute
@@ -323,8 +341,10 @@ export interface FileRouteTypes {
     | '/so-sanh'
     | '/thong-ke-tin'
     | '/tin-cua-toi'
+    | '/admin/all-listings'
     | '/admin/listings'
     | '/admin/reports'
+    | '/admin/users'
     | '/tin-dang/$slug'
     | '/da-luu/'
     | '/quan-ly/'
@@ -357,8 +377,10 @@ export interface FileRouteTypes {
     | '/so-sanh'
     | '/thong-ke-tin'
     | '/tin-cua-toi'
+    | '/admin/all-listings'
     | '/admin/listings'
     | '/admin/reports'
+    | '/admin/users'
     | '/tin-dang/$slug'
     | '/da-luu'
     | '/quan-ly'
@@ -391,8 +413,10 @@ export interface FileRouteTypes {
     | '/so-sanh'
     | '/thong-ke-tin'
     | '/tin-cua-toi'
+    | '/admin/all-listings'
     | '/admin/listings'
     | '/admin/reports'
+    | '/admin/users'
     | '/tin-dang/$slug'
     | '/da-luu/'
     | '/quan-ly/'
@@ -426,8 +450,10 @@ export interface RootRouteChildren {
   SoSanhRoute: typeof SoSanhRoute
   ThongKeTinRoute: typeof ThongKeTinRoute
   TinCuaToiRoute: typeof TinCuaToiRoute
+  AdminAllListingsRoute: typeof AdminAllListingsRoute
   AdminListingsRoute: typeof AdminListingsRoute
   AdminReportsRoute: typeof AdminReportsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   TinDangSlugRoute: typeof TinDangSlugRoute
   DaLuuIndexRoute: typeof DaLuuIndexRoute
   QuanLyIndexRoute: typeof QuanLyIndexRoute
@@ -546,6 +572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TinCuaToiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/all-listings': {
+      id: '/admin/all-listings'
+      path: '/admin/all-listings'
+      fullPath: '/admin/all-listings'
+      preLoaderRoute: typeof AdminAllListingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/listings': {
       id: '/admin/listings'
       path: '/admin/listings'
@@ -558,6 +591,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/da-luu/': {
@@ -690,8 +730,10 @@ const rootRouteChildren: RootRouteChildren = {
   SoSanhRoute: SoSanhRoute,
   ThongKeTinRoute: ThongKeTinRoute,
   TinCuaToiRoute: TinCuaToiRoute,
+  AdminAllListingsRoute: AdminAllListingsRoute,
   AdminListingsRoute: AdminListingsRoute,
   AdminReportsRoute: AdminReportsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   TinDangSlugRoute: TinDangSlugRoute,
   DaLuuIndexRoute: DaLuuIndexRoute,
   QuanLyIndexRoute: QuanLyIndexRoute,

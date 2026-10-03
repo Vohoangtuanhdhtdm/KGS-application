@@ -80,6 +80,9 @@ namespace kgs_api.Extensions
             services.AddScoped<ISavedSearchService, SavedSearchService>();
             services.AddScoped<IMatchmakingService, MatchmakingService>();
             services.AddScoped<BuildingModelService>();
+            services.AddMemoryCache();
+            services.AddSingleton<kgs_api.Services.Admin.UserAccessGuard>();
+            services.AddScoped<kgs_api.Services.Admin.AdminManagementService>();
             services.AddScoped<kgs_api.Services.Seeding.ShowcaseSeeder>();
 
             // Trợ lý tìm nhà (Groq). Thiếu khoá thì endpoint trả 503, phần còn lại chạy bình thường.
@@ -157,6 +160,23 @@ namespace kgs_api.Extensions
                         ValidateAudience = false,
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.Zero        // mặc định là 5 phút — token sẽ sống lâu hơn expires 5'
+                    };
+                    // Khoá tài khoản / thu quyền Admin có hiệu lực ngay, không đợi token hết hạn
+                    // (xem UserAccessGuard). Token mang quyền Admin mà người đó không còn là
+                    // Admin thì bị từ chối — client tự refresh và nhận token mới đúng quyền.
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = async ctx =>
+                        {
+                            var userId = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                            if (userId is null) return;
+                            var guard = ctx.HttpContext.RequestServices.GetRequiredService<kgs_api.Services.Admin.UserAccessGuard>();
+                            var access = await guard.GetAsync(userId, ctx.HttpContext.RequestAborted);
+                            if (!access.Exists || access.LockedByAdmin)
+                                ctx.Fail("Tài khoản đã bị khoá.");
+                            else if (ctx.Principal!.IsInRole("Admin") && !access.IsAdmin)
+                                ctx.Fail("Quyền quản trị đã bị thu hồi.");
+                        },
                     };
                 });
 
