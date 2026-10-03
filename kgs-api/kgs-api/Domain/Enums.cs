@@ -65,6 +65,21 @@
             Approved = 2,
             ChangesRequested = 3,
             Rejected = 4,
+            /// <summary>Gỡ khỏi trang công khai sau khi xác nhận báo vi phạm.</summary>
+            TakenDown = 5,
+            /// <summary>Đóng tin vì người dùng báo đã cho thuê/đã bán — chủ tin mở lại được.</summary>
+            ClosedByReport = 6,
+        }
+
+        /// <summary>Xử lý tin đăng khi xác nhận một báo vi phạm (xem ReportOutcomes).</summary>
+        public enum ReportAction
+        {
+            /// <summary>Gỡ tin (về "Bị từ chối"): lừa đảo, tin rác, nội dung không phù hợp.</summary>
+            TakeDown = 1,
+            /// <summary>Trả về cho chủ tin sửa ("Cần chỉnh sửa"): thông tin sai lệch.</summary>
+            RequestChanges = 2,
+            /// <summary>Đóng tin ("Đã đóng"): đã cho thuê/đã bán.</summary>
+            MarkTaken = 3,
         }
 
         // 7–9 thêm khi mở rộng tìm kiếm cho MỌI loại hình (bán lẫn thuê): trước đó phòng trọ,

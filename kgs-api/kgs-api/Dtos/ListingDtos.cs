@@ -307,7 +307,16 @@ namespace kgs_api.Dtos
     public sealed record ResolveListingReportRequest(
         /// <summary>true = có vi phạm thật (Resolved); false = tin không sai (Dismissed).</summary>
         bool Confirmed,
-        [MaxLength(500)] string? Note);
+        [MaxLength(500)] string? Note,
+        /// <summary>Xử lý tin khi Confirmed. Bỏ trống = theo lý do báo (ReportOutcomes.DefaultAction).</summary>
+        ReportAction? Action = null);
+
+    /// <summary>Kết quả xử lý báo cáo — để giao diện nói rõ chuyện gì đã xảy ra với tin.</summary>
+    public sealed record ResolveListingReportResultDto(
+        int ReportsClosed,
+        /// <summary>null = tin không đổi (bỏ qua báo cáo, hoặc tin đã không còn hiển thị).</summary>
+        ReportAction? AppliedAction,
+        ListingStatus ListingStatus);
 
     public sealed record OwnerListingDto(
         Guid Id, string? Slug, string Title, ListingType Type, ListingStatus Status,

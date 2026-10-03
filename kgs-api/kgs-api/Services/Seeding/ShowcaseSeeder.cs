@@ -88,6 +88,24 @@ namespace kgs_api.Services.Seeding
             _db.Assets.AddRange(assets);
             _db.Set<AssetUnit>().AddRange(units);
             _db.Set<Listing>().AddRange(listings);
+
+            // Lịch sử kiểm duyệt cho tin bị trả về / từ chối — chủ tin mở tin ra là thấy
+            // vòng gửi duyệt và lý do, đúng như tin bị xử lý thật.
+            foreach (var l in listings.Where(l => l.Status is ListingStatus.ChangesRequested or ListingStatus.Rejected))
+            {
+                _db.Set<ListingModerationEvent>().Add(new ListingModerationEvent
+                {
+                    Listing = l, Action = ModerationAction.Submitted, Round = 1, CreatedAt = now.AddDays(-4),
+                });
+                _db.Set<ListingModerationEvent>().Add(new ListingModerationEvent
+                {
+                    Listing = l, Round = 2, CreatedAt = now.AddDays(-3), Note = l.ModerationNote,
+                    Action = l.Status == ListingStatus.Rejected ? ModerationAction.Rejected : ModerationAction.ChangesRequested,
+                    Reasons = l.Status == ListingStatus.Rejected
+                        ? new List<ModerationReason> { ModerationReason.MissingOrBadPhotos }
+                        : new List<ModerationReason> { ModerationReason.MissingTerms, ModerationReason.ThinDescription },
+                });
+            }
             await _db.SaveChangesAsync(ct);
 
             var live = listings.Where(l => l.Status == ListingStatus.Approved).ToList();
@@ -181,7 +199,11 @@ namespace kgs_api.Services.Seeding
             var amenities = PickAmenities(s, furniture, hl.Short, rnd);
             var status = StatusFor(idx);
 
+            // "Gần {near}" mà địa điểm vốn bắt đầu bằng "gần ..." sẽ thành "Gần gần".
+            var nearGan = p.Near.StartsWith("gần ") ? p.Near : "gần " + p.Near;
             string Fill(string t) => t
+                .Replace("Gần {near}", char.ToUpper(nearGan[0]) + nearGan[1..])
+                .Replace("gần {near}", nearGan)
                 .Replace("{area}", area.ToString("0"))
                 .Replace("{d}", ShortArea(p.District))
                 .Replace("{street}", p.Street)
@@ -236,9 +258,12 @@ namespace kgs_api.Services.Seeding
                 Slug = status == ListingStatus.Draft ? null : SlugFor(s, p, idx, rnd),
                 PublishedAt = status is ListingStatus.Approved or ListingStatus.Closed ? now.AddDays(-(1 + (idx * 13) % 55)).AddHours(-rnd.Next(0, 20)) : null,
                 BumpedAt = idx % 17 == 4 ? now.AddDays(-rnd.Next(0, 3)) : null,
-                ModerationNote = status == ListingStatus.Rejected
-                    ? "Ảnh chưa đúng với bất động sản trong tin. Vui lòng chụp ảnh thật và gửi duyệt lại."
-                    : null,
+                ModerationNote = status switch
+                {
+                    ListingStatus.Rejected => "Ảnh chưa đúng với bất động sản trong tin. Vui lòng chụp ảnh thật và gửi duyệt lại.",
+                    ListingStatus.ChangesRequested => "Cần chỉnh sửa: thiếu điều kiện thuê (cọc, điện nước, nội quy); mô tả quá sơ sài. Sửa xong bạn gửi duyệt lại.",
+                    _ => null,
+                },
                 Amenities = amenities,
                 Terms = isSale ? new ListingTerms() : Terms(s.Type, amenities, hl.Short, rnd, now),
                 Images = Images(s.Images, status, idx, rnd),
@@ -250,6 +275,7 @@ namespace kgs_api.Services.Seeding
         {
             3 or 7 => ListingStatus.Pending,   // hàng đợi kiểm duyệt
             11 => ListingStatus.Draft,
+            13 => ListingStatus.ChangesRequested,   // admin trả về — tab "Cần chỉnh sửa" của chủ tin
             15 => ListingStatus.Rejected,
             19 => ListingStatus.Closed,
             _ => ListingStatus.Approved,

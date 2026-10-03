@@ -1,5 +1,6 @@
 using kgs_api.Domain.Entity;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Domain.Rules;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
@@ -13,16 +14,23 @@ namespace kgs_api.Services
     {
         private readonly IRepository<ListingReport> _reports;
         private readonly IRepository<Listing> _listings;
+        private readonly IRepository<ListingModerationEvent> _events;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
+        private readonly INotificationSender _notifier;
+        private readonly ILogger<ListingReportService> _logger;
 
         public ListingReportService(
             IRepository<ListingReport> reports,
             IRepository<Listing> listings,
+            IRepository<ListingModerationEvent> events,
             IUnitOfWork uow,
-            ICurrentUserService currentUser)
+            ICurrentUserService currentUser,
+            INotificationSender notifier,
+            ILogger<ListingReportService> logger)
         {
-            _reports = reports; _listings = listings; _uow = uow; _currentUser = currentUser;
+            _reports = reports; _listings = listings; _events = events; _uow = uow; _currentUser = currentUser;
+            _notifier = notifier; _logger = logger;
         }
 
         public async Task ReportAsync(string slug, CreateListingReportRequest request, CancellationToken ct = default)
@@ -108,7 +116,8 @@ namespace kgs_api.Services
                 pendingCounts.GetValueOrDefault(r.ListingId))).ToList();
         }
 
-        public async Task ResolveAsync(Guid reportId, ResolveListingReportRequest request, CancellationToken ct = default)
+        public async Task<ResolveListingReportResultDto> ResolveAsync(
+            Guid reportId, ResolveListingReportRequest request, CancellationToken ct = default)
         {
             var report = await _reports.Query().FirstOrDefaultAsync(r => r.Id == reportId, ct)
                 ?? throw new NotFoundException("Không tìm thấy báo cáo.");
@@ -139,7 +148,69 @@ namespace kgs_api.Services
                 r.HandlerNote = note;
             }
 
+            // Xác nhận vi phạm thì xử lý luôn TIN ĐĂNG — xem ReportOutcomes. Chỉ đụng tới tin
+            // đang hiển thị: tin đã đóng, đã gỡ hay đang chờ duyệt thì vốn không còn trước mắt
+            // người tìm nhà, đổi trạng thái của nó chỉ làm rối lịch sử của chủ tin.
+            var listing = await _listings.Query().Include(l => l.Asset)
+                .FirstAsync(l => l.Id == report.ListingId, ct);
+            ReportAction? applied = null;
+            if (request.Confirmed && listing.Status == ListingStatus.Approved)
+            {
+                applied = request.Action ?? ReportOutcomes.DefaultAction(report.Reason);
+                var (status, action, reason) = ReportOutcomes.Apply(applied.Value, report.Reason);
+                var why = ReportOutcomes.Describe(report.Reason);
+
+                listing.Status = status;
+                listing.ModerationNote = $"Theo phản ánh của người dùng: {why}." + (note is null ? "" : $" {note}");
+
+                var round = await _events.Query().CountAsync(e => e.ListingId == listing.Id, ct);
+                await _events.AddAsync(new ListingModerationEvent
+                {
+                    ListingId = listing.Id,
+                    Action = action,
+                    Reasons = new List<ModerationReason> { reason },
+                    Note = listing.ModerationNote,
+                    ModeratorUserId = handler,
+                    Round = round + 1,
+                }, ct);
+            }
+
             await _uow.SaveChangesAsync(ct);
+
+            if (applied is not null) await NotifyOwnerAsync(listing, applied.Value, report.Reason, note, ct);
+            return new ResolveListingReportResultDto(siblings.Count, applied, listing.Status);
+        }
+
+        /// <summary>Báo chủ tin chuyện gì đã xảy ra với tin và họ làm được gì tiếp. Lỗi gửi không
+        /// được làm hỏng quyết định đã lưu — cùng nguyên tắc với thông báo kiểm duyệt.</summary>
+        private async Task NotifyOwnerAsync(
+            Listing listing, ReportAction action, ListingReportReason reason, string? note, CancellationToken ct)
+        {
+            var why = ReportOutcomes.Describe(reason);
+            var extra = note is null ? "" : $" Ghi chú của người kiểm duyệt: {note}.";
+            var (title, body, label) = action switch
+            {
+                ReportAction.TakeDown => (
+                    $"Tin đăng đã bị gỡ: {listing.Title}",
+                    $"Tin bị gỡ khỏi trang tìm kiếm sau khi xác nhận phản ánh của người dùng: {why}.{extra} Nếu bạn cho rằng đây là nhầm lẫn, hãy sửa tin và gửi duyệt lại.",
+                    "Xem tin"),
+                ReportAction.MarkTaken => (
+                    $"Tin đăng đã được đóng: {listing.Title}",
+                    $"Người xem phản ánh {why}, nên tin đã được đóng để người tìm nhà không gọi nhầm.{extra} Khi còn trống, bạn mở lại tin bất cứ lúc nào.",
+                    "Mở lại tin"),
+                _ => (
+                    $"Tin đăng cần chỉnh sửa: {listing.Title}",
+                    $"Người xem phản ánh {why}. Tin tạm ẩn cho tới khi bạn sửa và gửi duyệt lại.{extra}",
+                    "Mở tin để sửa"),
+            };
+            try
+            {
+                await _notifier.SendAsync(listing.Asset.UserId, title, body, "/tin-cua-toi", label, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không gửi được thông báo xử lý vi phạm cho tin {ListingId}", listing.Id);
+            }
         }
     }
 }

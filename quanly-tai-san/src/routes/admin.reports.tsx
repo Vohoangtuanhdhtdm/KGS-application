@@ -20,7 +20,9 @@ import {
 } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatDateTime } from "@/lib/format";
-import { LISTING_STATUS } from "@/constants/enums";
+import { LISTING_STATUS, REPORT_ACTION, type ReportActionCode } from "@/constants/enums";
+import type { ReportReasonCode } from "@/lib/api/listings";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AdminRoute } from "@/components/auth/ProtectedRoute";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -130,7 +132,12 @@ function AdminReportsPage() {
         </div>
       )}
 
-      <ResolveDialog state={resolving} onClose={() => setResolving(null)} />
+      {/* key theo báo cáo: mở báo cáo khác thì lựa chọn xử lý của lần trước không dính sang. */}
+      <ResolveDialog
+        key={resolving ? `${resolving.report.id}:${resolving.confirmed}` : "none"}
+        state={resolving}
+        onClose={() => setResolving(null)}
+      />
     </div>
   );
 }
@@ -222,6 +229,22 @@ function ReportCard({
   );
 }
 
+/** Cách xử lý đề xuất theo lý do báo — khớp ReportOutcomes.DefaultAction ở máy chủ. */
+const DEFAULT_ACTION: Record<ReportReasonCode, ReportActionCode> = {
+  1: 1, // tin rác → gỡ
+  2: 2, // sai thông tin → yêu cầu sửa
+  3: 3, // đã cho thuê/bán → đóng
+  4: 1, // lừa đảo → gỡ
+  5: 1, // không phù hợp → gỡ
+  6: 2, // khác → yêu cầu sửa
+};
+
+const RESULT_TEXT: Record<ReportActionCode, string> = {
+  1: "Đã gỡ tin và báo cho chủ tin.",
+  2: "Đã trả tin về cho chủ tin sửa.",
+  3: "Đã đóng tin và báo cho chủ tin.",
+};
+
 function ResolveDialog({
   state,
   onClose,
@@ -231,16 +254,32 @@ function ResolveDialog({
 }) {
   const qc = useQueryClient();
   const [note, setNote] = useState("");
+  // null = chưa chọn tay → dùng đề xuất theo lý do báo.
+  const [picked, setPicked] = useState<ReportActionCode | null>(null);
+  const action: ReportActionCode | null = state
+    ? (picked ?? DEFAULT_ACTION[state.report.reason])
+    : null;
+  // Chỉ tin ĐANG HIỂN THỊ mới cần xử lý; tin đã đóng/gỡ thì chỉ đóng báo cáo.
+  const listingLive = state?.report.listingStatus === 2;
 
   const resolve = useMutation({
-    mutationFn: () => adminReportsApi.resolve(state!.report.id, state!.confirmed, note.trim() || null),
-    onSuccess: () => {
+    mutationFn: () =>
+      adminReportsApi.resolve(
+        state!.report.id,
+        state!.confirmed,
+        note.trim() || null,
+        listingLive ? action : null,
+      ),
+    onSuccess: (r) => {
       // Làm mới mọi tab, không riêng tab đang mở: báo cáo vừa xử lý phải biến khỏi tab
       // "chờ xử lý" và xuất hiện ở tab kia.
       qc.invalidateQueries({ queryKey: ["admin-reports"] });
+      qc.invalidateQueries({ queryKey: ["admin-pending"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
       setNote("");
+      setPicked(null);
       onClose();
-      toast.success("Đã xử lý báo cáo.");
+      toast.success(r.appliedAction ? RESULT_TEXT[r.appliedAction] : "Đã xử lý báo cáo.");
     },
     onError: (e) => toast.error(getErrorMessage(e, "Không xử lý được báo cáo")),
   });
@@ -259,8 +298,10 @@ function ResolveDialog({
           </DialogTitle>
           <DialogDescription>
             {confirmed
-              ? "Đánh dấu báo cáo là đúng. Nếu cần gỡ tin xuống, dùng màn hình duyệt tin đăng."
-              : "Đánh dấu tin này không vi phạm. Báo cáo sẽ được đóng lại."}
+              ? listingLive
+                ? "Đánh dấu báo cáo là đúng và xử lý tin ngay. Chủ tin nhận thông báo kèm lý do."
+                : "Đánh dấu báo cáo là đúng. Tin đã không còn hiển thị nên không cần xử lý thêm."
+              : "Đánh dấu tin này không vi phạm. Báo cáo sẽ được đóng lại, tin giữ nguyên."}
             {others > 0 && (
               <>
                 {" "}
@@ -270,6 +311,35 @@ function ResolveDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {confirmed && listingLive && action && (
+          <div className="space-y-1.5">
+            <Label>Xử lý tin đăng</Label>
+            <RadioGroup
+              value={String(action)}
+              onValueChange={(v) => setPicked(Number(v) as ReportActionCode)}
+              className="gap-2"
+            >
+              {([1, 2, 3] as ReportActionCode[]).map((a) => (
+                <label
+                  key={a}
+                  className="flex cursor-pointer items-start gap-2 rounded-md border p-2.5 has-[[data-state=checked]]:border-primary"
+                >
+                  <RadioGroupItem value={String(a)} className="mt-0.5" />
+                  <span className="text-sm">
+                    <span className="font-medium">{REPORT_ACTION[a].label}</span>
+                    {a === DEFAULT_ACTION[report.reason] && (
+                      <span className="ml-1 text-xs text-muted-foreground">(đề xuất)</span>
+                    )}
+                    <span className="block text-xs text-muted-foreground">
+                      {REPORT_ACTION[a].hint}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <Label htmlFor="resolve-note">Ghi chú (không bắt buộc)</Label>
           <Textarea
@@ -278,7 +348,11 @@ function ResolveDialog({
             onChange={(e) => setNote(e.target.value)}
             maxLength={500}
             rows={3}
-            placeholder="Ghi lại kết luận để người kiểm duyệt sau hiểu vì sao đóng."
+            placeholder={
+              confirmed && listingLive
+                ? "Ghi chú này được gửi kèm thông báo cho chủ tin."
+                : "Ghi lại kết luận để người kiểm duyệt sau hiểu vì sao đóng."
+            }
           />
         </div>
 

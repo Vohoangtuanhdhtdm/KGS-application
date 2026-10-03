@@ -51,6 +51,9 @@ const PAGE_SIZE = 20;
 /** Các trạng thái làm tab lọc, theo thứ tự việc-cần-làm chứ không theo thứ tự mã số. */
 const STATUS_TABS: { value: number | "all"; label: string }[] = [
   { value: "all", label: "Tất cả" },
+  // "Cần chỉnh sửa" đứng đầu: đây là tin admin trả về (hoặc bị phản ánh sai thông tin) —
+  // việc chủ tin phải làm ngay, và tin đang ẩn cho tới khi họ sửa.
+  { value: 6, label: LISTING_STATUS[6] },
   { value: 1, label: LISTING_STATUS[1] },
   { value: 2, label: LISTING_STATUS[2] },
   { value: 3, label: LISTING_STATUS[3] },
@@ -261,7 +264,7 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
 
       {thieuSoDienThoai && (
         <div className="flex flex-wrap items-start gap-3 rounded-md border border-warning/40 bg-warning/10 px-4 py-3">
-          <PhoneOff className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />
+          <PhoneOff className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm font-medium">Tin của bạn đang hiển thị nhưng không ai gọi được</p>
             <p className="text-sm text-muted-foreground">
@@ -450,6 +453,18 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
                       >
                         <TableCell className="font-medium">
                           {l.title}
+                          {/* Lý do bị trả về / gỡ / đóng do phản ánh — trước đây chỉ nằm trong
+                              email, chủ tin mở trang này không biết phải sửa gì. */}
+                          {(l.status === 3 || l.status === 4 || l.status === 6) &&
+                            l.moderationNote && (
+                              <p
+                                className={`mt-0.5 max-w-md text-xs font-normal ${
+                                  l.status === 3 ? "text-destructive" : "text-warning"
+                                }`}
+                              >
+                                {l.moderationNote}
+                              </p>
+                            )}
                           {demandBadge(l) && <div>{demandBadge(l)}</div>}
                         </TableCell>
                         <TableCell className="text-sm">{LISTING_TYPE[l.type]}</TableCell>
@@ -554,7 +569,7 @@ function RowActions({
         {editable && (
           <DropdownMenuItem onClick={onEdit}>
             <Pencil className="h-4 w-4 mr-2" />
-            {l.status === 3 ? "Sửa và gửi lại" : "Sửa tin"}
+            {l.status === 3 || l.status === 6 ? "Sửa và gửi lại" : "Sửa tin"}
           </DropdownMenuItem>
         )}
         {l.status === 2 && (
