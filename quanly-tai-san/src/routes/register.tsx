@@ -155,7 +155,7 @@ function RegisterPage() {
                 {error}
               </div>
             )}
-            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
               Ghi chú (chế độ dev): email xác thực được in ra console của backend. Copy link trong
               console và mở trong trình duyệt để xác thực.
             </div>

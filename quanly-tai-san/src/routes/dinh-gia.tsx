@@ -366,7 +366,7 @@ function EmptyResult() {
 
 const CONFIDENCE_TONE: Record<string, string> = {
   cao: "bg-success/15 text-success",
-  "trung bình": "bg-warning/20 text-warning-foreground",
+  "trung bình": "bg-warning/20 text-warning",
   thấp: "bg-muted text-muted-foreground",
 };
 

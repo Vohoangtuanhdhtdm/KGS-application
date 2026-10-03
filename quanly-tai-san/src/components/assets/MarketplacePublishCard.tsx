@@ -120,7 +120,7 @@ function LiveListings({ listings }: { listings: OwnerListingDto[] }) {
             {l.viewCount}
           </span>
           {l.moderationNote && (
-            <span className="text-xs text-warning-foreground">{l.moderationNote}</span>
+            <span className="text-xs text-warning">{l.moderationNote}</span>
           )}
           <Link to="/tin-cua-toi" className="text-sm text-primary hover:underline ml-auto">
             Quản lý
@@ -521,7 +521,7 @@ function ConfirmStep({
           </Link>
         </div>
       ) : (
-        <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+        <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
           Tin đăng sẽ ở trạng thái <Badge variant="outline">Chờ duyệt</Badge> cho tới khi quản trị
           viên phê duyệt.
         </div>

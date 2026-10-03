@@ -125,7 +125,7 @@ export function BaseTileLayer({ variant = "streets" }: { variant?: TileVariant }
         >
           <div className="pointer-events-auto max-w-md rounded-md border bg-card/95 px-3 py-2 shadow-lg backdrop-blur">
             <p className="inline-flex items-center gap-1.5 text-sm font-medium">
-              <WifiOff className="h-4 w-4 text-warning-foreground" />
+              <WifiOff className="h-4 w-4 text-warning" />
               Không tải được ảnh nền bản đồ
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">

@@ -15,8 +15,8 @@ import { Wallet, Home, Bell, X, LayoutPanelLeft, RefreshCw, ArrowRight } from "l
 /** Càng gần hết hạn càng gắt — giữ đúng thang màu vốn dùng ở trang Tổng quan cũ. */
 function daysLeftClass(d: number): string {
   if (d <= 7) return "bg-destructive/15 text-destructive border-destructive/30";
-  if (d <= 15) return "bg-warning/25 text-warning-foreground border-warning/40";
-  return "bg-warning/10 text-warning-foreground border-warning/30";
+  if (d <= 15) return "bg-warning/25 text-warning border-warning/40";
+  return "bg-warning/10 text-warning border-warning/30";
 }
 
 const STORAGE_KEY = "ban-do:panels-hidden";

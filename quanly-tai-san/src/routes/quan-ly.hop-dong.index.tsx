@@ -180,7 +180,7 @@ export function ContractListPage({ embedded = false }: { embedded?: boolean } = 
                           {CONTRACT_STATUS[c.status]}
                         </Badge>
                         {c.status === 2 && dLeft >= 0 && dLeft <= 30 && (
-                          <div className="text-xs text-warning-foreground mt-1 flex items-center gap-1">
+                          <div className="text-xs text-warning mt-1 flex items-center gap-1">
                             <AlertTriangle className="h-3 w-3" />
                             Còn {dLeft} ngày
                           </div>

@@ -68,7 +68,7 @@ const STAT_TONE: Record<ListingStatusCode, string> = {
   3: "text-destructive",
   4: "text-foreground",
   5: "text-muted-foreground",
-  6: "text-warning-foreground",
+  6: "text-warning",
 };
 
 /**
@@ -701,7 +701,7 @@ function PreviewPanel({
           <div className="text-xs text-muted-foreground">
             Đã đăng tổng cộng {d.ownerListingCount} tin
             {d.ownerListingCount > 20 && (
-              <span className="text-warning-foreground"> — kiểm tra kỹ, có thể đăng hàng loạt</span>
+              <span className="text-warning"> — kiểm tra kỹ, có thể đăng hàng loạt</span>
             )}
           </div>
         </div>

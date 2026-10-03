@@ -326,7 +326,7 @@ function TerminateDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm flex gap-2 items-start">
-          <AlertTriangle className="h-4 w-4 text-warning-foreground shrink-0 mt-0.5" />
+          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
           <span>Không thể hoàn tác. Hãy chắc chắn về quyết định này.</span>
         </div>
         <div className="space-y-3 mt-3">
