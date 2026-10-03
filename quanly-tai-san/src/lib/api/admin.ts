@@ -1,7 +1,11 @@
 import { api, toQuery } from "./http";
 import type { ListingReportDto, ReportStatusCode } from "./listings";
 import type { ListingTypeCode, ListingStatusCode } from "@/constants/enums";
-import type { ModerationActionCode, ModerationReasonCode } from "@/constants/enums";
+import type {
+  ModerationActionCode,
+  ModerationReasonCode,
+  ReportActionCode,
+} from "@/constants/enums";
 
 export interface AdminPendingListing {
   id: string;
@@ -134,10 +138,18 @@ export const adminReportsApi = {
   list: (status?: ReportStatusCode) =>
     api<ListingReportDto[]>(`/admin/listing-reports${toQuery({ status })}`),
 
-  /** confirmed = true nghĩa là có vi phạm thật; false nghĩa là tin không sai. */
-  resolve: (id: string, confirmed: boolean, note: string | null) =>
-    api<void>(`/admin/listing-reports/${id}/resolve`, {
+  /** confirmed = true nghĩa là có vi phạm thật; false nghĩa là tin không sai.
+   *  action: cách xử lý tin khi có vi phạm — bỏ trống thì máy chủ chọn theo lý do báo. */
+  resolve: (id: string, confirmed: boolean, note: string | null, action?: ReportActionCode | null) =>
+    api<ResolveReportResult>(`/admin/listing-reports/${id}/resolve`, {
       method: "POST",
-      body: { confirmed, note },
+      body: { confirmed, note, action: confirmed ? (action ?? null) : null },
     }),
 };
+
+export interface ResolveReportResult {
+  reportsClosed: number;
+  /** null = tin không đổi (bỏ qua báo cáo, hoặc tin đã không còn hiển thị). */
+  appliedAction: ReportActionCode | null;
+  listingStatus: ListingStatusCode;
+}

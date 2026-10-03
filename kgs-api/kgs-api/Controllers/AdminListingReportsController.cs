@@ -25,13 +25,12 @@ namespace kgs_api.Controllers
             => Ok(await _reports.GetForModerationAsync(status, ct));
 
         [HttpPost("{id:guid}/resolve")]
-        public async Task<IActionResult> Resolve(
+        public async Task<ActionResult<ResolveListingReportResultDto>> Resolve(
             Guid id, [FromBody] ResolveListingReportRequest request, CancellationToken ct)
         {
             try
             {
-                await _reports.ResolveAsync(id, request, ct);
-                return NoContent();
+                return Ok(await _reports.ResolveAsync(id, request, ct));
             }
             catch (InvalidOperationException ex)
             {

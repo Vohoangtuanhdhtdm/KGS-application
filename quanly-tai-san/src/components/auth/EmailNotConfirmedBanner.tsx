@@ -28,7 +28,7 @@ export function EmailNotConfirmedBanner() {
   };
 
   return (
-    <div className="border-b border-warning/40 bg-warning/15 px-4 py-2 text-sm text-warning-foreground">
+    <div className="border-b border-warning/40 bg-warning/15 px-4 py-2 text-sm text-warning">
       <div className="flex flex-wrap items-center gap-2">
         <AlertTriangle className="h-4 w-4" />
         <span>Email của bạn chưa được xác thực.</span>

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 
 const CONFIDENCE_TONE: Record<string, string> = {
   cao: "bg-success/15 text-success border-success/30",
-  "trung bình": "bg-warning/20 text-warning-foreground border-warning/40",
+  "trung bình": "bg-warning/20 text-warning border-warning/40",
   thấp: "bg-muted text-muted-foreground border-border",
 };
 
@@ -143,7 +143,7 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
             >
               <p className="inline-flex items-start gap-1.5 font-medium">
                 {doLech.huong === "cao" ? (
-                  <TrendingUp className="h-3.5 w-3.5 shrink-0 mt-0.5 text-warning-foreground" />
+                  <TrendingUp className="h-3.5 w-3.5 shrink-0 mt-0.5 text-warning" />
                 ) : (
                   <TrendingDown className="h-3.5 w-3.5 shrink-0 mt-0.5 text-info" />
                 )}

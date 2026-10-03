@@ -155,7 +155,7 @@ function Kpi({
         </div>
         <div
           className={`text-xl font-semibold tabular-nums ${
-            primary ? "text-primary" : tone === "warn" ? "text-warning-foreground" : ""
+            primary ? "text-primary" : tone === "warn" ? "text-warning" : ""
           }`}
         >
           {value}

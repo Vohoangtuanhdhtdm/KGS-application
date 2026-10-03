@@ -104,7 +104,7 @@ namespace kgs_api.Services.Seeding
             new(AssetDomainType.Room, ListingType.Rent, 30,
                 new[] { "bt-xvnt", "gv-quangtrung", "tb-hvt", "btan-tenlua", "td-linhtrung", "q10-3thang2", "q12-tth", "bt-dbp", "bd-phuhoa", "bd-hiepthanh", "hn-caugiay", "hn-bachkhoa", "pn-pxl", "dn-haichau" },
                 "room", (16, 35),
-                new[] { "Phòng trọ {area}m² {hl}, {d}", "Cho thuê phòng {area}m² có gác lửng, {d}", "Phòng mới xây {area}m² gần {near0}", "Phòng trọ sạch đẹp {area}m², giờ giấc tự do, {d}" },
+                new[] { "Phòng trọ {area}m² {hl}, {d}", "Cho thuê phòng {area}m² có gác lửng, {d}", "Phòng mới xây {area}m², {near0}", "Phòng trọ sạch đẹp {area}m², giờ giấc tự do, {d}" },
                 new[]
                 {
                     "Phòng {area}m² trong hẻm {street}, {d}. {hlSentence} Khu vực {near}. Phòng có cửa sổ thoáng, toilet riêng, chỗ để xe máy miễn phí.",

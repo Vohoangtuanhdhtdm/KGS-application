@@ -81,7 +81,7 @@ export type AssetStatusCode = keyof typeof ASSET_STATUS;
 export const ASSET_STATUS_CLASS: Record<AssetStatusCode, string> = {
   1: "bg-info/15 text-info border-info/30",
   2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning-foreground border-warning/40",
+  3: "bg-warning/20 text-warning border-warning/40",
   4: "bg-muted text-muted-foreground border-border",
   5: "bg-secondary text-secondary-foreground border-border",
   6: "bg-destructive/15 text-destructive border-destructive/30",
@@ -93,7 +93,7 @@ export type UnitStatusCode = keyof typeof UNIT_STATUS;
 export const UNIT_STATUS_CLASS: Record<UnitStatusCode, string> = {
   1: "bg-muted text-muted-foreground border-border",
   2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning-foreground border-warning/40",
+  3: "bg-warning/20 text-warning border-warning/40",
 };
 
 export const CONTRACT_DIRECTION = { 1: "Cho thuê", 2: "Đi thuê" } as const;
@@ -111,7 +111,7 @@ export type ContractStatusCode = keyof typeof CONTRACT_STATUS;
 export const CONTRACT_STATUS_CLASS: Record<ContractStatusCode, string> = {
   1: "bg-muted text-muted-foreground border-border",
   2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning-foreground border-warning/40",
+  3: "bg-warning/20 text-warning border-warning/40",
   4: "bg-destructive/15 text-destructive border-destructive/30",
   5: "bg-info/15 text-info border-info/30",
 };
@@ -139,7 +139,7 @@ export type ContactTypeCode = keyof typeof CONTACT_TYPE;
 export const CONTACT_TYPE_CLASS: Record<ContactTypeCode, string> = {
   1: "bg-info/15 text-info border-info/30",
   2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning-foreground border-warning/40",
+  3: "bg-warning/20 text-warning border-warning/40",
   4: "bg-secondary text-secondary-foreground border-border",
   99: "bg-muted text-muted-foreground border-border",
 };
@@ -190,7 +190,7 @@ export const REMINDER_TYPE_CLASS: Record<ReminderTypeCode, string> = {
   1: "bg-success/15 text-success border-success/30",
   2: "bg-destructive/15 text-destructive border-destructive/30",
   3: "bg-info/15 text-info border-info/30",
-  4: "bg-warning/20 text-warning-foreground border-warning/40",
+  4: "bg-warning/20 text-warning border-warning/40",
   5: "bg-primary/10 text-primary border-primary/30",
   6: "bg-secondary text-secondary-foreground border-border",
 };
@@ -256,8 +256,27 @@ export const MODERATION_ACTION = {
   2: "Đã duyệt",
   3: "Yêu cầu chỉnh sửa",
   4: "Bị từ chối",
+  5: "Bị gỡ do báo vi phạm",
+  6: "Đóng do báo đã cho thuê/bán",
 } as const;
 export type ModerationActionCode = keyof typeof MODERATION_ACTION;
+
+/** Cách xử lý tin khi xác nhận báo vi phạm — khớp enum ReportAction ở backend. */
+export const REPORT_ACTION = {
+  1: {
+    label: "Gỡ tin",
+    hint: 'Tin chuyển về "Bị từ chối", biến khỏi trang tìm kiếm. Hợp với lừa đảo, tin rác.',
+  },
+  2: {
+    label: "Yêu cầu chủ tin sửa",
+    hint: 'Tin tạm ẩn ở trạng thái "Cần chỉnh sửa" cho tới khi chủ tin sửa và gửi duyệt lại.',
+  },
+  3: {
+    label: "Đóng tin (đã cho thuê/bán)",
+    hint: 'Tin chuyển về "Đã đóng". Chủ tin mở lại được khi bất động sản trống lại.',
+  },
+} as const;
+export type ReportActionCode = keyof typeof REPORT_ACTION;
 export type ListingStatusCode = keyof typeof LISTING_STATUS;
 
 export const LISTING_STATUS_CLASS: Record<ListingStatusCode, string> = {
@@ -265,10 +284,12 @@ export const LISTING_STATUS_CLASS: Record<ListingStatusCode, string> = {
   2: "bg-success/15 text-success border-success/30",
   3: "bg-destructive/15 text-destructive border-destructive/30",
   4: "bg-secondary text-secondary-foreground border-border",
-  5: "bg-warning/20 text-warning-foreground border-warning/40",
+  // text-warning, không phải warning-foreground: foreground đó dành cho nền warning ĐẶC
+  // (gần trắng ở theme sáng), đặt lên nền warning/20 nhạt thì gần như không đọc được.
+  5: "bg-warning/20 text-warning border-warning/40",
   // Cần chỉnh sửa dùng tông hổ phách như "cần chú ý" — KHÔNG dùng tông đỏ của Bị từ chối.
   // Đó là điểm khác biệt của cả tính năng: một lời nhắc việc, không phải một phán quyết.
-  6: "bg-warning/20 text-warning-foreground border-warning/40",
+  6: "bg-warning/20 text-warning border-warning/40",
 };
 
 // ---- Thông tin mô tả chi tiết của tài sản (dùng lại khi đăng tin công khai) ----

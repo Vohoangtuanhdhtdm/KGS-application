@@ -5,7 +5,7 @@ import type { AssetStatus, ContractStatus, UnitStatus } from "@/lib/types";
 const assetTone: Record<AssetStatus, string> = {
   "Đang sử dụng": "bg-info/15 text-info border-info/30",
   "Đang cho thuê": "bg-success/15 text-success border-success/30",
-  "Đang rao bán": "bg-warning/20 text-warning-foreground border-warning/40",
+  "Đang rao bán": "bg-warning/20 text-warning border-warning/40",
   Trống: "bg-muted text-muted-foreground border-border",
   "Đã bán": "bg-secondary text-secondary-foreground border-border",
   "Hết hợp đồng thuê": "bg-destructive/15 text-destructive border-destructive/30",
@@ -22,7 +22,7 @@ const contractTone: Record<ContractStatus, string> = {
 const unitTone: Record<UnitStatus, string> = {
   Trống: "bg-muted text-muted-foreground border-border",
   "Đang cho thuê": "bg-success/15 text-success border-success/30",
-  "Đang sửa chữa": "bg-warning/20 text-warning-foreground border-warning/40",
+  "Đang sửa chữa": "bg-warning/20 text-warning border-warning/40",
 };
 
 export function AssetStatusBadge({ status }: { status: AssetStatus }) {

@@ -16,6 +16,7 @@ namespace kgs_api.Interfaces
 
         /// <summary>Đóng một báo cáo. Đóng luôn MỌI báo cáo đang chờ khác trên cùng tin —
         /// người kiểm duyệt đã xem tin đó rồi, bắt họ bấm lại cho từng người báo là vô nghĩa.</summary>
-        Task ResolveAsync(Guid reportId, ResolveListingReportRequest request, CancellationToken ct = default);
+        Task<ResolveListingReportResultDto> ResolveAsync(
+            Guid reportId, ResolveListingReportRequest request, CancellationToken ct = default);
     }
 }

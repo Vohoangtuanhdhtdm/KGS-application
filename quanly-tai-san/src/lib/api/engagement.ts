@@ -32,7 +32,7 @@ export type InquiryStatusCode = keyof typeof INQUIRY_STATUS;
 export const INQUIRY_STATUS_CLASS: Record<InquiryStatusCode, string> = {
   1: "bg-primary/10 text-primary border-primary/30",
   2: "bg-info/15 text-info border-info/30",
-  3: "bg-warning/20 text-warning-foreground border-warning/40",
+  3: "bg-warning/20 text-warning border-warning/40",
   4: "bg-success/15 text-success border-success/30",
   5: "bg-muted text-muted-foreground border-border",
 };
