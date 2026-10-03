@@ -58,6 +58,9 @@ namespace kgs_api.Interfaces
         /// người đăng. Gộp một lần gọi vì cả hai đều suy ra từ chính tin đang xem.</summary>
         Task<RelatedListingsDto> GetRelatedAsync(string slug, CancellationToken ct = default);
 
+        /// <summary>Hồ sơ công khai của người đăng kèm các tin đang hiển thị.</summary>
+        Task<OwnerProfileDto> GetOwnerProfileAsync(string ownerId, CancellationToken ct = default);
+
         /// <summary>Các khu vực đang có tin hiển thị, kèm số tin, để gợi ý ô tìm khu vực.</summary>
         Task<IReadOnlyList<ListingAreaDto>> GetAreasAsync(ListingType? type, CancellationToken ct = default);
 

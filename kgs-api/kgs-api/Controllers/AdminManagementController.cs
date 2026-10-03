@@ -13,7 +13,16 @@ namespace kgs_api.Controllers
     public sealed class AdminManagementController : ControllerBase
     {
         private readonly AdminManagementService _svc;
-        public AdminManagementController(AdminManagementService svc) => _svc = svc;
+        private readonly AdminOverviewService _overview;
+        public AdminManagementController(AdminManagementService svc, AdminOverviewService overview)
+        {
+            _svc = svc; _overview = overview;
+        }
+
+        /// <summary>Số liệu trang tổng quan, <paramref name="days"/> ngày gần nhất (7–180).</summary>
+        [HttpGet("overview")]
+        public async Task<ActionResult<AdminOverviewDto>> Overview([FromQuery] int days = 30, CancellationToken ct = default)
+            => Ok(await _overview.GetAsync(days, ct));
 
         // -------------------- Tin đăng --------------------
 

@@ -267,3 +267,57 @@ export const adminManageApi = {
       body: { admin },
     }),
 };
+
+// ============================================================
+// Tổng quan quản trị (A4)
+// ============================================================
+
+export interface CountItem {
+  key: string;
+  count: number;
+}
+
+export interface AdminOverview {
+  days: number;
+  kpis: {
+    usersTotal: number;
+    usersNew: number;
+    listingsLive: number;
+    listingsNew: number;
+    pendingQueue: number;
+    pendingReports: number;
+    lockedUsers: number;
+    inquiriesNew: number;
+    invitationsNew: number;
+    oldestPendingHours: number | null;
+  };
+  daily: { date: string; newListings: number; newUsers: number; inquiries: number }[];
+  moderation: {
+    decisions: number;
+    approved: number;
+    changesRequested: number;
+    rejected: number;
+    takenDown: number;
+    firstRoundApprovalPercent: number | null;
+    medianHoursToDecision: number | null;
+    p90HoursToDecision: number | null;
+    /** Khoá = mã ModerationReason dạng chuỗi. */
+    topReasons: CountItem[];
+  };
+  reports: {
+    received: number;
+    pending: number;
+    resolved: number;
+    dismissed: number;
+    medianHoursToHandle: number | null;
+    /** Khoá = mã ListingReportReason dạng chuỗi. */
+    byReason: CountItem[];
+  };
+  /** Khoá = mã AssetDomainType dạng chuỗi. */
+  liveByType: CountItem[];
+  liveByCity: CountItem[];
+}
+
+export const adminOverviewApi = {
+  get: (days: number) => api<AdminOverview>(`/admin/overview?days=${days}`),
+};

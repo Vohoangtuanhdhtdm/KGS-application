@@ -311,12 +311,13 @@ function PublicListingDetailPage() {
 
             <MarketTrendCard city={p.city} district={p.district} />
 
-            <RelatedListings slug={p.slug} ownerName={p.ownerName} />
+            <RelatedListings slug={p.slug} ownerName={p.ownerName} ownerId={p.ownerId} />
           </div>
 
           {/* Card liên hệ — sticky bên phải desktop */}
           <div className="hidden lg:block sticky top-20">
             <ContactCard
+              ownerId={p.ownerId}
               ownerName={p.ownerName}
               ownerPhone={p.ownerPhone}
               avatarUrl={p.ownerAvatarUrl}
@@ -371,6 +372,7 @@ function membershipLabel(iso: string): string {
 }
 
 function ContactCard({
+  ownerId,
   ownerName,
   ownerPhone,
   avatarUrl,
@@ -379,6 +381,7 @@ function ContactCard({
   onCopy,
   children,
 }: {
+  ownerId?: string | null;
   ownerName: string;
   ownerPhone: string | null;
   avatarUrl: string | null;
@@ -401,7 +404,17 @@ function ContactCard({
           </Avatar>
           <div className="min-w-0">
             <div className="text-xs text-muted-foreground">Chủ tài sản</div>
-            <div className="text-base font-semibold truncate">{ownerName}</div>
+            {ownerId ? (
+              <Link
+                to="/nguoi-dang/$id"
+                params={{ id: ownerId }}
+                className="block truncate text-base font-semibold hover:underline"
+              >
+                {ownerName}
+              </Link>
+            ) : (
+              <div className="text-base font-semibold truncate">{ownerName}</div>
+            )}
           </div>
         </div>
 

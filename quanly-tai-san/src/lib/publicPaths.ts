@@ -18,6 +18,8 @@ export const PUBLIC_PREFIXES = [
   // Hai công cụ tra cứu công khai — khách chưa có tài khoản cũng dùng được.
   "/dinh-gia",
   "/chi-so-gia",
+  // Hồ sơ công khai của người đăng — người tìm nhà xem trước khi quyết định liên hệ.
+  "/nguoi-dang",
 ];
 
 export function isPublicPath(p: string): boolean {

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Flag, ListChecks, Search, ShieldCheck, Users } from "lucide-react";
+import { Building2, Flag, Gauge, ListChecks, Search, ShieldCheck, Users } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -36,6 +36,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const pending = stats.data?.byStatus.find((s) => isPending(s.status))?.count ?? 0;
 
   const nav = [
+    { to: "/admin/overview", label: "Tổng quan", icon: Gauge, badge: 0 },
     { to: "/admin/listings", label: "Duyệt tin đăng", icon: ShieldCheck, badge: pending },
     { to: "/admin/reports", label: "Báo vi phạm", icon: Flag, badge: 0 },
     { to: "/admin/all-listings", label: "Tất cả tin đăng", icon: ListChecks, badge: 0 },
