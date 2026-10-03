@@ -198,7 +198,11 @@ namespace kgs_api.Dtos
         List<string>? Directions = null,
         /// <summary>Pháp lý — khớp bất kỳ. "Có sổ" = [Sổ hồng riêng, Sổ hồng chung, Sổ đỏ].</summary>
         List<string>? LegalStatuses = null,
-        List<string>? FurnitureStates = null);
+        List<string>? FurnitureStates = null,
+
+        /// <summary>Mong muốn MỀM, phân cách bằng dấu chấm phẩy ("yên tĩnh; ban công"). Chỉ
+        /// ảnh hưởng thứ tự (ListingSort.Relevance), không bao giờ loại tin. Xem SoftPreferences.</summary>
+        [MaxLength(400)] string? Prefer = null);
 
     public sealed record PublicListingSummaryDto(
         Guid Id, string Slug, string Title, ListingType Type, decimal Price,
@@ -212,7 +216,12 @@ namespace kgs_api.Dtos
         decimal TotalMonthlyCost,
         int? DepositMonths,
         bool? PetsAllowed,
-        IReadOnlyList<string> Amenities);
+        IReadOnlyList<string> Amenities)
+    {
+        /// <summary>Những mong muốn mềm (Prefer) mà tin này thật sự nhắc tới trong tiêu đề/mô
+        /// tả — để giao diện giải thích "vì sao hợp". Null khi không tìm theo mong muốn.</summary>
+        public IReadOnlyList<string>? MatchedPreferences { get; init; }
+    }
 
     public sealed record PublicListingDetailDto(
         Guid Id, string Slug, string Title, string Description, ListingType Type,

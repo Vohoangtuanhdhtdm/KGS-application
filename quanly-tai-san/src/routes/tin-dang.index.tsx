@@ -17,6 +17,18 @@ import {
 } from "@/lib/mapboxNav";
 import { TravelTimeControl } from "@/components/listings/TravelTimeControl";
 import { PropertyFiltersPanel } from "@/components/public/PropertyFiltersPanel";
+import { AssistantBar } from "@/components/public/AssistantBar";
+import type { AssistantAnchor, AssistantResult } from "@/lib/api/assistant";
+import { geocodeForward } from "@/lib/geocode";
+import { matchReasons } from "@/lib/matchReasons";
+import {
+  EMPTY_RENT_TERMS,
+  isEmptyRentTerms,
+  rentTermChips,
+  rentTermsFromCriteria,
+  rentTermsToSearchParams,
+  type RentTerms,
+} from "@/lib/rentTerms";
 import {
   EMPTY_PROPERTY_FILTERS,
   countPropertyFilters,
@@ -114,6 +126,14 @@ function PublicListingsPage() {
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [sortBy, setSortBy] = useState<ListingSortCode>(1);
+  // ---- Trợ lý tìm nhà: câu tiếng Việt → bộ lọc của chính trang này ----
+  const [assistant, setAssistant] = useState<AssistantResult | null>(null);
+  // Điều kiện riêng của tin thuê (tổng chi phí, nội quy, tiện nghi bắt buộc) — trợ lý điền.
+  const [rentTerms, setRentTerms] = useState<RentTerms>(EMPTY_RENT_TERMS);
+  // Mong muốn MỀM — chỉ đẩy tin phù hợp lên trước (sắp "Phù hợp nhất"), không loại tin nào.
+  const [prefer, setPrefer] = useState<string[]>([]);
+  // Tâm tìm kiếm hiện tại có phải do trợ lý đặt không — để "Làm lại" gỡ đúng thứ trợ lý đã đặt.
+  const centerFromAssistant = useRef(false);
 
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -353,6 +373,8 @@ function PublicListingsPage() {
         : "",
     within: travelArea ? encodeRing(travelArea.ring) : "",
     ...toSearchParams(prop),
+    ...rentTermsToSearchParams(rentTerms),
+    prefer: prefer.length ? prefer.join(";") : undefined,
     bedroomsMin: visibleFields(prop, type).rooms ? (bedroomsMin ?? "") : "",
     sortBy,
     pageSize: 20,
@@ -587,6 +609,16 @@ function PublicListingsPage() {
       clear: () => setBedroomsMin(null),
     });
   appliedFilters.push(...propertyChips(prop, setProp));
+  appliedFilters.push(...rentTermChips(rentTerms, setRentTerms));
+  if (prefer.length)
+    appliedFilters.push({
+      key: "prefer",
+      label: `Ưu tiên: ${prefer.join(", ")}`,
+      clear: () => {
+        setPrefer([]);
+        if (sortBy === 6) setSortBy(1);
+      },
+    });
   if (searchCenter)
     appliedFilters.push({
       key: "area",
@@ -613,6 +645,9 @@ function PublicListingsPage() {
     setKeywordInput(c.keyword ?? "");
     setKeyword(c.keyword ?? "");
     setProp(fromCriteria(c));
+    setRentTerms(rentTermsFromCriteria(c));
+    setPrefer([]);
+    setAssistant(null);
     setTravel(null);
     setTravelIntent(false);
     setCenterLabel(null);
@@ -643,6 +678,115 @@ function PublicListingsPage() {
       .join(" · ")
       .slice(0, 120) || "Bộ lọc của tôi";
   const savedSearchFilters = travelArea ? { ...filters, within: "" } : filters;
+
+  // ---- Trợ lý tìm nhà: áp kết quả vào bộ lọc của trang ----
+  // Điều kiện thuê không có nghĩa với tin bán — đổi sang "Bán" thì gỡ, để không âm thầm lọc
+  // tin bán theo những trường tin bán không bao giờ khai.
+  useEffect(() => {
+    if (type === 1 && !isEmptyRentTerms(rentTerms)) setRentTerms(EMPTY_RENT_TERMS);
+  }, [type, rentTerms]);
+
+  const sameAnchor = (a: AssistantAnchor | null | undefined, b: AssistantAnchor | null) =>
+    !!a &&
+    !!b &&
+    a.text === b.text &&
+    a.travelMinutes === b.travelMinutes &&
+    a.travelMode === b.travelMode &&
+    a.radiusKm === b.radiusKm;
+
+  // Điểm neo ("làm ở Hàm Nghi"): tìm trên bản đồ rồi dùng đúng luồng tìm quanh điểm / theo thời
+  // gian đi lại sẵn có. Chỉ trên bản đồ GL — kết quả geocoding và Isochrone của Mapbox phải
+  // hiển thị trên bản đồ Mapbox.
+  const applyAnchor = async (a: AssistantAnchor | null) => {
+    if (!a) {
+      if (centerFromAssistant.current) {
+        clearMyLocationSearch();
+        centerFromAssistant.current = false;
+      }
+      return;
+    }
+    if (mapEngine !== "gl") {
+      toast.info(`Tìm quanh “${a.text}” cần bản đồ Mapbox — đang dùng bản đồ dự phòng nên bỏ qua.`);
+      return;
+    }
+    const prox = searchCenter ?? { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
+    const hit = (await geocodeForward(a.text, prox).catch(() => null))?.[0];
+    if (!hit) {
+      toast.warning(`Không tìm thấy “${a.text}” trên bản đồ`, {
+        description: "Bấm lên bản đồ đúng chỗ đó để tìm quanh điểm ấy.",
+      });
+      return;
+    }
+    setSearchCenter({ lat: hit.lat, lng: hit.lng });
+    setCenterLabel(a.text);
+    setUsingMyLocation(false);
+    setShowSearchAreaButton(false);
+    centerFromAssistant.current = true;
+    if (a.travelMinutes) {
+      setRadiusMeters((r) => r ?? DEFAULT_RADIUS_METERS);
+      setTravel({
+        profile:
+          a.travelMode === "walking"
+            ? "walking"
+            : a.travelMode === "cycling"
+              ? "cycling"
+              : "driving-traffic",
+        minutes: a.travelMinutes,
+      });
+      setTravelIntent(true);
+    } else {
+      setTravel(null);
+      setRadiusMeters(Math.round((a.radiusKm ?? 3) * 1000));
+    }
+  };
+
+  const applyAssistant = (r: AssistantResult) => {
+    const c = r.criteria;
+    if (c.type === 1 || c.type === 2) setType(c.type as ListingTypeCode);
+    setCity(c.city ?? "");
+    setDistrict(c.district ?? "");
+    setPriceMin(c.priceMin ?? null);
+    setPriceMax(c.priceMax ?? null);
+    setBedroomsMin(c.bedroomsMin ?? null);
+    setKeywordInput(c.keyword ?? "");
+    setKeyword(c.keyword ?? "");
+    setProp(fromCriteria(c));
+    setRentTerms(rentTermsFromCriteria(c));
+    setPrefer(r.preferences);
+    setSortBy(r.preferences.length ? 6 : sortBy === 6 ? 1 : sortBy);
+    const previous = assistant?.anchor;
+    setAssistant(r);
+    if (!sameAnchor(previous, r.anchor)) void applyAnchor(r.anchor);
+  };
+
+  const resetAssistant = () => {
+    clearAllFilters();
+    setPrefer([]);
+    if (sortBy === 6) setSortBy(1);
+    setAssistant(null);
+    centerFromAssistant.current = false;
+  };
+
+  const assistantBar = (
+    <AssistantBar result={assistant} onResult={applyAssistant} onReset={resetAssistant} />
+  );
+
+  // "Vì sao hợp" cho từng tin — tính bằng quy tắc từ dữ liệu thật (lib/matchReasons.ts), chỉ
+  // khi đang tìm qua trợ lý. Gói trong useMemo để thẻ tin (React.memo) không vẽ lại thừa.
+  const reasonsById = useMemo(() => {
+    if (!assistant) return null;
+    const ctx = {
+      priceMax,
+      totalCostMax: rentTerms.totalCostMax,
+      bedroomsMin,
+      areaMin: prop.areaMin,
+      areaMax: prop.areaMax,
+      petsAllowed: rentTerms.petsAllowed,
+      amenities: rentTerms.amenities,
+      centerLabel: searchCenter ? centerLabel : null,
+    };
+    return new Map(items.map((p) => [p.id, matchReasons(p, ctx)]));
+  }, [assistant, items, priceMax, rentTerms, bedroomsMin, prop, searchCenter, centerLabel]);
 
   const appliedFilterBar =
     appliedFilters.length === 0 ? null : (
@@ -677,7 +821,8 @@ function PublicListingsPage() {
   // "Mới nhất", nen an luon cho khoi hua hen thu minh khong lam duoc.
   const sortOptions = (Object.keys(LISTING_SORT) as unknown as ListingSortCode[])
     .map(Number)
-    .filter((code) => code !== 5 || searchCenter != null) as ListingSortCode[];
+    .filter((code) => code !== 5 || searchCenter != null)
+    .filter((code) => code !== 6 || prefer.length > 0) as ListingSortCode[];
 
   const resultsBar = (
     <div className="flex items-center justify-between gap-2">
@@ -978,6 +1123,7 @@ function PublicListingsPage() {
               compareSelected={compareHas(p.id)}
               compareFull={compareItems.length >= compareMax && !compareHas(p.id)}
               onToggleCompare={compareToggle}
+              reasons={reasonsById?.get(p.id)}
             />
           ))}
         </div>
@@ -1239,6 +1385,7 @@ function PublicListingsPage() {
             className="overflow-y-auto p-4 space-y-4 shrink-0"
             style={{ width: `${listWidthPercent}%` }}
           >
+            {assistantBar}
             {appliedFilterBar}
             {resultsBar}
             {listContent}
@@ -1263,6 +1410,7 @@ function PublicListingsPage() {
           <div
             className={`absolute inset-0 overflow-y-auto p-4 space-y-4 ${tabletView === "list" ? "" : "invisible pointer-events-none"}`}
           >
+            {assistantBar}
             {appliedFilterBar}
             {resultsBar}
             {listContent}
@@ -1285,6 +1433,7 @@ function PublicListingsPage() {
             onActiveSnapChange={setMobileSnap}
           >
             <div className="space-y-3">
+              {assistantBar}
               {appliedFilterBar}
               {resultsBar}
               {listContent}

@@ -4,7 +4,7 @@ import { formatListingPrice, type PublicListingSummaryDto } from "@/lib/api/list
 import type { CompareItem } from "@/hooks/useCompareList";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon, Scale } from "lucide-react";
+import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon, Scale, Check } from "lucide-react";
 
 /**
  * Tổng chi phí viết ĐỦ SỐ, không rút gọn.
@@ -54,6 +54,8 @@ interface PropertyListCardProps {
       suông một thao tác sẽ bị hook âm thầm bỏ qua. */
   compareFull?: boolean;
   onToggleCompare?: (item: CompareItem) => void;
+  /** "Vì sao hợp" — chỉ có khi tìm qua trợ lý (xem lib/matchReasons.ts). */
+  reasons?: string[];
 }
 
 export const PropertyListCard = memo(
@@ -67,6 +69,7 @@ export const PropertyListCard = memo(
       onHover,
       onLeave,
       compareSelected = false,
+      reasons,
       compareFull = false,
       onToggleCompare,
     },
@@ -212,6 +215,16 @@ export const PropertyListCard = memo(
                   </span>
                 )}
               </div>
+              {reasons && reasons.length > 0 && (
+                <ul className="space-y-0.5 pt-1" aria-label="Vì sao hợp với nhu cầu của bạn">
+                  {reasons.map((r) => (
+                    <li key={r} className="flex items-start gap-1 text-xs text-success">
+                      <Check className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+                      <span className="text-foreground/80">{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {p.publishedAt && (
                 <div className="text-xs text-muted-foreground/80 pt-0.5">
                   {postedAgoLabel(p.publishedAt)}

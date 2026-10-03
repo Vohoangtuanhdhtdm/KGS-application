@@ -79,6 +79,11 @@ namespace kgs_api.Extensions
             services.AddScoped<IListingRetrievalService, ListingRetrievalService>();
             services.AddScoped<ISavedSearchService, SavedSearchService>();
             services.AddScoped<IMatchmakingService, MatchmakingService>();
+
+            // Trợ lý tìm nhà (Groq). Thiếu khoá thì endpoint trả 503, phần còn lại chạy bình thường.
+            services.Configure<kgs_api.Services.Assistant.GroqSettings>(config.GetSection("Groq"));
+            services.AddHttpClient<kgs_api.Services.Assistant.GroqChatClient>();
+            services.AddScoped<kgs_api.Services.Assistant.SearchAssistantService>();
             services.AddScoped<IListingReportService, ListingReportService>();
             services.AddScoped<IListingViewTracker, ListingViewTracker>();
             services.AddScoped<IListingAnalyticsService, ListingAnalyticsService>();

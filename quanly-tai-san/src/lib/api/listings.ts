@@ -79,6 +79,8 @@ export interface PublicListingSummaryDto {
   depositMonths: number | null;
   petsAllowed: boolean | null;
   amenities: string[];
+  /** Những mong muốn mềm (prefer) mà tin nhắc tới — chỉ có khi tìm qua trợ lý. */
+  matchedPreferences?: string[] | null;
 }
 
 export interface PublicListingDetailDto {
@@ -256,6 +258,7 @@ export const LISTING_SORT = {
   3: "Giá cao đến thấp",
   4: "Diện tích lớn nhất",
   5: "Gần tôi nhất",
+  6: "Phù hợp nhất",
 } as const;
 export type ListingSortCode = keyof typeof LISTING_SORT;
 
@@ -297,6 +300,8 @@ export interface PublicListingFilters {
   directions?: string[];
   legalStatuses?: string[];
   furnitureStates?: string[];
+  /** Mong muốn mềm, phân cách bằng ";" — chỉ ảnh hưởng thứ tự (sắp "Phù hợp nhất"). */
+  prefer?: string;
   // Bộ lọc điều kiện thuê — cũng là các hard filter AI Agent sẽ sinh ra
   totalCostMax?: number | "";
   petsAllowed?: boolean | "";

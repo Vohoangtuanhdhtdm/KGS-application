@@ -226,12 +226,25 @@ namespace kgs_api.Services
             // Mặc định: có toạ độ thì gần nhất trước, không thì mới nhất trước.
             // "Nearest" mà không có toạ độ sẽ tự lùi về "Newest" — trả về thứ tự ngẫu nhiên
             // trong trường hợp đó còn tệ hơn là bỏ qua lựa chọn của người dùng.
-            var sort = query.SortBy ?? (hasGeoSearch ? ListingSort.Nearest : ListingSort.Newest);
+            var preferences = SoftPreferences.Parse(query.Prefer);
+            var tsQuery = SoftPreferences.ToTsQuery(preferences);
+
+            // Có mong muốn mềm thì mặc định xếp theo mức khớp; không có thì Relevance vô nghĩa
+            // và tự lùi về mặc định, như "Nearest" khi thiếu toạ độ.
+            var sort = query.SortBy
+                       ?? (tsQuery is not null ? ListingSort.Relevance
+                           : hasGeoSearch ? ListingSort.Nearest : ListingSort.Newest);
             if (sort == ListingSort.Nearest && !hasGeoSearch) sort = ListingSort.Newest;
+            if (sort == ListingSort.Relevance && tsQuery is null)
+                sort = hasGeoSearch ? ListingSort.Nearest : ListingSort.Newest;
 
             var ordered = sort switch
             {
                 ListingSort.Nearest => q.OrderBy(l => l.Asset.Location!.Distance(origin)),
+                // Đồng điểm (thường là 0 — không nhắc tới mong muốn nào) thì tin mới đẩy lên trước.
+                ListingSort.Relevance => q
+                    .OrderByDescending(l => l.SearchVector!.Rank(EF.Functions.ToTsQuery("simple", tsQuery!)))
+                    .ThenByDescending(l => l.BumpedAt ?? l.PublishedAt ?? l.CreatedAt),
                 ListingSort.PriceAsc => q.OrderBy(l => l.Price),
                 ListingSort.PriceDesc => q.OrderByDescending(l => l.Price),
                 ListingSort.AreaDesc => q
@@ -248,6 +261,19 @@ namespace kgs_api.Services
 
             var items = await ToSummariesAsync(
                 ordered.Skip((page - 1) * pageSize).Take(pageSize), origin, ct);
+
+            if (preferences.Count > 0 && items.Count > 0)
+            {
+                var ids = items.Select(i => i.Id).ToList();
+                var texts = await _listings.Query().AsNoTracking()
+                    .Where(l => ids.Contains(l.Id))
+                    .Select(l => new { l.Id, l.Title, l.Description })
+                    .ToDictionaryAsync(x => x.Id, ct);
+                items = items.Select(i => texts.TryGetValue(i.Id, out var t)
+                        ? i with { MatchedPreferences = SoftPreferences.Matched(preferences, t.Title, t.Description) }
+                        : i)
+                    .ToList();
+            }
 
             return new PagedResult<PublicListingSummaryDto>(items, page, pageSize, total);
         }

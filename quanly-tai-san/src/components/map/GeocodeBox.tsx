@@ -3,15 +3,9 @@
 // geocoding này. Không dùng Search Box API vì hạn mức miễn phí chỉ 500 phiên/tháng.
 import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
-import { MAPBOX_TOKEN, distanceMeters } from "@/lib/mapEngine";
+import { geocodeForward, type GeocodeHit } from "@/lib/geocode";
 
-interface Suggestion {
-  id: string;
-  name: string;
-  place: string;
-  lat: number;
-  lng: number;
-}
+type Suggestion = GeocodeHit;
 
 interface Props {
   /** Ưu tiên kết quả gần điểm này (tâm bản đồ hiện tại). */
@@ -24,9 +18,6 @@ interface Props {
 
 const MIN_CHARS = 3;
 const DEBOUNCE_MS = 400;
-const LIMIT = 8;
-/** Kết quả trong bán kính này quanh tâm bản đồ được đưa lên đầu. */
-const NEAR_METERS = 50_000;
 
 export function GeocodeBox({
   proximity,
@@ -60,55 +51,15 @@ export function GeocodeBox({
     // Chờ người dùng ngừng gõ rồi mới gọi — mỗi lần gõ một chữ không nên tốn một lượt.
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
-      type Feature = {
-        id: string;
-        geometry: { coordinates: [number, number] };
-        properties: { name?: string; place_formatted?: string };
-      };
-      const search = async (q: string): Promise<Feature[] | null> => {
-        const url = new URL("https://api.mapbox.com/search/geocode/v6/forward");
-        url.searchParams.set("q", q);
-        url.searchParams.set("country", "vn");
-        url.searchParams.set("language", "vi");
-        url.searchParams.set("limit", String(LIMIT));
-        url.searchParams.set("proximity", `${prox.current[1]},${prox.current[0]}`);
-        url.searchParams.set("access_token", MAPBOX_TOKEN);
-        const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) return null;
-        return ((await res.json()) as { features?: Feature[] }).features ?? [];
-      };
       try {
-        // Dữ liệu Mapbox đã theo địa giới MỚI (sau sáp nhập 2025): "Quận 1" không còn, nên
-        // gõ "Hàm Nghi, Quận 1" ra rỗng trong khi "Hàm Nghi" ra ngay. Người dùng vẫn quen gõ
-        // kèm quận — bỏ phần quận/huyện đi; vẫn rỗng thì thử lại với phần trước dấu phẩy
-        // (chỉ tốn thêm một lượt khi lượt đầu không ra gì).
-        const cleaned =
-          text
-            .replace(/(^|[\s,])(quận|huyện|q\.)\s*[^,]*/giu, " ")
-            .replace(/\s*,\s*(,\s*)+/g, ", ")
-            .replace(/^[\s,]+|[\s,]+$/g, "")
-            .trim() || text;
-        let features = await search(cleaned);
-        if (features && features.length === 0 && cleaned.includes(",")) {
-          features = await search(cleaned.split(",")[0].trim());
-        }
-        if (!features) return setItems([]);
-        const data = { features };
-        const here = { lat: prox.current[0], lng: prox.current[1] };
-        const all = (data.features ?? []).map((f) => ({
-          id: f.id,
-          name: f.properties.name ?? "",
-          place: f.properties.place_formatted ?? "",
-          lng: f.geometry.coordinates[0],
-          lat: f.geometry.coordinates[1],
-        }));
-        // `proximity` của Geocoding v6 chỉ ưu tiên rất nhẹ: gõ "Chợ Bến Thành" khi đang xem
-        // TP.HCM vẫn ra phố "Bến Bình" ở Hải Phòng đứng đầu. Đưa kết quả gần tâm bản đồ lên
-        // trước, giữ nguyên thứ tự liên quan của Mapbox trong mỗi nhóm.
-        const near = all.filter((s) => distanceMeters(here, s) <= NEAR_METERS);
-        const far = all.filter((s) => distanceMeters(here, s) > NEAR_METERS);
-        setItems([...near, ...far]);
-        setNoResult(all.length === 0);
+        const hits = await geocodeForward(
+          text,
+          { lat: prox.current[0], lng: prox.current[1] },
+          ctrl.signal,
+        );
+        if (!hits) return setItems([]);
+        setItems(hits);
+        setNoResult(hits.length === 0);
         setActive(-1);
         setOpen(true);
       } catch {
