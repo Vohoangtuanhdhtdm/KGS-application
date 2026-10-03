@@ -27,8 +27,10 @@ namespace kgs_api.Extensions
         /// (một lượt dự đoán LightGBM). Đây là ngoại lệ có chủ đích của nguyên tắc "không giới
         /// hạn endpoint đọc": nó đọc, nhưng cái giá của mỗi lần đọc không bằng không.</summary>
         public const string Valuation = "valuation";
+        public const string Assistant = "assistant";
 
-        public static IServiceCollection AddKgsRateLimiting(this IServiceCollection services)
+        public static IServiceCollection AddKgsRateLimiting(
+            this IServiceCollection services, IConfiguration? config = null)
         {
             services.AddRateLimiter(options =>
             {
@@ -57,6 +59,12 @@ namespace kgs_api.Extensions
                 // 15 lượt / 10 phút: đủ để một người thử vài biến thể cho cùng một căn (đổi
                 // số phòng, số tầng để xem giá dịch chuyển), không đủ để một script cào mô hình.
                 options.AddPolicy(Valuation, PartitionByUserOrIp(limit: 15, minutes: 10));
+                // 20 câu / 10 phút: đủ cho một người hỏi rồi chỉnh vài lần, không đủ để một
+                // script đốt sạch hạn mức Groq miễn phí (1000 lượt/ngày cho cả hệ thống).
+                // Đặt lại được qua cấu hình "RateLimits:Assistant" — chỉ để chạy bộ đánh giá
+                // (vài trăm câu liền) trên máy dev; mặc định giữ 20.
+                options.AddPolicy(Assistant, PartitionByUserOrIp(
+                    limit: config?.GetValue<int?>("RateLimits:Assistant") ?? 20, minutes: 10));
             });
 
             return services;

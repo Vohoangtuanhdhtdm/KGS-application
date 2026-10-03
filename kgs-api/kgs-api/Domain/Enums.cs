@@ -168,7 +168,9 @@
 
         // Cach sap xep ket qua tim kiem cong khai. Nearest chi co nghia khi truy van kem
         // toa do — khong co toa do thi service tu lui ve Newest thay vi tra thu tu ngau nhien.
-        public enum ListingSort { Newest = 1, PriceAsc = 2, PriceDesc = 3, AreaDesc = 4, Nearest = 5 }
+        // Relevance: xếp theo mức khớp mong muốn MỀM (Prefer) — dùng khi trợ lý tìm nhà hiểu ra
+        // những thứ như "yên tĩnh", "có ban công". Không có Prefer thì tự lùi về mặc định.
+        public enum ListingSort { Newest = 1, PriceAsc = 2, PriceDesc = 3, AreaDesc = 4, Nearest = 5, Relevance = 6 }
 
         /// <summary>Lý do báo vi phạm một tin đăng.
         ///

@@ -13,7 +13,7 @@ using static kgs_api.Common.Common;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationServices(builder.Configuration, builder.Environment);
-builder.Services.AddKgsRateLimiting();
+builder.Services.AddKgsRateLimiting(builder.Configuration);
 
 
 builder.Services.AddEndpointsApiExplorer();
