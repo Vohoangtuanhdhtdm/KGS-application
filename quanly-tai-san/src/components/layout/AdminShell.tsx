@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Building2, Flag, ListChecks, Search, ShieldCheck, Users } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 /**
  * Khung của không gian **Quản trị**.
@@ -112,8 +113,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
           >
             <Building2 className="h-4 w-4" /> Về Chủ nhà
           </Link>
-          <div className="px-1 pt-2">
-            <UserMenu />
+          <div className="flex items-center gap-1 px-1 pt-2">
+            <div className="min-w-0 flex-1">
+              <UserMenu />
+            </div>
+            <NotificationBell tone="dark" />
           </div>
         </div>
       </aside>
@@ -123,7 +127,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <div className="flex h-12 items-center gap-2 px-3">
           <ShieldCheck className="h-4.5 w-4.5 text-ws-admin-accent" />
           <span className="text-sm font-semibold">KGS Quản trị</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell tone="dark" />
             <UserMenu compact />
           </div>
         </div>

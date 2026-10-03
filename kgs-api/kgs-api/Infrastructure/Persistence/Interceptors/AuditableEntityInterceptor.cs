@@ -43,7 +43,10 @@ namespace kgs_api.Infrastructure.Persistence.Interceptors
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Entity.CreatedAt = now;
+                    // Chỉ điền khi còn trống: dữ liệu nhập/dựng lại (bộ trình diễn, di chuyển dữ
+                    // liệu) cần giữ mốc thời gian gốc. Code nghiệp vụ không gán trường này, hoặc
+                    // gán đúng "bây giờ", nên kết quả với nó không đổi.
+                    if (entry.Entity.CreatedAt == default) entry.Entity.CreatedAt = now;
                     entry.Entity.CreatedBy = userId;
                 }
                 else if (entry.State == EntityState.Modified)
