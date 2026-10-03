@@ -23,6 +23,7 @@ namespace kgs_api.Data
         public DbSet<CashFlowEntry> CashFlowEntries => Set<CashFlowEntry>();
         public DbSet<Reminder> Reminders => Set<Reminder>();
         public DbSet<SavedListing> SavedListings => Set<SavedListing>();
+        public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<ListingInquiry> ListingInquiries => Set<ListingInquiry>();
         public DbSet<SavedSearch> SavedSearches => Set<SavedSearch>();
         public DbSet<ListingInvitation> ListingInvitations => Set<ListingInvitation>();

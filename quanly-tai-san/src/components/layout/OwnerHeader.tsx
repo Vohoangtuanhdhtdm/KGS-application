@@ -3,6 +3,7 @@ import { BarChart3, Building, Building2, FileText, Inbox, Plus, Search } from "l
 import { ENABLE_ASSET_MANAGEMENT } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { WorkspaceBadge } from "@/components/workspace/WorkspaceBadge";
 
 /**
@@ -80,6 +81,7 @@ export function OwnerHeader() {
               Đăng tin
             </Link>
           </Button>
+          <NotificationBell />
           <UserMenu />
         </div>
       </div>

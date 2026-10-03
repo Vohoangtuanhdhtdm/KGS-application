@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { WorkspaceBadge } from "@/components/workspace/WorkspaceBadge";
 
 /**
@@ -85,7 +86,7 @@ export function PublicHeader() {
                   thấy trước rằng bấm vào là sang một nơi khác, không phải thêm một trang. */}
               <Link
                 to="/tin-cua-toi"
-                className="hidden items-center gap-1.5 rounded-md border border-ws-owner/40 px-3 py-1.5 text-sm font-medium text-ws-owner transition-colors hover:bg-ws-owner-soft lg:inline-flex"
+                className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-ws-owner/40 px-3 py-1.5 text-sm font-medium text-ws-owner transition-colors hover:bg-ws-owner-soft lg:inline-flex"
               >
                 <Building2 className="h-4 w-4" />
                 Chủ nhà
@@ -96,6 +97,7 @@ export function PublicHeader() {
                   Đăng tin
                 </Link>
               </Button>
+              <NotificationBell />
               <UserMenu />
             </>
           ) : (

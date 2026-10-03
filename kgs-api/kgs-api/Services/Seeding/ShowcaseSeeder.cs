@@ -111,6 +111,7 @@ namespace kgs_api.Services.Seeding
             var live = listings.Where(l => l.Status == ListingStatus.Approved).ToList();
             var (views, saved, inquiries, reports) = await EngagementAsync(live, people, rnd, now, ct);
             var (demands, invitations) = await DemandsAsync(listings, people, now, ct);
+            await NotificationsAsync(listings, people, now, ct);
 
             return new Result(
                 listings.Count, Buildings.Length, units.Count,
@@ -142,6 +143,11 @@ namespace kgs_api.Services.Seeding
                 .Where(s => names.Contains(s.Name) && emails.Contains(s.User.NormalizedEmail!))
                 .ToListAsync(ct);
             _db.Set<SavedSearch>().RemoveRange(searches);
+
+            // Thông báo của các tài khoản trong bộ — dựng lại cùng dữ liệu, không để chuông
+            // đếm dồn qua mỗi lần chạy lại.
+            var notes = await _db.Notifications.Where(n => emails.Contains(n.User.NormalizedEmail!)).ToListAsync(ct);
+            _db.Notifications.RemoveRange(notes);
 
             await _db.SaveChangesAsync(ct);
             return assets.Count;
@@ -651,6 +657,56 @@ namespace kgs_api.Services.Seeding
             _db.Set<ListingInvitation>().AddRange(invitations);
             await _db.SaveChangesAsync(ct);
             return (searches.Count, invitations.Count);
+        }
+
+        /// <summary>Thông báo trong ứng dụng khớp với câu chuyện của bộ dữ liệu — cùng câu chữ và
+        /// đường dẫn hệ thống thật gửi (yêu cầu xem nhà, lời mời, kiểm duyệt, bộ lọc đã lưu), để
+        /// mở tài khoản nào ra chuông cũng có việc để xem.</summary>
+        private async Task NotificationsAsync(
+            List<Listing> listings, Dictionary<string, string> people, DateTime now, CancellationToken ct)
+        {
+            var ids = listings.Select(l => l.Id).ToList();
+            var notes = new List<Notification>();
+            void Add(string userId, string title, string body, string link, string label, double hoursAgo, bool read = false)
+                => notes.Add(new Notification
+                {
+                    UserId = userId, Title = title, Body = body, LinkPath = link, LinkLabel = label,
+                    CreatedAt = now.AddHours(-hoursAgo), ReadAt = read ? now.AddHours(-hoursAgo + 1) : null,
+                });
+
+            var inquiries = await _db.Set<ListingInquiry>().Include(i => i.Listing).Include(i => i.FromUser)
+                .Where(i => ids.Contains(i.ListingId)).ToListAsync(ct);
+            foreach (var i in inquiries)
+                Add(i.ToUserId, $"Có người hỏi thuê: {i.Listing.Title}",
+                    $"{i.FromUser.Name} vừa gửi yêu cầu xem nhà. Lời nhắn: {i.Message}",
+                    "/yeu-cau", "Xem yêu cầu", (now - i.CreatedAt).TotalHours, read: i.Status != InquiryStatus.New);
+
+            var invitations = await _db.Set<ListingInvitation>().Include(i => i.Listing).Include(i => i.SavedSearch)
+                .Where(i => ids.Contains(i.ListingId)).ToListAsync(ct);
+            foreach (var inv in invitations)
+                Add(inv.SeekerUserId, $"Chủ nhà mời bạn xem nhà: {inv.Listing.Title}",
+                    $"Tin này khớp nhu cầu \"{inv.SavedSearch?.Name}\" bạn đang tìm. Lời nhắn của chủ nhà: \"{inv.Message}\". " +
+                    "Chủ nhà chưa biết bạn là ai — thông tin liên hệ chỉ được gửi đi khi bạn nhận lời.",
+                    "/yeu-cau?tab=invites", "Xem lời mời", 20);
+
+            foreach (var l in listings.Where(l => l.Status == ListingStatus.ChangesRequested))
+                Add(l.Asset.UserId, $"Tin đăng cần chỉnh sửa: {l.Title}", l.ModerationNote ?? "",
+                    "/tin-cua-toi", "Mở tin để sửa", 72);
+            foreach (var l in listings.Where(l => l.Status == ListingStatus.Rejected))
+                Add(l.Asset.UserId, $"Tin đăng bị từ chối: {l.Title}",
+                    $"Lý do: {l.ModerationNote} Bạn có thể sửa lại nội dung và gửi duyệt lần nữa.",
+                    "/tin-cua-toi", "Mở tin để sửa", 72, read: true);
+            foreach (var l in listings.Where(l => l.Status == ListingStatus.Approved && l.AssetUnit == null).Take(12))
+                Add(l.Asset.UserId, $"Tin đăng đã được duyệt: {l.Title}",
+                    "Tin của bạn đã hiển thị công khai trên KGS.", "/tin-cua-toi", "Xem tin đã đăng",
+                    (now - (l.PublishedAt ?? now)).TotalHours, read: true);
+
+            Add(people["khoa"], "3 tin mới khớp bộ lọc \"Phòng trọ Bình Thạnh dưới 5 triệu\"",
+                "Có 3 tin mới khớp bộ lọc của bạn kể từ lần xem trước. Mở trang tìm nhà để xem.",
+                "/tin-dang", "Xem tin mới", 6);
+
+            _db.Notifications.AddRange(notes);
+            await _db.SaveChangesAsync(ct);
         }
 
         // ==================== Tiện ích ====================

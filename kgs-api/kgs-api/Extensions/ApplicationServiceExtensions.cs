@@ -126,7 +126,9 @@ namespace kgs_api.Extensions
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<IReminderService, ReminderService>();
             services.AddScoped<IMarketplaceEngagementService, MarketplaceEngagementService>();
-            services.AddScoped<INotificationSender, EmailNotificationSender>();
+            // Mỗi thông báo: một bản trong ứng dụng (chuông) + một email — xem CompositeNotificationSender.
+            services.AddScoped<EmailNotificationSender>();
+            services.AddScoped<INotificationSender, kgs_api.Services.Notifications.CompositeNotificationSender>();
             services.Configure<GoogleAuthSettings>(config.GetSection("GoogleAuth"));
 
 
