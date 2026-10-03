@@ -34,6 +34,7 @@ export interface SavedSearchCriteria {
   directions?: string[] | null;
   legalStatuses?: string[] | null;
   furnitureStates?: string[] | null;
+  has3D?: boolean | null;
 }
 
 export interface SavedSearchDto {
@@ -80,6 +81,7 @@ export function toCriteria(f: PublicListingFilters): SavedSearchCriteria {
     directions: f.directions?.length ? f.directions : null,
     legalStatuses: f.legalStatuses?.length ? f.legalStatuses : null,
     furnitureStates: f.furnitureStates?.length ? f.furnitureStates : null,
+    has3D: f.has3D === true ? true : null,
   };
 }
 

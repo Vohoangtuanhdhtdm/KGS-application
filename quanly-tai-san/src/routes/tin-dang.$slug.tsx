@@ -44,6 +44,9 @@ import { Label } from "@/components/ui/label";
 import { DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/tin-dang/$slug")({
+  // ?xem3d=1 — mở sẵn hộp thoại toà nhà 3D (đi tới từ khối toà nhà trên bản đồ tìm kiếm).
+  validateSearch: (s: Record<string, unknown>): { xem3d?: 1 } =>
+    s.xem3d === 1 || s.xem3d === "1" ? { xem3d: 1 } : {},
   // Nap tin ngay tren may chu de the OG duoc dung SAN trong HTML tra ve.
   //
   // Day la diem mau chot cua nut "chia se": Zalo, Messenger va Facebook doc the meta
@@ -92,6 +95,7 @@ export const Route = createFileRoute("/tin-dang/$slug")({
 function PublicListingDetailPage() {
   const { slug } = Route.useParams();
   const seed = Route.useLoaderData();
+  const autoOpen3D = Route.useSearch().xem3d === 1;
 
   const query = useQuery({
     queryKey: ["public-listing", slug],
@@ -297,7 +301,12 @@ function PublicListingDetailPage() {
             )}
 
             {p.latitude != null && p.longitude != null && (
-              <ListingBuilding3D slug={p.slug} lat={p.latitude} lng={p.longitude} />
+              <ListingBuilding3D
+                slug={p.slug}
+                lat={p.latitude}
+                lng={p.longitude}
+                autoOpen={autoOpen3D}
+              />
             )}
 
             <MarketTrendCard city={p.city} district={p.district} />

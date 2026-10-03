@@ -1182,6 +1182,7 @@ function PublicListingsPage() {
               : undefined
           }
           onEngine={setMapEngine}
+          listingType={type}
           onMapReady={(map) => {
             mapRef.current = map;
           }}

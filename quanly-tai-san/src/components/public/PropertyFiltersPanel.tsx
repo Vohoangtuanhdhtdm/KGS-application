@@ -202,6 +202,21 @@ export function PropertyFiltersPanel({
         </div>
       )}
 
+      <label className="flex cursor-pointer items-start gap-2 rounded-md border p-2.5">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
+          checked={s.has3D}
+          onChange={(e) => onChange({ ...s, has3D: e.target.checked })}
+        />
+        <span className="text-xs">
+          <span className="font-medium">Có mô hình 3D toà nhà</span>
+          <span className="block text-muted-foreground">
+            Xem được toà nhà, từng tầng và căn nào còn trống trước khi đi xem.
+          </span>
+        </span>
+      </label>
+
       {show.furniture && (
         <div className="space-y-1.5">
           <Label className="text-xs">Nội thất</Label>

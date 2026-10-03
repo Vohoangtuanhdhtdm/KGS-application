@@ -879,7 +879,8 @@ namespace kgs_api.Services
                         + (l.Terms.InternetFee ?? 0),
                     l.Terms.DepositMonths,
                     l.Terms.PetsAllowed,
-                    l.Amenities
+                    l.Amenities,
+                    Has3D = l.Asset.BuildingModelPublished && l.Asset.FootprintJson != null
                 })
                 .ToListAsync(ct);
 
@@ -887,7 +888,10 @@ namespace kgs_api.Services
                 r.Id, r.Slug!, r.Title, r.Type, r.Price, r.RentPaymentCycle,
                 r.City, r.District, r.Bedrooms, r.Bathrooms, r.Area, r.ThumbnailUrl,
                 r.Location?.Y, r.Location?.X, r.DistanceMeters, r.UnitName, r.PublishedAt,
-                r.TotalMonthlyCost, r.DepositMonths, r.PetsAllowed, r.Amenities)).ToList();
+                r.TotalMonthlyCost, r.DepositMonths, r.PetsAllowed, r.Amenities)
+            {
+                HasBuildingModel = r.Has3D
+            }).ToList();
         }
 
         private static List<string> NormalizeAmenities(IEnumerable<string>? input)

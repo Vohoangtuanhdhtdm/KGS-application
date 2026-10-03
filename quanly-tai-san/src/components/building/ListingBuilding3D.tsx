@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Box, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,18 @@ import { BuildingSceneClient } from "./BuildingSceneClient";
  * Bản đồ 3D chỉ dựng khi người dùng bấm mở — mỗi lần mở bản đồ GL là một lượt tính phí của
  * Mapbox, không đáng tốn cho mọi lượt xem trang.
  */
-export function ListingBuilding3D({ slug, lat, lng }: { slug: string; lat: number; lng: number }) {
+export function ListingBuilding3D({
+  slug,
+  lat,
+  lng,
+  autoOpen = false,
+}: {
+  slug: string;
+  lat: number;
+  lng: number;
+  /** Mở sẵn hộp thoại khi trang mở (đi tới từ bản đồ tìm kiếm) — chỉ khi có mô hình. */
+  autoOpen?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const q = useQuery({
     queryKey: ["listing-building", slug],
@@ -34,6 +45,10 @@ export function ListingBuilding3D({ slug, lat, lng }: { slug: string; lat: numbe
   const model = q.data ?? null;
   const focus = model?.units.find((u) => u.id === model.focusUnitId);
   const vacant = model?.units.filter((u) => u.status === 1).length ?? 0;
+
+  useEffect(() => {
+    if (autoOpen && model) setOpen(true);
+  }, [autoOpen, model]);
 
   return (
     <Card>

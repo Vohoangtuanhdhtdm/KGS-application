@@ -26,6 +26,9 @@ import {
   type PropertyMapPoint,
 } from "./propertyMapShared";
 import { MiniPropertyCard } from "./MiniPropertyCard";
+import { MapBuildingCard } from "@/components/building/MapBuildingCard";
+import { MAX_VIEW_SPAN_DEG, mapBuildingsApi, type MapBuilding } from "@/lib/api/buildingModel";
+import { centroid, openRing } from "@/lib/buildingGeometry";
 
 interface Props {
   points: PropertyMapPoint[];
@@ -48,9 +51,37 @@ interface Props {
   popupExtra?: (point: PropertyMapPoint) => ReactNode;
   /** GL hỏng hẳn (token, hạn mức) — lớp bọc đổi sang bản Leaflet. */
   onFatalError?: () => void;
+  /** Loại tin đang tìm — khối toà nhà 3D chỉ hiện toà nhà có tin loại này. */
+  listingType?: 1 | 2 | null;
 }
 
 const RADIUS_SOURCE = "kgs-search-radius";
+/** Khối nhà 3D nền của Mapbox — chỉ bật ở chế độ 3D. */
+const CTX_BUILDINGS = "kgs-search-ctx-buildings";
+/** Toà nhà có mô hình công khai (dữ liệu của KGS). */
+const MODEL_BUILDINGS = "kgs-search-model-buildings";
+/** Gần hơn mức này mới tải và hiện khối toà nhà — xa hơn thì khối chỉ là chấm nhỏ. */
+const BUILDINGS_MIN_ZOOM = 14.5;
+const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+
+function buildingsFC(list: MapBuilding[]): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: list
+      .map((b) => ({ b, ring: openRing(b.footprint) }))
+      .filter(({ ring }) => ring.length >= 3)
+      .map(({ b, ring }) => ({
+        type: "Feature" as const,
+        properties: {
+          assetId: b.assetId,
+          height: b.floors * b.floorHeightMeters,
+          // Còn căn trống → xanh lá; đang đăng tin nhưng không khai căn trống → xanh dương.
+          color: b.vacantCount > 0 ? "#10b981" : "#3b82f6",
+        },
+        geometry: { type: "Polygon" as const, coordinates: [[...ring, ring[0]]] },
+      })),
+  };
+}
 
 function userDot(): HTMLElement {
   const el = document.createElement("div");
@@ -94,6 +125,7 @@ export default function GlPropertyMap({
   onMapReady,
   onShowSearchAreaButtonChange,
   onFatalError,
+  listingType = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -124,6 +156,18 @@ export default function GlPropertyMap({
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const [popupHost, setPopupHost] = useState<HTMLElement | null>(null);
   const [popupPoint, setPopupPoint] = useState<PropertyMapPoint | null>(null);
+
+  // ---- Toà nhà 3D ----
+  const [is3D, setIs3D] = useState(false);
+  const [buildings, setBuildings] = useState<MapBuilding[]>([]);
+  const buildingsRef = useRef<MapBuilding[]>([]);
+  buildingsRef.current = buildings;
+  const typeRef = useRef(listingType);
+  typeRef.current = listingType;
+  const loadBuildingsRef = useRef<() => void>(() => {});
+  const buildingPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const [buildingHost, setBuildingHost] = useState<HTMLElement | null>(null);
+  const [popupBuilding, setPopupBuilding] = useState<MapBuilding | null>(null);
 
   // ---------------- Dựng bản đồ (một lần) ----------------
   useEffect(() => {
@@ -169,7 +213,39 @@ export default function GlPropertyMap({
         source: RADIUS_SOURCE,
         paint: { "line-color": "#1f2f6b", "line-width": 1 },
       });
+
+      // Khối nhà nền 3D (chỉ hiện khi bật 3D) và toà nhà có mô hình của KGS (luôn hiện khi
+      // đủ gần: nhìn thẳng từ trên xuống chúng là các mảng màu đánh dấu toà nhà xem 3D được).
+      map.addLayer({
+        id: CTX_BUILDINGS,
+        type: "fill-extrusion",
+        source: "composite",
+        "source-layer": "building",
+        minzoom: 14,
+        filter: ["==", ["get", "extrude"], "true"],
+        layout: { visibility: "none" },
+        paint: {
+          "fill-extrusion-color": "#e2e8f0",
+          "fill-extrusion-height": ["coalesce", ["get", "height"], 6],
+          "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
+          "fill-extrusion-opacity": 0.65,
+        },
+      });
+      map.addSource(MODEL_BUILDINGS, { type: "geojson", data: EMPTY_FC });
+      map.addLayer({
+        id: MODEL_BUILDINGS,
+        type: "fill-extrusion",
+        source: MODEL_BUILDINGS,
+        minzoom: BUILDINGS_MIN_ZOOM,
+        paint: {
+          "fill-extrusion-color": ["get", "color"],
+          "fill-extrusion-height": ["get", "height"],
+          "fill-extrusion-base": 0,
+          "fill-extrusion-opacity": 0.9,
+        },
+      });
       setReady(true);
+      loadBuildingsRef.current();
       onMapReady?.({
         getCenter: () => {
           const c = map.getCenter();
@@ -185,10 +261,47 @@ export default function GlPropertyMap({
       });
     });
 
-    // Bấm vào bản đồ (không phải vào viên giá) → đổi tâm tìm kiếm.
-    map.on("click", (e) =>
-      cb.current.onSearchCenterChange?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }),
-    );
+    // Bấm vào khối toà nhà → cửa sổ toà nhà. Bấm chỗ khác của bản đồ (không phải viên giá)
+    // → đổi tâm tìm kiếm.
+    map.on("click", (e) => {
+      const hit = map.getLayer(MODEL_BUILDINGS)
+        ? map.queryRenderedFeatures(e.point, { layers: [MODEL_BUILDINGS] })[0]
+        : undefined;
+      const b = hit && buildingsRef.current.find((x) => x.assetId === hit.properties?.assetId);
+      if (b) {
+        setPopupBuilding(b);
+        buildingPopupRef.current?.setLngLat(e.lngLat).addTo(map);
+        return;
+      }
+      cb.current.onSearchCenterChange?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+    });
+    map.on("mouseenter", MODEL_BUILDINGS, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", MODEL_BUILDINGS, () => (map.getCanvas().style.cursor = ""));
+
+    // Tải toà nhà trong khung nhìn sau mỗi lần dừng kéo/phóng. Huỷ lượt cũ nếu lượt mới tới.
+    let ctrl: AbortController | null = null;
+    loadBuildingsRef.current = () => {
+      if (!map.getSource(MODEL_BUILDINGS)) return;
+      const bounds = map.getBounds();
+      if (!bounds || map.getZoom() < BUILDINGS_MIN_ZOOM) return;
+      const box = {
+        west: bounds.getWest(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        north: bounds.getNorth(),
+      };
+      if (box.east - box.west > MAX_VIEW_SPAN_DEG || box.north - box.south > MAX_VIEW_SPAN_DEG)
+        return;
+      ctrl?.abort();
+      ctrl = new AbortController();
+      mapBuildingsApi
+        .inView(box, typeRef.current ?? null, ctrl.signal)
+        .then(setBuildings)
+        .catch(() => {
+          // Lỗi mạng hay bị huỷ: giữ khối đang có, lần kéo sau thử lại.
+        });
+    };
+    map.on("moveend", () => loadBuildingsRef.current());
 
     map.on("moveend", (e) => {
       const { searchCenter: sc, onShowSearchAreaButtonChange: show } = cb.current;
@@ -220,12 +333,25 @@ export default function GlPropertyMap({
     popup.on("close", () => setPopupPoint(null));
     popupRef.current = popup;
 
+    const bHost = document.createElement("div");
+    setBuildingHost(bHost);
+    const bPopup = new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      offset: 8,
+      maxWidth: "260px",
+    }).setDOMContent(bHost);
+    bPopup.on("close", () => setPopupBuilding(null));
+    buildingPopupRef.current = bPopup;
+
     const pills = pillsRef.current;
     return () => {
       ro.disconnect();
       pills.forEach((p) => p.marker.remove());
       pills.clear();
       popup.remove();
+      bPopup.remove();
+      ctrl?.abort();
       map.remove();
       mapRef.current = null;
     };
@@ -400,6 +526,52 @@ export default function GlPropertyMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, radiusMeters, searchCenter, areaKey]);
 
+  // ---------------- Toà nhà 3D ----------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    (map.getSource(MODEL_BUILDINGS) as mapboxgl.GeoJSONSource).setData(buildingsFC(buildings));
+  }, [ready, buildings]);
+
+  // Đổi Bán/Thuê → tải lại toà nhà theo loại tin mới.
+  useEffect(() => {
+    if (ready) loadBuildingsRef.current();
+  }, [ready, listingType]);
+
+  // Bật/tắt 3D: nghiêng bản đồ, cho xoay, hiện khối nhà nền. Ẩn khối nhà nền nằm dưới toà
+  // nhà có mô hình để hai khối không chồng lên nhau.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    map.setLayoutProperty(CTX_BUILDINGS, "visibility", is3D ? "visible" : "none");
+    if (is3D) {
+      map.dragRotate.enable();
+      map.easeTo({ pitch: 55, zoom: Math.max(map.getZoom(), 17), duration: 700 });
+    } else {
+      map.dragRotate.disable();
+      map.easeTo({ pitch: 0, bearing: 0, duration: 500 });
+    }
+  }, [ready, is3D]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !is3D) return;
+    const base: mapboxgl.FilterSpecification = ["==", ["get", "extrude"], "true"];
+    map.setFilter(CTX_BUILDINGS, base);
+    const apply = () => {
+      const ids = new Set<string | number>();
+      for (const b of buildings) {
+        const c = centroid(openRing(b.footprint));
+        for (const f of map.queryRenderedFeatures(map.project(c), { layers: [CTX_BUILDINGS] }))
+          if (f.id != null) ids.add(f.id);
+      }
+      if (ids.size)
+        map.setFilter(CTX_BUILDINGS, ["all", base, ["!", ["in", ["id"], ["literal", [...ids]]]]]);
+    };
+    map.once("idle", apply);
+    map.triggerRepaint();
+  }, [ready, is3D, buildings]);
+
   // ---------------- Chấm GPS ----------------
   const dotRef = useRef<mapboxgl.Marker | null>(null);
   useEffect(() => {
@@ -427,6 +599,26 @@ export default function GlPropertyMap({
       }}
     >
       <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
+      <button
+        type="button"
+        onClick={() => setIs3D((v) => !v)}
+        aria-pressed={is3D}
+        title={
+          is3D
+            ? "Về bản đồ phẳng"
+            : "Xem 3D: khối toà nhà và các toà nhà xem được từng tầng, từng căn"
+        }
+        className={`absolute right-2 top-2 z-10 rounded-md border px-2.5 py-1.5 text-xs font-semibold shadow-sm ${
+          is3D ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent"
+        }`}
+      >
+        {is3D ? "2D" : "3D"}
+        {!is3D && buildings.length > 0 && (
+          <span className="ml-1 rounded-full bg-emerald-500 px-1.5 text-[10px] text-white">
+            {buildings.length}
+          </span>
+        )}
+      </button>
       {/* Thẻ xem nhanh render bằng React qua portal vào khung popup của GL — nhờ vậy nó vẫn
           nằm trong cây component và dùng được Link của router. */}
       {popupHost &&
@@ -438,6 +630,9 @@ export default function GlPropertyMap({
           </>,
           popupHost,
         )}
+      {buildingHost &&
+        popupBuilding &&
+        createPortal(<MapBuildingCard b={popupBuilding} />, buildingHost)}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { formatListingPrice, type PublicListingSummaryDto } from "@/lib/api/list
 import type { CompareItem } from "@/hooks/useCompareList";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon, Scale, Check } from "lucide-react";
+import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon, Scale, Check, Box } from "lucide-react";
 
 /**
  * Tổng chi phí viết ĐỦ SỐ, không rút gọn.
@@ -109,6 +109,14 @@ export const PropertyListCard = memo(
                 <div className="w-full h-full flex items-center justify-center">
                   <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
                 </div>
+              )}
+              {p.hasBuildingModel && (
+                <span
+                  className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-card/90 px-1.5 py-0.5 text-[11px] font-semibold backdrop-blur"
+                  title="Toà nhà có mô hình 3D — xem từng tầng, căn nào còn trống"
+                >
+                  <Box className="h-3 w-3" /> 3D
+                </span>
               )}
               {/* Nút thêm vào so sánh — đối xứng với nút lưu tin, nhưng ở góc trái để
                   không tranh chỗ. Chỉ hiện khi trang cha gắn CompareBar (truyền
