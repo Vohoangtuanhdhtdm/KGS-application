@@ -35,6 +35,25 @@ namespace kgs_api.Dtos
         double? Latitude,
         double? Longitude);
 
+    /// <summary>Một tin đang hiển thị trong toà nhà — cho cửa sổ bấm vào toà nhà trên bản đồ tìm kiếm.</summary>
+    public sealed record BuildingListingPreviewDto(
+        string Slug, string Title, decimal Price, ListingType Type, PaymentCycle? RentPaymentCycle,
+        string? UnitName);
+
+    /// <summary>Toà nhà có mô hình công khai, hiện thành khối 3D trên bản đồ tìm kiếm.</summary>
+    public sealed record MapBuildingDto(
+        Guid AssetId,
+        string Address,
+        List<double[]> Footprint,
+        int Floors,
+        double FloorHeightMeters,
+        int UnitCount,
+        int VacantCount,
+        /// <summary>Tổng số tin đang hiển thị (khớp loại tin đang tìm, nếu có).</summary>
+        int ListingCount,
+        /// <summary>Vài tin rẻ nhất để xem nhanh.</summary>
+        List<BuildingListingPreviewDto> Listings);
+
     public sealed record SaveBuildingModelRequest(
         [Required] List<double[]> Footprint,
         [Range(1, 100)] int Floors,

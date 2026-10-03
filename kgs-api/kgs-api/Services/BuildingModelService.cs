@@ -5,6 +5,7 @@ using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using static kgs_api.Common.Common;
 using static kgs_api.Domain.Enums;
 
@@ -26,12 +27,20 @@ namespace kgs_api.Services
         private readonly IRepository<Listing> _listings;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
+        private readonly GeometryFactory _geometryFactory;
+
+        /// <summary>Khung nhìn rộng hơn mức này (độ) thì không trả: khối 3D chỉ hiện khi đã phóng
+        /// gần, và một khung nhìn cả thành phố thì vừa nặng vừa vô nghĩa.</summary>
+        public const double MaxViewSpanDegrees = 0.2;
+        private const int MaxBuildingsInView = 150;
+        private const int PreviewListings = 4;
 
         public BuildingModelService(
             IRepository<Asset> assets, IRepository<AssetUnit> units, IRepository<Listing> listings,
-            IUnitOfWork uow, ICurrentUserService currentUser)
+            IUnitOfWork uow, ICurrentUserService currentUser, GeometryFactory geometryFactory)
         {
             _assets = assets; _units = units; _listings = listings; _uow = uow; _currentUser = currentUser;
+            _geometryFactory = geometryFactory;
         }
 
         // ==================== Chủ nhà ====================
@@ -70,6 +79,77 @@ namespace kgs_api.Services
             if (asset is null || !asset.BuildingModelPublished || string.IsNullOrEmpty(asset.FootprintJson)) return null;
 
             return await ToDtoAsync(asset, row.AssetUnitId, publicView: true, ct);
+        }
+
+        /// <summary>Các toà nhà có mô hình công khai VÀ đang có tin hiển thị trong khung nhìn.
+        /// Toà nhà không còn tin nào thì không hiện: bản đồ tìm kiếm là để tìm chỗ đang cho
+        /// thuê/bán, không phải để xem kiến trúc. <paramref name="type"/> = loại tin đang tìm.</summary>
+        public async Task<List<MapBuildingDto>> GetInViewAsync(
+            double west, double south, double east, double north, ListingType? type, CancellationToken ct)
+        {
+            if (!(west < east && south < north) || east - west > MaxViewSpanDegrees || north - south > MaxViewSpanDegrees
+                || west < -180 || east > 180 || south < -90 || north > 90)
+                throw new ValidationFailedException("Khung nhìn không hợp lệ hoặc quá rộng — hãy phóng gần hơn.");
+
+            var view = _geometryFactory.CreatePolygon(new[]
+            {
+                new Coordinate(west, south), new Coordinate(east, south), new Coordinate(east, north),
+                new Coordinate(west, north), new Coordinate(west, south),
+            });
+
+            var assets = await _assets.Query().AsNoTracking()
+                .Where(a => a.BuildingModelPublished && a.FootprintJson != null && a.Location != null
+                            && a.Location.Intersects(view))
+                .Where(a => a.Listings.Any(l => l.Status == ListingStatus.Approved && (type == null || l.Type == type)))
+                .Select(a => new
+                {
+                    a.Id, a.FootprintJson, a.Floors, a.FloorHeightMeters,
+                    a.Address.Detail, a.Address.District,
+                })
+                .Take(MaxBuildingsInView)
+                .ToListAsync(ct);
+            if (assets.Count == 0) return new();
+
+            var ids = assets.Select(a => a.Id).ToList();
+            var unitStats = await _units.Query().AsNoTracking()
+                .Where(u => ids.Contains(u.AssetId))
+                .GroupBy(u => u.AssetId)
+                .Select(g => new
+                {
+                    AssetId = g.Key,
+                    Count = g.Count(),
+                    Vacant = g.Count(u => u.Status == UnitStatus.Vacant),
+                    MaxFloor = g.Max(u => u.FloorNumber),
+                })
+                .ToDictionaryAsync(x => x.AssetId, ct);
+            var listings = await _listings.Query().AsNoTracking()
+                .Where(l => ids.Contains(l.AssetId) && l.Status == ListingStatus.Approved && (type == null || l.Type == type))
+                .OrderBy(l => l.Price)
+                .Select(l => new
+                {
+                    l.AssetId, l.Slug, l.Title, l.Price, l.Type, l.RentPaymentCycle,
+                    UnitName = l.AssetUnit != null ? l.AssetUnit.Name : null,
+                })
+                .ToListAsync(ct);
+            var byAsset = listings.GroupBy(l => l.AssetId).ToDictionary(g => g.Key, g => g.ToList());
+
+            return assets.Select(a =>
+            {
+                unitStats.TryGetValue(a.Id, out var st);
+                var ls = byAsset.GetValueOrDefault(a.Id) ?? new();
+                return new MapBuildingDto(
+                    a.Id,
+                    $"{a.Detail}, {a.District}".Trim(' ', ','),
+                    JsonSerializer.Deserialize<List<double[]>>(a.FootprintJson!) ?? new(),
+                    Math.Max(Math.Max(a.Floors ?? 0, st?.MaxFloor ?? 0), 1),
+                    a.FloorHeightMeters ?? DefaultFloorHeight,
+                    st?.Count ?? 0,
+                    st?.Vacant ?? 0,
+                    ls.Count,
+                    ls.Take(PreviewListings)
+                      .Select(l => new BuildingListingPreviewDto(l.Slug!, l.Title, l.Price, l.Type, l.RentPaymentCycle, l.UnitName))
+                      .ToList());
+            }).ToList();
         }
 
         // ==================== Nội bộ ====================

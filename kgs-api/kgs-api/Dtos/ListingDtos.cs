@@ -202,7 +202,10 @@ namespace kgs_api.Dtos
 
         /// <summary>Mong muốn MỀM, phân cách bằng dấu chấm phẩy ("yên tĩnh; ban công"). Chỉ
         /// ảnh hưởng thứ tự (ListingSort.Relevance), không bao giờ loại tin. Xem SoftPreferences.</summary>
-        [MaxLength(400)] string? Prefer = null);
+        [MaxLength(400)] string? Prefer = null,
+
+        /// <summary>Chỉ tin thuộc toà nhà đã có mô hình 3D công khai (xem BuildingModelService).</summary>
+        bool? Has3D = null);
 
     public sealed record PublicListingSummaryDto(
         Guid Id, string Slug, string Title, ListingType Type, decimal Price,
@@ -221,6 +224,9 @@ namespace kgs_api.Dtos
         /// <summary>Những mong muốn mềm (Prefer) mà tin này thật sự nhắc tới trong tiêu đề/mô
         /// tả — để giao diện giải thích "vì sao hợp". Null khi không tìm theo mong muốn.</summary>
         public IReadOnlyList<string>? MatchedPreferences { get; init; }
+
+        /// <summary>Toà nhà của tin có mô hình 3D công khai — thẻ tin hiện nhãn "3D".</summary>
+        public bool HasBuildingModel { get; init; }
     }
 
     public sealed record PublicListingDetailDto(

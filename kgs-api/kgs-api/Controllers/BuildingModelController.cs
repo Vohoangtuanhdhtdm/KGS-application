@@ -2,6 +2,7 @@ using kgs_api.Dtos;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Controllers
 {
@@ -22,6 +23,14 @@ namespace kgs_api.Controllers
         public async Task<ActionResult<BuildingModelDto>> Save(
             Guid assetId, [FromBody] SaveBuildingModelRequest request, CancellationToken ct)
             => Ok(await _models.SaveAsync(assetId, request, ct));
+
+        /// <summary>Toà nhà có mô hình 3D trong khung nhìn của bản đồ tìm kiếm.</summary>
+        [HttpGet("api/listings/buildings")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<MapBuildingDto>>> InView(
+            [FromQuery] double west, [FromQuery] double south, [FromQuery] double east, [FromQuery] double north,
+            [FromQuery] ListingType? type, CancellationToken ct)
+            => Ok(await _models.GetInViewAsync(west, south, east, north, type, ct));
 
         /// <summary>404 khi toà nhà chưa có mô hình hoặc chủ nhà chưa công khai — trang tin khi
         /// đó dùng khối nhà 3D sẵn có của bản đồ.</summary>

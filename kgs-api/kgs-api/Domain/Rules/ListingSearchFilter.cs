@@ -53,6 +53,10 @@ namespace kgs_api.Domain.Rules
             if (query.BathroomsMin is not null) q = q.Where(l => l.Asset.Bathrooms >= query.BathroomsMin);
             if (query.FloorsMin is not null) q = q.Where(l => l.Asset.Floors >= query.FloorsMin);
             if (query.FrontageMin is not null) q = q.Where(l => l.Asset.Frontage >= query.FrontageMin);
+            // "Có mô hình 3D": đúng điều kiện mà trang tin dùng để hiện thẻ Toà nhà 3D, để lọc
+            // ra tin nào thì mở tin đó cũng thấy được toà nhà.
+            if (query.Has3D == true)
+                q = q.Where(l => l.Asset.BuildingModelPublished && l.Asset.FootprintJson != null);
 
             var directions = PropertyVocabulary.NormalizeFilter(
                 query.Directions, PropertyVocabulary.NormalizeDirection, PropertyVocabulary.Directions);
