@@ -14,18 +14,22 @@ import type { LatLng } from "@/hooks/useGeolocationOnDemand";
 import type { MapViewApi } from "@/lib/mapEngine";
 import {
   MOVE_THRESHOLD_METERS,
+  groupHovered,
+  groupLabel,
+  groupPoints,
   isValidLatLng,
-  pillLabel,
   pillStyle,
+  type PillGroup,
   type PropertyMapPoint,
 } from "./propertyMapShared";
 import { MiniPropertyCard } from "./MiniPropertyCard";
+import { MiniGroupCard } from "./MiniGroupCard";
 
 export type { PropertyMapPoint } from "./propertyMapShared";
 
-function pillIcon(point: PropertyMapPoint, hovered: boolean): L.DivIcon {
+function pillIcon(group: PillGroup, hovered: boolean): L.DivIcon {
   return L.divIcon({
-    html: `<div style="${pillStyle(point, hovered)}">${pillLabel(point)}</div>`,
+    html: `<div style="${pillStyle(group.points[0], hovered)}">${groupLabel(group)}</div>`,
     className: "property-pill-marker", // reset style mặc định của leaflet cho div icon
     iconSize: undefined,
     iconAnchor: [hovered ? 30 : 26, 14],
@@ -147,9 +151,11 @@ export default function PropertyMap({
   onMapReady,
   onShowSearchAreaButtonChange,
 }: PropertyMapProps) {
+  // Tin chung toạ độ (các căn của một toà nhà) gộp thành một viên — xem groupPoints.
+  const groups = useMemo(() => groupPoints(points), [points]);
   const icons = useMemo(
-    () => new Map(points.map((p) => [p.id, pillIcon(p, p.id === hoveredId)])),
-    [points, hoveredId],
+    () => new Map(groups.map((g) => [g.key, pillIcon(g, groupHovered(g, hoveredId))])),
+    [groups, hoveredId],
   );
 
   const handleMoveEnd = (map: L.Map) => {
@@ -223,14 +229,19 @@ export default function PropertyMap({
 
         {/* Cùng lý do với FitBounds: một Marker mang toạ độ NaN cũng ném lỗi và hạ cả trang.
             Bỏ qua điểm hỏng thay vì tin dữ liệu luôn sạch. */}
-        {points
-          .filter((p) => isValidLatLng(p.lat, p.lng))
-          .map((p) => (
+        {groups.map((g) => {
+          const p = g.points[0];
+          const withCard = g.points.filter((x) => x.slug && x.title);
+          return (
             <Marker
-              key={p.id}
-              position={[p.lat, p.lng]}
-              icon={icons.get(p.id)}
-              alt={`Tin đăng giá ${formatCurrency(p.price, { compact: true })}`}
+              key={g.key}
+              position={[g.lat, g.lng]}
+              icon={icons.get(g.key)}
+              alt={
+                g.points.length === 1
+                  ? `Tin đăng giá ${formatCurrency(p.price, { compact: true })}`
+                  : `${g.points.length} tin đăng cùng vị trí`
+              }
               eventHandlers={{
                 mouseover: () => onHoverPoint(p.id),
                 mouseout: () => onHoverPoint(null),
@@ -238,13 +249,18 @@ export default function PropertyMap({
               }}
             >
               {/* Popup xem nhanh — song song với hành vi cuộn danh sách (onClickPoint ở trên) */}
-              {p.slug && p.title && (
+              {withCard.length > 0 && (
                 <Popup autoPan={false} closeButton minWidth={200}>
-                  <MiniPropertyCard point={p} />
+                  {withCard.length === 1 ? (
+                    <MiniPropertyCard point={withCard[0]} />
+                  ) : (
+                    <MiniGroupCard points={withCard} />
+                  )}
                 </Popup>
               )}
             </Marker>
-          ))}
+          );
+        })}
       </MapContainer>
     </div>
   );

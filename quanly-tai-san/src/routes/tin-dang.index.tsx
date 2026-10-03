@@ -443,6 +443,7 @@ function PublicListingsPage() {
           slug: p.slug,
           title: p.title,
           thumbnailUrl: p.thumbnailUrl,
+          unitName: p.unitName,
           rentPaymentCycle: p.rentPaymentCycle,
         })),
     [items],
