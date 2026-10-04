@@ -227,6 +227,12 @@ namespace kgs_api.Dtos
 
         /// <summary>Toà nhà của tin có mô hình 3D công khai — thẻ tin hiện nhãn "3D".</summary>
         public bool HasBuildingModel { get; init; }
+
+        /// <summary>Tối đa 5 ảnh đầu — thẻ tin cho lướt xem ảnh ngay trong danh sách.</summary>
+        public IReadOnlyList<string> ImageUrls { get; init; } = Array.Empty<string>();
+        /// <summary>Tổng số ảnh của tin (để ghi "1/12" khi chỉ gửi 5 ảnh đầu).</summary>
+        public int ImageCount { get; init; }
+        public AssetDomainType AssetType { get; init; }
     }
 
     public sealed record PublicListingDetailDto(

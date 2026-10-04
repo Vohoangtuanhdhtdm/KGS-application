@@ -623,7 +623,7 @@ export default function GlPropertyMap({
             ? "Về bản đồ phẳng"
             : "Xem 3D: khối toà nhà và các toà nhà xem được từng tầng, từng căn"
         }
-        className={`absolute right-2 top-2 z-10 rounded-md border px-2.5 py-1.5 text-xs font-semibold shadow-sm ${
+        className={`absolute right-2 top-[118px] z-10 rounded-md md:top-2 border px-2.5 py-1.5 text-xs font-semibold shadow-sm ${
           is3D ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent"
         }`}
       >

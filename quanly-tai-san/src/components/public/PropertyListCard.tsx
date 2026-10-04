@@ -4,7 +4,20 @@ import { formatListingPrice, type PublicListingSummaryDto } from "@/lib/api/list
 import type { CompareItem } from "@/hooks/useCompareList";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, MapPin, BedDouble, Bath, Ruler, ImageIcon, Scale, Check, Box } from "lucide-react";
+import { AMENITIES, ASSET_TYPE, type AmenityKey } from "@/constants/enums";
+import {
+  Heart,
+  MapPin,
+  BedDouble,
+  Bath,
+  Ruler,
+  ImageIcon,
+  Scale,
+  Check,
+  Box,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 /**
  * Tổng chi phí viết ĐỦ SỐ, không rút gọn.
@@ -56,8 +69,21 @@ interface PropertyListCardProps {
   onToggleCompare?: (item: CompareItem) => void;
   /** "Vì sao hợp" — chỉ có khi tìm qua trợ lý (xem lib/matchReasons.ts). */
   reasons?: string[];
+  /** "auto" (mặc định): ngang khi đủ rộng. "vertical": luôn dọc — cho dải giới thiệu như
+   *  trang chủ, nơi các thẻ đứng cạnh nhau thành hàng. */
+  layout?: "auto" | "vertical";
 }
 
+/**
+ * Thẻ tin TỰ ĐỔI DÁNG theo chỗ nó được đặt (container query, không theo màn hình):
+ *
+ *   • hẹp (< 20rem — lưới nhiều cột, trang chủ): dọc, ảnh trên chữ dưới;
+ *   • đủ rộng (cột danh sách cạnh bản đồ, danh sách toàn trang, khung dưới trên điện thoại):
+ *     NGANG, ảnh trái chữ phải — đọc được tiêu đề hai dòng, thấy thông số và tiện nghi, và
+ *     một màn hình chứa gấp đôi số tin so với thẻ dọc phóng to.
+ *
+ * Một component cho mọi nơi, nên mọi cải tiến của thẻ tới được mọi trang dùng nó.
+ */
 export const PropertyListCard = memo(
   forwardRef<HTMLDivElement, PropertyListCardProps>(function PropertyListCard(
     {
@@ -72,44 +98,40 @@ export const PropertyListCard = memo(
       reasons,
       compareFull = false,
       onToggleCompare,
+      layout = "auto",
     },
     ref,
   ) {
-    const [imgLoaded, setImgLoaded] = useState(false);
+    const row = layout === "auto";
     const distanceKm = p.distanceMeters != null ? p.distanceMeters / 1000 : null;
+    const images = p.imageUrls?.length ? p.imageUrls : p.thumbnailUrl ? [p.thumbnailUrl] : [];
+    const typeLabel = p.assetType ? ASSET_TYPE[p.assetType as keyof typeof ASSET_TYPE] : null;
 
     return (
-      <div ref={ref} onMouseEnter={() => onHover?.(p.id)} onMouseLeave={() => onLeave?.(p.id)}>
+      <div
+        ref={ref}
+        className="@container"
+        onMouseEnter={() => onHover?.(p.id)}
+        onMouseLeave={() => onLeave?.(p.id)}
+      >
         <Link
           to="/tin-dang/$slug"
           params={{ slug: p.slug }}
           className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <Card
-            className={`overflow-hidden py-0 gap-0 h-full transition-[box-shadow,transform] duration-[--dur-base] ease-[--ease-out] ${
+            className={`group flex h-full flex-col gap-0 overflow-hidden py-0 transition-[box-shadow,transform] duration-[--dur-base] ease-[--ease-out] ${
+              row ? "@xs:flex-row" : ""
+            } ${
               hovered ? "shadow-[--shadow-e3] -translate-y-0.5" : "shadow-none"
             } ${highlighted ? "ring-2 ring-primary" : ""}`}
           >
-            <div className="relative aspect-[4/3] bg-muted">
-              {p.thumbnailUrl ? (
-                <>
-                  {/* Placeholder xám trong lúc ảnh tải, tránh giật layout */}
-                  {!imgLoaded && <Skeleton className="absolute inset-0 rounded-none" />}
-                  <img
-                    src={p.thumbnailUrl}
-                    alt={p.title}
-                    loading="lazy"
-                    onLoad={() => setImgLoaded(true)}
-                    className={`w-full h-full object-cover transition-opacity duration-200 ${
-                      imgLoaded ? "opacity-100" : "opacity-0"
-                    }`}
-                  />
-                </>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
-                </div>
-              )}
+            <div
+              className={`relative aspect-[4/3] shrink-0 bg-muted ${
+                row ? "@xs:aspect-auto @xs:min-h-[168px] @xs:w-[40%] @lg:w-[34%]" : ""
+              }`}
+            >
+              <ImageStrip images={images} total={p.imageCount ?? images.length} title={p.title} />
               {p.hasBuildingModel && (
                 <span
                   className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded bg-card/90 px-1.5 py-0.5 text-[11px] font-semibold backdrop-blur"
@@ -155,11 +177,8 @@ export const PropertyListCard = memo(
                   <Scale className="h-4 w-4" />
                 </button>
               )}
-              {/* Nút lưu tin.
-                  Trước đây nút này chỉ đổi một biến useState trong chính thẻ — nó sáng lên
-                  khi bấm rồi mất sạch khi tải lại trang, và không bao giờ xuất hiện ở mục
-                  "Tin đã lưu". Một nút giả vờ chạy còn tệ hơn không có nút. Nay cha gọi
-                  đúng API lưu tin, và đưa người chưa đăng nhập sang trang đăng nhập. */}
+              {/* Nút lưu tin — cha gọi đúng API lưu tin, và đưa người chưa đăng nhập sang
+                  trang đăng nhập (một nút chỉ đổi màu rồi mất khi tải lại là nút giả). */}
               <button
                 type="button"
                 aria-label={saved ? "Bỏ lưu tin" : "Lưu tin"}
@@ -180,49 +199,65 @@ export const PropertyListCard = memo(
                 />
               </button>
             </div>
-            <div className="p-4 space-y-1.5">
-              <div className="flex items-baseline gap-2 flex-wrap">
+
+            <div className="flex min-w-0 flex-1 flex-col gap-1 p-3.5 @xs:px-4 @xs:py-3">
+              {/* Loại hình + ngày đăng chung một dòng — dòng "Đăng … trước" riêng làm thẻ
+                  ngang cao thêm một nấc mà không thêm thông tin quyết định. */}
+              <div className="flex items-baseline justify-between gap-2 text-[11px] text-muted-foreground">
+                <span className="truncate font-medium uppercase tracking-wide">
+                  {typeLabel}
+                  {typeLabel && p.unitName ? ` · ${p.unitName}` : ""}
+                </span>
+                {p.publishedAt && (
+                  <span className="shrink-0">
+                    {postedAgoLabel(p.publishedAt).replace("Đăng ", "")}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span className="text-lg font-bold tabular-nums text-foreground">
                   {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
                 </span>
-                {/* Tổng chi phí hàng tháng — luận điểm cốt lõi của sản phẩm, và nó đã nằm
-                    sẵn trong dữ liệu trả về từ trước mà thẻ không hề dùng tới. Chỉ hiện khi
-                    LỚN HƠN giá thuê: bằng nhau nghĩa là tin chưa khai phí nào, lúc đó lặp
-                    lại con số cũ chỉ làm thẻ rối mà không thêm thông tin. */}
+                {/* Tổng chi phí hàng tháng — luận điểm cốt lõi của sản phẩm. Chỉ hiện khi
+                    LỚN HƠN giá thuê: bằng nhau nghĩa là tin chưa khai phí nào. */}
                 {p.type === 2 && p.totalMonthlyCost > p.price && (
                   <span className="rounded bg-price-soft px-1.5 py-0.5 text-xs font-medium tabular-nums text-price">
                     Tổng {formatFullVnd(p.totalMonthlyCost)}/tháng
                   </span>
                 )}
               </div>
-              <div className="font-medium line-clamp-1">{p.title}</div>
-              <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <div className="line-clamp-2 font-medium leading-snug">{p.title}</div>
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">
                   {[p.district, p.city].filter(Boolean).join(", ")}
                   {distanceKm != null && ` · ${distanceKm.toFixed(1)}km`}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground pt-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
+                {p.area != null && (
+                  <Spec icon={<Ruler className="h-3.5 w-3.5" />}>{p.area} m²</Spec>
+                )}
                 {p.bedrooms != null && (
-                  <span className="flex items-center gap-1">
-                    <BedDouble className="h-3.5 w-3.5" />
-                    {p.bedrooms} PN
-                  </span>
+                  <Spec icon={<BedDouble className="h-3.5 w-3.5" />}>{p.bedrooms} PN</Spec>
                 )}
                 {p.bathrooms != null && (
-                  <span className="flex items-center gap-1">
-                    <Bath className="h-3.5 w-3.5" />
-                    {p.bathrooms} WC
-                  </span>
-                )}
-                {p.area != null && (
-                  <span className="flex items-center gap-1">
-                    <Ruler className="h-3.5 w-3.5" />
-                    {p.area}m²
-                  </span>
+                  <Spec icon={<Bath className="h-3.5 w-3.5" />}>{p.bathrooms} WC</Spec>
                 )}
               </div>
+              {/* Tiện nghi chỉ hiện khi thẻ đủ rộng — ở thẻ dọc hẹp nó đẩy thẻ cao lên mà
+                  không ai đọc kịp. */}
+              {p.amenities.length > 0 && (
+                <div
+                  className={`hidden truncate text-xs text-muted-foreground ${row ? "@md:block" : ""}`}
+                >
+                  {p.amenities
+                    .slice(0, 4)
+                    .map((a) => AMENITIES[a as AmenityKey] ?? a)
+                    .join(" · ")}
+                  {p.amenities.length > 4 && ` · +${p.amenities.length - 4}`}
+                </div>
+              )}
               {reasons && reasons.length > 0 && (
                 <ul className="space-y-0.5 pt-1" aria-label="Vì sao hợp với nhu cầu của bạn">
                   {reasons.map((r) => (
@@ -233,11 +268,6 @@ export const PropertyListCard = memo(
                   ))}
                 </ul>
               )}
-              {p.publishedAt && (
-                <div className="text-xs text-muted-foreground/80 pt-0.5">
-                  {postedAgoLabel(p.publishedAt)}
-                </div>
-              )}
             </div>
           </Card>
         </Link>
@@ -245,3 +275,89 @@ export const PropertyListCard = memo(
     );
   }),
 );
+
+function Spec({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-muted-foreground">
+      {icon}
+      <span className="font-medium text-foreground/80">{children}</span>
+    </span>
+  );
+}
+
+/**
+ * Lướt ảnh ngay trên thẻ: mũi tên hiện khi rê chuột (luôn hiện trên màn cảm ứng), chấm chỉ
+ * vị trí. Chỉ dựng ảnh đang xem — năm ảnh cho mỗi thẻ trong danh sách 20 tin là 100 ảnh tải
+ * cùng lúc, không đáng.
+ */
+function ImageStrip({ images, total, title }: { images: string[]; total: number; title: string }) {
+  const [i, setI] = useState(0);
+  const [loaded, setLoaded] = useState<Record<number, boolean>>({});
+  if (images.length === 0) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
+      </div>
+    );
+  }
+  const go = (e: React.MouseEvent, d: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setI((v) => (v + d + images.length) % images.length);
+  };
+  return (
+    <>
+      {!loaded[i] && <Skeleton className="absolute inset-0 rounded-none" />}
+      <img
+        key={images[i]}
+        src={images[i]}
+        alt={`${title} — ảnh ${i + 1}`}
+        loading="lazy"
+        onLoad={() => setLoaded((m) => ({ ...m, [i]: true }))}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+          loaded[i] ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Ảnh trước"
+            onClick={(e) => go(e, -1)}
+            className="absolute left-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-card/90 shadow-sm transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Ảnh sau"
+            onClick={(e) => go(e, 1)}
+            className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-card/90 shadow-sm transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div
+            className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1"
+            aria-hidden="true"
+          >
+            {images.map((_, k) => (
+              <span
+                key={k}
+                className={`h-1.5 w-1.5 rounded-full ${k === i ? "bg-white" : "bg-white/55"}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      {total > 1 && (
+        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded bg-black/55 px-1.5 py-0.5 text-[11px] tabular-nums text-white">
+          <ImageIcon className="h-3 w-3" /> {total}
+        </span>
+      )}
+      {/* Tải trước ảnh kế để bấm "sau" không phải chờ. */}
+      {images.length > 1 && (
+        <link rel="prefetch" href={images[(i + 1) % images.length]} as="image" />
+      )}
+    </>
+  );
+}

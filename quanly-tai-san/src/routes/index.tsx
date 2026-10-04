@@ -538,6 +538,7 @@ function LatestListings() {
               compareSelected={compareHas(l.id)}
               compareFull={compareItems.length >= compareMax && !compareHas(l.id)}
               onToggleCompare={compareToggle}
+              layout="vertical"
             />
           ))}
         </div>
