@@ -314,6 +314,7 @@ namespace kgs_api.Services
                               && l.Status == ListingStatus.Approved, ct);
 
             var asset = listing.Asset;
+            var stats = await OwnerResponseStatsAsync(owner.UserId, ct);
 
             return new PublicListingDetailDto(
                 listing.Id, listing.Slug!, listing.Title, listing.Description, listing.Type,
@@ -333,6 +334,9 @@ namespace kgs_api.Services
                 owner.AvatarUrl, owner.CreatedAt, ownerActiveCount)
             {
                 OwnerId = owner.UserId,
+                OwnerInquiriesReceived = stats.Received,
+                OwnerInquiriesAnswered = stats.Answered,
+                OwnerMedianResponseHours = stats.MedianHours,
             };
         }
 
@@ -356,15 +360,7 @@ namespace kgs_api.Services
             var active = await mine.CountAsync(l => l.Status == ListingStatus.Approved, ct);
             var published = await mine.CountAsync(l => l.Status == ListingStatus.Approved || l.Status == ListingStatus.Closed, ct);
 
-            var since = DateTime.UtcNow.AddDays(-180);
-            var inquiries = await _inquiries.Query().AsNoTracking()
-                .Where(i => i.ToUserId == ownerId && i.CreatedAt >= since)
-                .Select(i => new { i.Status, i.CreatedAt, i.UpdatedAt })
-                .ToListAsync(ct);
-            var answered = inquiries.Where(i => i.Status != InquiryStatus.New).ToList();
-            var hours = answered.Where(i => i.UpdatedAt != null && i.UpdatedAt > i.CreatedAt)
-                .Select(i => (i.UpdatedAt!.Value - i.CreatedAt).TotalHours).Order().ToList();
-            double? median = hours.Count == 0 ? null : Math.Round(hours[hours.Count / 2], 1);
+            var (received, answeredCount, median) = await OwnerResponseStatsAsync(ownerId, ct);
 
             var listings = await ToSummariesAsync(
                 mine.Where(l => l.Status == ListingStatus.Approved)
@@ -375,7 +371,24 @@ namespace kgs_api.Services
             return new OwnerProfileDto(
                 user.Id, user.Name, user.AvatarUrl, user.Bio, user.CreatedAt, user.EmailConfirmed,
                 !string.IsNullOrWhiteSpace(user.PhoneNumber), active, published,
-                inquiries.Count, answered.Count, median, listings);
+                received, answeredCount, median, listings);
+        }
+
+        /// <summary>Yêu cầu xem nhà nhận được trong 180 ngày, số đã trả lời, thời gian trả lời
+        /// trung vị (giờ). Dùng chung cho hồ sơ người đăng và thẻ liên hệ ở trang tin.</summary>
+        private async Task<(int Received, int Answered, double? MedianHours)> OwnerResponseStatsAsync(
+            string ownerId, CancellationToken ct)
+        {
+            var since = DateTime.UtcNow.AddDays(-180);
+            var inquiries = await _inquiries.Query().AsNoTracking()
+                .Where(i => i.ToUserId == ownerId && i.CreatedAt >= since)
+                .Select(i => new { i.Status, i.CreatedAt, i.UpdatedAt })
+                .ToListAsync(ct);
+            var answered = inquiries.Where(i => i.Status != InquiryStatus.New).ToList();
+            var hours = answered.Where(i => i.UpdatedAt != null && i.UpdatedAt > i.CreatedAt)
+                .Select(i => (i.UpdatedAt!.Value - i.CreatedAt).TotalHours).Order().ToList();
+            double? median = hours.Count == 0 ? null : Math.Round(hours[hours.Count / 2], 1);
+            return (inquiries.Count, answered.Count, median);
         }
 
         // ==================== ĐĂNG TIN TRỰC TIẾP (Giai đoạn 1) ====================

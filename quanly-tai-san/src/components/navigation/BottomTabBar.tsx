@@ -58,6 +58,10 @@ export function BottomTabBar() {
   const [showAccount, setShowAccount] = useState(false);
 
   if (ws === "admin") return null;
+  // Trang chi tiết tin có thanh hành động riêng (giá · Xem nhà · Gọi) ở đáy màn hình — đó là
+  // việc người xem cần làm ở đây, không phải chuyển tab. Hai thanh chồng nhau thì thanh
+  // hành động bị che mất.
+  if (/^\/tin-dang\/[^/]+$/.test(pathname)) return null;
   const { left, right } = TABS[ws];
 
   const isActive = (tab: TabConfig) => {

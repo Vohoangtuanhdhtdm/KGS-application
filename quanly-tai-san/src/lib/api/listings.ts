@@ -124,6 +124,9 @@ export interface PublicListingDetailDto {
   ownerActiveListingCount: number;
   /** Để dẫn tới hồ sơ công khai /nguoi-dang/{id}. */
   ownerId?: string | null;
+  ownerInquiriesReceived?: number;
+  ownerInquiriesAnswered?: number;
+  ownerMedianResponseHours?: number | null;
 }
 
 /** Hai dải gợi ý dưới trang chi tiết. */
