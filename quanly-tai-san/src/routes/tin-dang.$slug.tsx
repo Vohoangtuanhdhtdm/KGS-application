@@ -2,11 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  listingsApi,
-  formatListingPrice,
-  type PublicListingDetailDto,
-} from "@/lib/api/listings";
+import { listingsApi, formatListingPrice, type PublicListingDetailDto } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { AMENITIES, WATER_PRICING, type AmenityKey } from "@/constants/enums";
@@ -18,6 +14,11 @@ import { MarketTrendCard } from "@/components/public/MarketTrendCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ListingLocationMap } from "@/components/listings/ListingLocationMap";
 import { ListingBuilding3D } from "@/components/building/ListingBuilding3D";
+import { KeyFacts } from "@/components/listing-detail/KeyFacts";
+import { SectionNav, type SectionLink } from "@/components/listing-detail/SectionNav";
+import { AmenityGrid } from "@/components/listing-detail/AmenityGrid";
+import { ExpandableText } from "@/components/listing-detail/ExpandableText";
+import { buildingModelApi } from "@/lib/api/buildingModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +34,8 @@ import {
   ChevronRight,
   Heart,
   Send,
-  CalendarDays,
-  Building2,
+  Box,
+  MessageCircleReply,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { inquiriesApi, savedListingsApi } from "@/lib/api/engagement";
@@ -120,6 +121,16 @@ function PublicListingDetailPage() {
    * Chỉ chạm vào document.title khi loader KHÔNG có dữ liệu; nếu loader chạy được thì
    * HeadContent đã đặt đúng rồi, và ghi đè thêm một lần nữa chỉ tạo cơ hội lệch nhau.
    */
+  // Cùng khoá truy vấn với ListingBuilding3D nên chỉ một lượt gọi — dùng để gắn nhãn "Xem
+  // được 3D" ngay cạnh tiêu đề.
+  const buildingQ = useQuery({
+    queryKey: ["listing-building", slug],
+    queryFn: () => buildingModelApi.forListing(slug),
+    staleTime: 60_000,
+    retry: 0,
+  });
+  const building = buildingQ.data ?? null;
+
   const resolvedTitle = query.data
     ? `${query.data.title} — ${query.data.district}, ${query.data.city}`
     : null;
@@ -176,188 +187,219 @@ function PublicListingDetailPage() {
     }
   };
 
-  const specs: [string, string | null][] = [
-    ["Diện tích", p.area != null ? `${p.area} m²` : null],
-    ["Mặt tiền", p.frontage != null ? `${p.frontage} m` : null],
-    ["Số tầng", p.floors != null ? String(p.floors) : null],
-    ["Phòng ngủ", p.bedrooms != null ? String(p.bedrooms) : null],
-    ["Phòng tắm", p.bathrooms != null ? String(p.bathrooms) : null],
-    ["Hướng nhà", p.houseDirection],
-    ["Pháp lý", p.legalStatus],
-    ["Nội thất", p.furnitureState],
-    ["Loại BĐS", p.assetTypeLabel],
+  const hasMap = p.latitude != null && p.longitude != null;
+  const sections: SectionLink[] = [
+    { id: "tong-quan", label: "Tổng quan" },
+    ...(p.type === 2 ? [{ id: "chi-phi", label: "Chi phí & điều kiện" }] : []),
+    ...(p.amenities.length > 0 ? [{ id: "tien-nghi", label: "Tiện nghi" }] : []),
+    ...(hasMap
+      ? [
+          { id: "vi-tri", label: "Vị trí" },
+          { id: "toa-nha-3d", label: building ? "Toà nhà 3D" : "Xem 3D" },
+        ]
+      : []),
+    { id: "thi-truong", label: "Giá khu vực" },
   ];
 
+  const compareItem = {
+    id: p.id,
+    slug: p.slug,
+    type: p.type,
+    title: p.title,
+    thumbnailUrl: p.imageUrls[0] ?? null,
+  };
+
   return (
-    <div className="min-h-screen bg-muted/20 pb-24 lg:pb-6">
+    <div className="min-h-screen bg-background pb-24 lg:pb-10">
       <PublicHeader />
-      <div className="mx-auto max-w-[1200px] p-4 lg:p-6 space-y-4">
-        <BackButton />
+      <div className="mx-auto max-w-[1200px] space-y-5 px-4 pt-4 lg:px-6">
+        {/* Dòng điều hướng + chia sẻ/so sánh/báo sai — tách khỏi khối giá để khối giá chỉ còn
+            đúng việc của nó. */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <nav
+            aria-label="Đường dẫn"
+            className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground"
+          >
+            <BackButton />
+            <span className="hidden truncate sm:inline">
+              {p.type === 1 ? "Bán" : "Cho thuê"} · {p.assetTypeLabel} · {p.district}
+            </span>
+          </nav>
+          <ListingShareActions slug={p.slug} title={p.title} compareItem={compareItem} />
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-          <div className="lg:col-span-2 space-y-4">
-            <Gallery images={p.imageUrls} title={p.title} />
+        {/* Ảnh tràn cả bề ngang nội dung — ảnh là thứ quyết định người ta đọc tiếp hay đóng tab. */}
+        <Gallery images={p.imageUrls} title={p.title} />
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0 space-y-6">
+            {/* ---- Tiêu đề: thứ đầu tiên đọc sau ảnh ---- */}
+            <header className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge>{p.type === 1 ? "Bán" : "Cho thuê"}</Badge>
+                <Badge variant="outline">{p.assetTypeLabel}</Badge>
+                {p.unitName && <Badge variant="outline">{p.unitName}</Badge>}
+                {building && (
+                  <a href="#toa-nha-3d">
+                    <Badge variant="outline" className="gap-1 border-primary/40 text-primary">
+                      <Box className="h-3 w-3" /> Xem được 3D
+                    </Badge>
+                  </a>
+                )}
                 <span className="text-xs text-muted-foreground">
-                  Đăng ngày {formatDate(p.publishedAt)}
+                  Đăng {formatDate(p.publishedAt)} · {p.viewCount} lượt xem
                 </span>
               </div>
-              {/* GIÁ là neo thị giác, không phải tiêu đề.
-                  Trước đây cả hai cùng text-2xl font-semibold nên mắt không biết bám vào
-                  đâu — trong khi thứ quyết định người ta đọc tiếp hay đóng tab là con số.
-                  Dòng "Tổng cố định ..." trước nằm ở đây cũng đã bỏ: nó lặp lại đúng thứ
-                  khối bóc tách chi phí bên dưới nói kỹ hơn. */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1">
-                  <div className="text-3xl font-bold tabular-nums leading-none text-price">
-                    {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
-                  </div>
-                  <h1 className="text-lg font-medium leading-snug text-foreground">{p.title}</h1>
-                </div>
-                <ListingShareActions
-                  slug={p.slug}
-                  title={p.title}
-                  compareItem={{
-                    id: p.id,
-                    slug: p.slug,
-                    type: p.type,
-                    title: p.title,
-                    thumbnailUrl: p.imageUrls[0] ?? null,
-                  }}
-                />
-              </div>
-              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 shrink-0" />
-                {address || "—"}
+              <h1 className="text-2xl font-semibold leading-tight tracking-tight md:text-3xl">
+                {p.title}
+              </h1>
+              <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  {address || "—"}
+                  {hasMap && (
+                    <a href="#vi-tri" className="ml-2 font-medium text-primary hover:underline">
+                      Xem bản đồ
+                    </a>
+                  )}
+                </span>
               </p>
-            </div>
+              {/* Giá trên điện thoại — trên máy tính giá nằm ở thẻ quyết định bên phải. */}
+              <div className="lg:hidden">
+                <PriceBlock listing={p} />
+              </div>
+            </header>
 
-            {p.type === 2 && <TermsCard listing={p} />}
+            <KeyFacts listing={p} />
+
+            <SectionNav sections={sections} />
+
+            <Section id="tong-quan" title="Giới thiệu">
+              {p.description ? (
+                <ExpandableText text={p.description} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Người đăng chưa viết mô tả.</p>
+              )}
+            </Section>
+
+            {p.type === 2 && (
+              <Section id="chi-phi" title="Chi phí & điều kiện thuê">
+                <TermsCard listing={p} />
+              </Section>
+            )}
 
             {p.amenities.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Tiện nghi</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {p.amenities.map((a) => (
-                      <Badge key={a} variant="secondary" className="font-normal">
-                        {AMENITIES[a as AmenityKey] ?? a}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <Section id="tien-nghi" title="Tiện nghi">
+                <AmenityGrid amenities={p.amenities} />
+              </Section>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Thông số</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3 text-sm">
-                  {specs
-                    .filter(([, v]) => v)
-                    .map(([label, v]) => (
-                      <div key={label}>
-                        <div className="text-xs text-muted-foreground">{label}</div>
-                        <div className="font-medium mt-0.5">{v}</div>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {p.description && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Mô tả</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* giữ nguyên xuống dòng người dùng đã nhập */}
-                  <p className="text-sm whitespace-pre-wrap">{p.description}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {p.latitude != null && p.longitude != null && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Vị trí</CardTitle>
-                </CardHeader>
-                <CardContent>
+            {hasMap && (
+              <>
+                <Section id="vi-tri" title="Vị trí & đi lại">
                   <ListingLocationMap
                     listingId={p.id}
                     title={p.title}
-                    lat={p.latitude}
-                    lng={p.longitude}
+                    lat={p.latitude!}
+                    lng={p.longitude!}
                   />
-                </CardContent>
-              </Card>
+                </Section>
+                <section id="toa-nha-3d" className="scroll-mt-28">
+                  <ListingBuilding3D
+                    slug={p.slug}
+                    lat={p.latitude!}
+                    lng={p.longitude!}
+                    autoOpen={autoOpen3D}
+                  />
+                </section>
+              </>
             )}
 
-            {p.latitude != null && p.longitude != null && (
-              <ListingBuilding3D
-                slug={p.slug}
-                lat={p.latitude}
-                lng={p.longitude}
-                autoOpen={autoOpen3D}
-              />
-            )}
-
-            <MarketTrendCard city={p.city} district={p.district} />
-
-            <RelatedListings slug={p.slug} ownerName={p.ownerName} ownerId={p.ownerId} />
+            <section id="thi-truong" className="scroll-mt-28">
+              <MarketTrendCard city={p.city} district={p.district} />
+            </section>
           </div>
 
-          {/* Card liên hệ — sticky bên phải desktop */}
-          <div className="hidden lg:block sticky top-20">
-            <ContactCard
-              ownerId={p.ownerId}
-              ownerName={p.ownerName}
-              ownerPhone={p.ownerPhone}
-              avatarUrl={p.ownerAvatarUrl}
-              joinedAt={p.ownerJoinedAt}
-              activeListingCount={p.ownerActiveListingCount}
-              onCopy={copyPhone}
-            >
-              <EngagementActions listingId={p.id} slug={p.slug} />
-            </ContactCard>
-          </div>
+          {/* ---- Thẻ quyết định: dính theo khi cuộn (máy tính) ---- */}
+          <aside className="hidden lg:sticky lg:top-20 lg:block">
+            <DecisionCard listing={p} onCopy={copyPhone} />
+          </aside>
+        </div>
+
+        <div className="border-t pt-8">
+          <RelatedListings slug={p.slug} ownerName={p.ownerName} ownerId={p.ownerId} />
         </div>
       </div>
 
-      {/* Card liên hệ — cố định dưới cùng trên mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t bg-card p-3">
+      {/* ---- Điện thoại: giá + hành động luôn trong tầm tay ---- */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 p-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
-            <div className="text-xs text-muted-foreground">Liên hệ</div>
-            <div className="text-sm font-medium truncate">{p.ownerName}</div>
+            {/* Dạng gọn ("4,7 triệu/tháng"): thanh đáy hẹp, giá đầy đủ đã có ở đầu trang. */}
+            <div className="truncate text-base font-bold tabular-nums text-price">
+              {formatCurrency(p.price, { compact: true })}
+              {p.type === 2 && <span className="text-sm font-medium">/tháng</span>}
+            </div>
+            <div className="truncate text-xs text-muted-foreground">{p.ownerName}</div>
           </div>
-          {p.ownerPhone ? (
-            <>
-              <Button variant="outline" size="icon" onClick={copyPhone} aria-label="Sao chép số">
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button asChild>
-                <a href={`tel:${p.ownerPhone}`}>
-                  <Phone className="h-4 w-4 mr-1.5" />
-                  Gọi {p.ownerPhone}
-                </a>
-              </Button>
-            </>
-          ) : (
-            <span className="text-xs text-muted-foreground text-right">
-              Chưa có số điện thoại —<br />
-              gửi yêu cầu xem nhà ở trên
-            </span>
+          <EngagementActions listingId={p.id} slug={p.slug} variant="bar" />
+          {p.ownerPhone && (
+            <Button asChild>
+              <a href={`tel:${p.ownerPhone}`}>
+                <Phone className="mr-1.5 h-4 w-4" />
+                Gọi
+              </a>
+            </Button>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Một mục của trang chi tiết: tiêu đề + nội dung, ngăn cách bằng đường kẻ thay vì thẻ —
+ *  tám thẻ xếp chồng làm trang trông như một biểu mẫu. */
+function Section({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-28 space-y-4 border-t pt-6 first-of-type:border-t-0">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+/** Giá + những con số đi kèm giúp so sánh: tổng chi phí cố định (thuê), giá/m² (bán). */
+function PriceBlock({ listing: p }: { listing: PublicListingDetailDto }) {
+  const perM2 = p.type === 1 && p.area ? p.price / p.area : null;
+  const extra = p.type === 2 && p.totalMonthlyCost > p.price;
+  return (
+    <div className="space-y-1">
+      <div className="text-3xl font-bold leading-none tabular-nums text-price">
+        {formatListingPrice(p.price, p.type, p.rentPaymentCycle)}
+      </div>
+      {extra && (
+        <div className="text-sm">
+          Tổng cố định{" "}
+          <span className="font-semibold tabular-nums">{formatCurrency(p.totalMonthlyCost)}</span>
+          <span className="text-muted-foreground">/tháng</span>
+        </div>
+      )}
+      {perM2 != null && (
+        <div className="text-sm text-muted-foreground">
+          ≈ {formatCurrency(perM2, { compact: true })}/m²
+        </div>
+      )}
+      {p.type === 2 && p.terms.depositMonths != null && (
+        <div className="text-sm text-muted-foreground">Cọc {p.terms.depositMonths} tháng</div>
+      )}
     </div>
   );
 }
@@ -371,86 +413,99 @@ function membershipLabel(iso: string): string {
   return `Tham gia ${years} năm`;
 }
 
-function ContactCard({
-  ownerId,
-  ownerName,
-  ownerPhone,
-  avatarUrl,
-  joinedAt,
-  activeListingCount,
+function responseLabel(p: PublicListingDetailDto): string | null {
+  const received = p.ownerInquiriesReceived ?? 0;
+  if (received === 0) return null;
+  const answered = p.ownerInquiriesAnswered ?? 0;
+  const h = p.ownerMedianResponseHours;
+  const time =
+    h == null
+      ? ""
+      : h < 1
+        ? " · thường trong 1 giờ"
+        : h < 24
+          ? ` · thường trong ~${Math.round(h)} giờ`
+          : ` · thường trong ~${Math.round(h / 24)} ngày`;
+  return `Đã trả lời ${answered}/${received} yêu cầu${time}`;
+}
+
+/**
+ * Thẻ quyết định bên phải: giá → hành động → người đăng.
+ *
+ * Hồ sơ người đăng nằm ngay đây vì người tìm nhà quyết định có nhấc máy hay không dựa trên
+ * việc họ tin ai ở đầu dây bên kia — "tham gia 8 tháng, 5 tin, thường trả lời trong 3 giờ"
+ * nói được điều đó, và cũng làm tài khoản mở hôm qua để đăng tin ma dễ nhận ra.
+ */
+function DecisionCard({
+  listing: p,
   onCopy,
-  children,
 }: {
-  ownerId?: string | null;
-  ownerName: string;
-  ownerPhone: string | null;
-  avatarUrl: string | null;
-  joinedAt: string;
-  activeListingCount: number;
+  listing: PublicListingDetailDto;
   onCopy: () => void;
-  children?: React.ReactNode;
 }) {
+  const reply = responseLabel(p);
   return (
-    <Card>
-      <CardContent className="p-5 space-y-3">
-        {/* Hồ sơ người đăng. Người tìm nhà quyết định có nhấc máy hay không dựa trên việc
-            họ tin ai đang ở đầu dây bên kia — một cái tên trần trụi không nói được gì,
-            còn "tham gia 8 tháng, đang có 5 tin" thì nói được, và nó cũng làm tài khoản
-            mở hôm qua để đăng tin ma trở nên dễ nhận ra. */}
-        <div className="flex items-center gap-3">
-          <Avatar className="h-11 w-11">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={ownerName} />}
-            <AvatarFallback>{ownerName.trim().charAt(0).toUpperCase() || "?"}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">Chủ tài sản</div>
-            {ownerId ? (
-              <Link
-                to="/nguoi-dang/$id"
-                params={{ id: ownerId }}
-                className="block truncate text-base font-semibold hover:underline"
+    <Card className="shadow-[--shadow-e2]">
+      <CardContent className="space-y-4 p-5">
+        <PriceBlock listing={p} />
+
+        {/* Không có số thì KHÔNG dựng nút "Gọi": nút gọi bấm vào không quay được số còn tệ
+            hơn là không có nút. */}
+        <div className="space-y-2">
+          {p.ownerPhone ? (
+            <div className="flex gap-2">
+              <Button className="h-11 flex-1 text-base" asChild>
+                <a href={`tel:${p.ownerPhone}`}>
+                  <Phone className="mr-2 h-4.5 w-4.5" />
+                  {p.ownerPhone}
+                </a>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-11 w-11"
+                onClick={onCopy}
+                aria-label="Sao chép số"
               >
-                {ownerName}
-              </Link>
-            ) : (
-              <div className="text-base font-semibold truncate">{ownerName}</div>
-            )}
-          </div>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <p className="rounded-md border border-dashed px-3 py-2.5 text-sm text-muted-foreground">
+              Người đăng chưa để lại số điện thoại. Hãy gửi yêu cầu xem nhà — họ nhận được thông tin
+              liên hệ của bạn.
+            </p>
+          )}
+          <EngagementActions listingId={p.id} slug={p.slug} />
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <CalendarDays className="h-3.5 w-3.5" />
-            {membershipLabel(joinedAt)}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Building2 className="h-3.5 w-3.5" />
-            {activeListingCount} tin đang đăng
-          </span>
+        <div className="flex items-center gap-3 border-t pt-4">
+          <Avatar className="h-11 w-11">
+            {p.ownerAvatarUrl && <AvatarImage src={p.ownerAvatarUrl} alt={p.ownerName} />}
+            <AvatarFallback>{p.ownerName.trim().charAt(0).toUpperCase() || "?"}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            {p.ownerId ? (
+              <Link
+                to="/nguoi-dang/$id"
+                params={{ id: p.ownerId }}
+                className="block truncate font-semibold hover:underline"
+              >
+                {p.ownerName}
+              </Link>
+            ) : (
+              <div className="truncate font-semibold">{p.ownerName}</div>
+            )}
+            <div className="text-xs text-muted-foreground">
+              {membershipLabel(p.ownerJoinedAt)} · {p.ownerActiveListingCount} tin đang đăng
+            </div>
+          </div>
         </div>
-        {/* Không có số thì KHÔNG dựng nút "Gọi". Một nút gọi bấm vào không quay được số
-            còn tệ hơn là không có nút: người tìm nhà bấm, máy không phản ứng, và họ kết
-            luận sản phẩm hỏng thay vì hiểu rằng người đăng chưa để lại số. */}
-        {ownerPhone ? (
-          <>
-            <Button className="w-full text-base h-11" asChild>
-              <a href={`tel:${ownerPhone}`}>
-                <Phone className="h-4.5 w-4.5 mr-2" />
-                Gọi {ownerPhone}
-              </a>
-            </Button>
-            <Button variant="outline" className="w-full" onClick={onCopy}>
-              <Copy className="h-4 w-4 mr-2" />
-              Sao chép số điện thoại
-            </Button>
-          </>
-        ) : (
-          <p className="rounded-md border border-dashed px-3 py-2.5 text-sm text-muted-foreground">
-            Người đăng chưa để lại số điện thoại. Hãy gửi yêu cầu xem nhà bên dưới — họ sẽ
-            nhận được thông tin liên hệ của bạn.
+        {reply && (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <MessageCircleReply className="h-3.5 w-3.5 shrink-0" /> {reply}
           </p>
         )}
-        {children}
       </CardContent>
     </Card>
   );
@@ -461,7 +516,16 @@ function ContactCard({
  * Đây là chỗ marketplace nối vào nghiệp vụ — yêu cầu gửi từ đây sẽ xuất hiện trong
  * hộp thư của chủ nhà, nơi họ chuyển thành đối tác rồi ký hợp đồng.
  */
-function EngagementActions({ listingId, slug }: { listingId: string; slug: string }) {
+function EngagementActions({
+  listingId,
+  slug,
+  variant = "card",
+}: {
+  listingId: string;
+  slug: string;
+  /** "bar": chỉ nút "Xem nhà" — cho thanh dưới cùng trên điện thoại. */
+  variant?: "card" | "bar";
+}) {
   const { isAuthenticated } = useAuth();
   const qc = useQueryClient();
   const [saved, setSaved] = useState(false);
@@ -470,7 +534,8 @@ function EngagementActions({ listingId, slug }: { listingId: string; slug: strin
   const [viewingAt, setViewingAt] = useState("");
 
   const save = useMutation({
-    mutationFn: () => (saved ? savedListingsApi.unsave(listingId) : savedListingsApi.save(listingId)),
+    mutationFn: () =>
+      saved ? savedListingsApi.unsave(listingId) : savedListingsApi.save(listingId),
     onSuccess: () => {
       setSaved((v) => !v);
       qc.invalidateQueries({ queryKey: ["saved-listings"] });
@@ -498,6 +563,12 @@ function EngagementActions({ listingId, slug }: { listingId: string; slug: strin
   });
 
   if (!isAuthenticated) {
+    if (variant === "bar")
+      return (
+        <Button variant="outline" asChild>
+          <Link to="/login">Xem nhà</Link>
+        </Button>
+      );
     return (
       <div className="pt-1 text-center text-xs text-muted-foreground">
         <Link to="/login" className="text-primary hover:underline">
@@ -510,16 +581,23 @@ function EngagementActions({ listingId, slug }: { listingId: string; slug: strin
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        <Button variant="outline" disabled={save.isPending} onClick={() => save.mutate()}>
-          <Heart className={`h-4 w-4 mr-1.5 ${saved ? "fill-current text-primary" : ""}`} />
-          {saved ? "Đã lưu" : "Lưu tin"}
-        </Button>
-        <Button variant="secondary" onClick={() => setAskOpen(true)}>
-          <Send className="h-4 w-4 mr-1.5" />
+      {variant === "bar" ? (
+        <Button variant="outline" onClick={() => setAskOpen(true)}>
+          <Send className="mr-1.5 h-4 w-4" />
           Xem nhà
         </Button>
-      </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <Button variant="outline" disabled={save.isPending} onClick={() => save.mutate()}>
+            <Heart className={`h-4 w-4 mr-1.5 ${saved ? "fill-current text-primary" : ""}`} />
+            {saved ? "Đã lưu" : "Lưu tin"}
+          </Button>
+          <Button variant="secondary" onClick={() => setAskOpen(true)}>
+            <Send className="h-4 w-4 mr-1.5" />
+            Xem nhà
+          </Button>
+        </div>
+      )}
 
       <Dialog open={askOpen} onOpenChange={setAskOpen}>
         <DialogContent className="sm:max-w-md">
@@ -614,7 +692,10 @@ function TermsCard({ listing: p }: { listing: PublicListingDetailDto }) {
   const dieuKienHien = dieuKien.filter(([, v]) => v);
   const shownRules = rules.filter(([, v]) => v !== null);
   const coGiDeHien =
-    khoanCoDinh.length > 0 || theoMucDung.length > 0 || dieuKienHien.length > 0 || shownRules.length > 0;
+    khoanCoDinh.length > 0 ||
+    theoMucDung.length > 0 ||
+    dieuKienHien.length > 0 ||
+    shownRules.length > 0;
 
   if (!coGiDeHien) {
     return (
@@ -659,8 +740,8 @@ function TermsCard({ listing: p }: { listing: PublicListingDetailDto }) {
           {theoMucDung.length > 0 && (
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               <span className="font-medium text-foreground">Chưa gồm</span>{" "}
-              {theoMucDung.join(" · ")} — hai khoản này tính theo mức dùng nên không cộng
-              thành một con số cố định được.
+              {theoMucDung.join(" · ")} — hai khoản này tính theo mức dùng nên không cộng thành một
+              con số cố định được.
             </p>
           )}
           {theoMucDung.length === 0 && (
@@ -745,7 +826,7 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[16/9] items-center justify-center rounded-xl bg-muted">
+      <div className="flex aspect-[21/9] items-center justify-center rounded-xl bg-muted">
         <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
       </div>
     );
@@ -768,9 +849,13 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
   return (
     <div>
       {images.length < 3 ? (
-        <div className="aspect-[16/9] overflow-hidden rounded-xl bg-muted">{anhLon}</div>
+        <div className="aspect-[4/3] overflow-hidden rounded-xl bg-muted sm:aspect-[21/9]">
+          {anhLon}
+        </div>
       ) : (
-        <div className="relative grid aspect-[16/9] grid-cols-2 gap-2">
+        // Khung 2:1 trên màn rộng (4:3 trên điện thoại): ảnh đủ lớn để thuyết phục mà không đẩy
+        // tiêu đề, giá và thông số xuống quá nửa màn hình đầu.
+        <div className="relative grid aspect-[4/3] grid-cols-2 gap-2 sm:aspect-[2/1]">
           {anhLon}
           {/* Lưới phải TỰ THÍCH ỨNG theo số ảnh còn lại.
               Bản đầu tôi cố định 2x2 rồi lấp chỗ thiếu bằng ô xám — mà ô xám trong lưới

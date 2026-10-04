@@ -256,6 +256,12 @@ namespace kgs_api.Dtos
     {
         /// <summary>Để trang tin dẫn tới hồ sơ công khai của người đăng (/nguoi-dang/{id}).</summary>
         public string? OwnerId { get; init; }
+
+        /// <summary>Phản hồi yêu cầu xem nhà của người đăng trong 180 ngày — tín hiệu tin cậy
+        /// ngay trên thẻ liên hệ (xem thêm OwnerProfileDto).</summary>
+        public int OwnerInquiriesReceived { get; init; }
+        public int OwnerInquiriesAnswered { get; init; }
+        public double? OwnerMedianResponseHours { get; init; }
     }
 
     /// <summary>Hồ sơ công khai của người đăng — để người tìm nhà quyết định có liên hệ hay không.
