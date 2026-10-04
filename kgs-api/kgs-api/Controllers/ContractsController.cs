@@ -1,4 +1,5 @@
-﻿using kgs_api.Dtos;
+﻿using kgs_api.Authorization;
+using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +13,7 @@ namespace kgs_api.Controllers
     // B2–B5 — HỢP ĐỒNG THUÊ (2 chiều: LeaseIn / LeaseOut)
     // ============================================================
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/contracts")]
     public sealed class ContractsController : ControllerBase
     {

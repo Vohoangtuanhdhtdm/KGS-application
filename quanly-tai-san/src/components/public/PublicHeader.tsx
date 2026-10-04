@@ -8,6 +8,7 @@ import {
   LogIn,
   Plus,
   Search,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ const NAV = [
 ] as const;
 
 export function PublicHeader() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -84,19 +85,32 @@ export function PublicHeader() {
             <>
               {/* Lối sang không gian Chủ nhà, mang màu của chính không gian đó — người dùng
                   thấy trước rằng bấm vào là sang một nơi khác, không phải thêm một trang. */}
-              <Link
-                to="/tin-cua-toi"
-                className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-ws-owner/40 px-3 py-1.5 text-sm font-medium text-ws-owner transition-colors hover:bg-ws-owner-soft lg:inline-flex"
-              >
-                <Building2 className="h-4 w-4" />
-                Chủ nhà
-              </Link>
-              <Button size="sm" asChild>
-                <Link to="/dang-tin">
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Đăng tin
+              {isAdmin ? (
+                /* Tài khoản quản trị không đăng tin — lối ra duy nhất là về khu quản trị. */
+                <Link
+                  to="/admin/overview"
+                  className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-ws-admin/40 px-3 py-1.5 text-sm font-medium text-ws-admin transition-colors hover:bg-ws-admin-soft sm:inline-flex"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Quản trị
                 </Link>
-              </Button>
+              ) : (
+                <>
+                  <Link
+                    to="/tin-cua-toi"
+                    className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-ws-owner/40 px-3 py-1.5 text-sm font-medium text-ws-owner transition-colors hover:bg-ws-owner-soft lg:inline-flex"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    Chủ nhà
+                  </Link>
+                  <Button size="sm" asChild>
+                    <Link to="/dang-tin">
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      Đăng tin
+                    </Link>
+                  </Button>
+                </>
+              )}
               <NotificationBell />
               <UserMenu />
             </>

@@ -1,3 +1,4 @@
+using kgs_api.Authorization;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,7 @@ namespace kgs_api.Controllers
 {
     /// <summary>Bảng phân tích cho người đăng tin (nhiem vu 1.8).</summary>
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/listing-analytics")]
     public sealed class ListingAnalyticsController : ControllerBase
     {

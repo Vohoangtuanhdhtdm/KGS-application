@@ -1,4 +1,5 @@
-﻿using kgs_api.Extensions;
+﻿using kgs_api.Authorization;
+using kgs_api.Extensions;
 using Microsoft.AspNetCore.RateLimiting;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
@@ -90,12 +91,12 @@ namespace kgs_api.Controllers
         // ---- Cần đăng nhập — chủ tài sản quản lý tin của mình ----
 
         [HttpGet("mine")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<IReadOnlyList<OwnerListingDto>>> MyListings(CancellationToken ct)
             => Ok(await _listings.GetMyListingsAsync(ct));
 
         [HttpPut("{listingId:guid}")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<OwnerListingDto>> Update(
             Guid listingId, [FromBody] UpdateListingRequest request, CancellationToken ct)
             => Ok(await _listings.UpdateAsync(listingId, request, ct));
@@ -106,27 +107,27 @@ namespace kgs_api.Controllers
         /// duyệt đi ở hai lời gọi sau, để form hiện được tiến trình tải ảnh và để người
         /// đăng bỏ dở giữa chừng vẫn không mất dữ liệu.</summary>
         [HttpPost]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         [EnableRateLimiting(RateLimitingExtensions.CreateListing)]
         public async Task<ActionResult<OwnerListingDto>> CreateDirect(
             [FromBody] CreateListingDirectRequest request, CancellationToken ct)
             => Ok(await _listings.CreateDirectAsync(request, ct));
 
         [HttpGet("{listingId:guid}/images")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<IReadOnlyList<ListingImageDto>>> GetImages(
             Guid listingId, CancellationToken ct)
             => Ok(await _listings.GetImagesAsync(listingId, ct));
 
         [HttpPost("{listingId:guid}/images")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         [RequestSizeLimit(120_000_000)]   // ~10MB × 10 ảnh, đệm an toàn
         public async Task<ActionResult<IReadOnlyList<ListingImageDto>>> AddImages(
             Guid listingId, IFormFileCollection files, CancellationToken ct)
             => Ok(await _listings.AddImagesAsync(listingId, files, ct));
 
         [HttpDelete("{listingId:guid}/images/{imageId:guid}")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<IActionResult> RemoveImage(Guid listingId, Guid imageId, CancellationToken ct)
         {
             await _listings.RemoveImageAsync(listingId, imageId, ct);
@@ -135,12 +136,13 @@ namespace kgs_api.Controllers
 
         /// <summary>Lịch sử kiểm duyệt tin của chính mình — mọi vòng, mọi lý do.</summary>
         [HttpGet("{listingId:guid}/moderation-history")]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<IReadOnlyList<ModerationEventDto>>> ModerationHistory(
             Guid listingId, CancellationToken ct)
             => Ok(await _listings.GetModerationHistoryAsync(listingId, ct));
 
         [HttpPost("{listingId:guid}/submit")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<OwnerListingDto>> Submit(Guid listingId, CancellationToken ct)
             => Ok(await _listings.SubmitAsync(listingId, ct));
 
@@ -148,25 +150,25 @@ namespace kgs_api.Controllers
 
         /// <summary>Nạp lại tin vào biểu mẫu: dùng cho cả soạn tiếp bản nháp lẫn sửa tin.</summary>
         [HttpGet("{listingId:guid}/edit")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<EditListingDto>> GetForEdit(Guid listingId, CancellationToken ct)
             => Ok(await _listings.GetForEditAsync(listingId, ct));
 
         /// <summary>Đẩy tin lên đầu danh sách. Giới hạn 24 giờ một lần.</summary>
         [HttpPost("{listingId:guid}/bump")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<OwnerListingDto>> Bump(Guid listingId, CancellationToken ct)
             => Ok(await _listings.BumpAsync(listingId, ct));
 
         /// <summary>Mở lại tin đã đóng — quay về bản nháp để sửa rồi gửi duyệt lại.</summary>
         [HttpPost("{listingId:guid}/reopen")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<OwnerListingDto>> Reopen(Guid listingId, CancellationToken ct)
             => Ok(await _listings.ReopenAsync(listingId, ct));
 
         /// <summary>Xoá hẳn — chỉ với bản nháp.</summary>
         [HttpDelete("{listingId:guid}")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<IActionResult> DeleteDraft(Guid listingId, CancellationToken ct)
         {
             await _listings.DeleteDraftAsync(listingId, ct);
@@ -175,7 +177,7 @@ namespace kgs_api.Controllers
 
         /// <summary>Đóng tin khi đã có khách / đã bán. Không xoá — giữ lượt xem và lịch sử.</summary>
         [HttpPost("{listingId:guid}/close")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<IActionResult> Close(Guid listingId, CancellationToken ct)
         {
             await _listings.CloseAsync(listingId, ct);
@@ -187,7 +189,7 @@ namespace kgs_api.Controllers
     // Đăng tin — lồng dưới tài sản, nhất quán với các endpoint khác
     // ============================================================
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/assets/{assetId:guid}/listings")]
     public sealed class AssetListingsController : ControllerBase
     {

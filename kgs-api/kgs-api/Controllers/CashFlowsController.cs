@@ -1,4 +1,5 @@
-﻿using kgs_api.Dtos;
+﻿using kgs_api.Authorization;
+using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +13,7 @@ namespace kgs_api.Controllers
     // C1 — SỔ CÁI THU/CHI
     // ============================================================
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/cashflows")]
     public sealed class CashFlowsController : ControllerBase
     {

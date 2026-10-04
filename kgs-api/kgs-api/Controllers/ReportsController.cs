@@ -1,4 +1,5 @@
-﻿using kgs_api.Dtos;
+﻿using kgs_api.Authorization;
+using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +12,7 @@ namespace kgs_api.Controllers
     // C2–C4 — BÁO CÁO
     // ============================================================
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/reports")]
     public sealed class ReportsController : ControllerBase
     {

@@ -60,6 +60,7 @@ const PRICE_BANDS: { label: string; max?: number; min?: number }[] = [
 
 function MarketplaceHome() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [city, setCity] = useState<string>("");
 
@@ -167,7 +168,7 @@ function MarketplaceHome() {
 
       <div className="mx-auto max-w-[1200px] px-4 py-10 space-y-10">
         <LatestListings />
-        <PostCta />
+        {!isAdmin && <PostCta />}
       </div>
     </div>
   );
@@ -187,6 +188,7 @@ function MarketplaceHome() {
  * Bits · SpotlightCard) cũng lấy màu của không gian đó.
  */
 function ActorPaths() {
+  const { isAdmin } = useAuth();
   const cards = [
     {
       ws: "seeker" as const,
@@ -211,24 +213,26 @@ function ActorPaths() {
           Bạn đến KGS để làm gì?
         </h2>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {cards.map((c) => (
-            <SpotlightCard key={c.ws} spotlightColor={c.glow} className="flex rounded-xl p-6">
-              <div className="flex h-full flex-col">
-                <WorkspaceBadge ws={c.ws} className="w-fit" />
-                <h3 className="mt-4 text-lg font-semibold leading-snug">{c.title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                  {c.body}
-                </p>
-                <Link
-                  to={c.cta.to}
-                  className={`mt-5 inline-flex w-fit items-center gap-1.5 text-sm font-semibold hover:underline ${WS_CLASS[c.ws].text}`}
-                >
-                  {c.cta.label}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </SpotlightCard>
-          ))}
+          {cards
+            .filter((c) => !(isAdmin && c.ws === "owner"))
+            .map((c) => (
+              <SpotlightCard key={c.ws} spotlightColor={c.glow} className="flex rounded-xl p-6">
+                <div className="flex h-full flex-col">
+                  <WorkspaceBadge ws={c.ws} className="w-fit" />
+                  <h3 className="mt-4 text-lg font-semibold leading-snug">{c.title}</h3>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                    {c.body}
+                  </p>
+                  <Link
+                    to={c.cta.to}
+                    className={`mt-5 inline-flex w-fit items-center gap-1.5 text-sm font-semibold hover:underline ${WS_CLASS[c.ws].text}`}
+                  >
+                    {c.cta.label}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </SpotlightCard>
+            ))}
 
           <SpotlightCard
             spotlightColor="color-mix(in oklch, var(--price) 18%, transparent)"

@@ -153,3 +153,12 @@ export async function api<T = unknown>(path: string, opts: ApiOptions = {}): Pro
 }
 
 export const API_BASE_URL = API_BASE;
+
+/** Token cho kết nối SignalR: làm mới trước nếu sắp hết hạn (cùng hàng đợi refresh với api()). */
+export async function getAccessTokenForRealtime(): Promise<string | null> {
+  if (shouldPreemptRefresh()) {
+    const t = await refreshOnce();
+    if (t) return t;
+  }
+  return loadAuth()?.accessToken ?? null;
+}

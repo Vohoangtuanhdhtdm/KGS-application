@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, Calculator, FileText, Heart, Inbox, Plus, Search, User } from "lucide-react";
 import { AccountSheet, type AccountItem } from "./AccountSheet";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { useCurrentWorkspace } from "@/components/workspace/useCurrentWorkspace";
 import type { Workspace } from "@/lib/workspace";
 
@@ -55,6 +56,7 @@ export function BottomTabBar() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const ws = useCurrentWorkspace();
+  const { isAdmin } = useAuth();
   const [showAccount, setShowAccount] = useState(false);
 
   if (ws === "admin") return null;
@@ -125,16 +127,19 @@ export function BottomTabBar() {
         {/* Đăng tin là HÀNH ĐỘNG, không phải một nơi để tới — nên nó có hình dạng khác hẳn
             bốn tab kia. Ở không gian Tìm nhà, bấm nút này cũng là bước sang không gian Chủ
             nhà: màu cả trang đổi theo, người dùng thấy ngay mình vừa đổi vai. */}
-        <button
-          type="button"
-          aria-label="Đăng tin"
-          onClick={() => navigate({ to: "/dang-tin" })}
-          className={`mx-0.5 flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 ease-out hover:brightness-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95 ${
-            postActive ? "ring-2 ring-primary/30 ring-offset-2" : ""
-          }`}
-        >
-          <Plus className="h-6 w-6" />
-        </button>
+        {/* Tài khoản quản trị không đăng tin (xem AppPolicies.Owner). */}
+        {!isAdmin && (
+          <button
+            type="button"
+            aria-label="Đăng tin"
+            onClick={() => navigate({ to: "/dang-tin" })}
+            className={`mx-0.5 flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 ease-out hover:brightness-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none active:scale-95 ${
+              postActive ? "ring-2 ring-primary/30 ring-offset-2" : ""
+            }`}
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+        )}
 
         {right.map(renderTab)}
       </nav>

@@ -1,4 +1,5 @@
-﻿using kgs_api.Extensions;
+﻿using kgs_api.Authorization;
+using kgs_api.Extensions;
 using Microsoft.AspNetCore.RateLimiting;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
@@ -52,6 +53,7 @@ namespace kgs_api.Controllers
 
         /// <summary>Hộp thư của chủ tin — các yêu cầu nhận được.</summary>
         [HttpGet("received")]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<IReadOnlyList<ReceivedInquiryDto>>> Received(
             [FromQuery] InquiryStatus? status, CancellationToken ct)
             => Ok(await _engagement.GetReceivedInquiriesAsync(status, ct));
@@ -62,6 +64,7 @@ namespace kgs_api.Controllers
             => Ok(await _engagement.GetSentInquiriesAsync(ct));
 
         [HttpPut("{inquiryId:guid}/status")]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<ReceivedInquiryDto>> UpdateStatus(
             Guid inquiryId, [FromBody] UpdateInquiryStatusRequest request, CancellationToken ct)
             => Ok(await _engagement.UpdateInquiryStatusAsync(inquiryId, request, ct));
@@ -69,6 +72,7 @@ namespace kgs_api.Controllers
         /// <summary>Cầu nối marketplace → nghiệp vụ: sinh ContactParty từ hồ sơ người gửi.
         /// Client dùng contactPartyId trả về để mở màn hình tạo hợp đồng đã điền sẵn đối tác.</summary>
         [HttpPost("{inquiryId:guid}/convert")]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<ConvertInquiryResultDto>> Convert(Guid inquiryId, CancellationToken ct)
             => Ok(await _engagement.ConvertInquiryAsync(inquiryId, ct));
     }

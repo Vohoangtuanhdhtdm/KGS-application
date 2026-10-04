@@ -1,4 +1,5 @@
-﻿using kgs_api.Dtos;
+﻿using kgs_api.Authorization;
+using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,7 @@ using static kgs_api.Domain.Enums;
 namespace kgs_api.Controllers
 {
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/assets")]
     public sealed class AssetsController : ControllerBase
     {
