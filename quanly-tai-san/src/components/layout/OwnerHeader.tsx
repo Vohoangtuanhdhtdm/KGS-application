@@ -76,9 +76,10 @@ export function OwnerHeader() {
             Về Tìm nhà
           </Link>
           <Button size="sm" asChild>
-            <Link to="/dang-tin">
-              <Plus className="mr-1.5 h-4 w-4" />
-              Đăng tin
+            {/* Điện thoại: chỉ còn biểu tượng — đủ chữ thì thanh đầu tràn ngang ở 375px. */}
+            <Link to="/dang-tin" aria-label="Đăng tin">
+              <Plus className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Đăng tin</span>
             </Link>
           </Button>
           <NotificationBell />

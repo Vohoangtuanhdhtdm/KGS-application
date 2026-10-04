@@ -62,6 +62,8 @@ export function BottomTabBar() {
   // việc người xem cần làm ở đây, không phải chuyển tab. Hai thanh chồng nhau thì thanh
   // hành động bị che mất.
   if (/^\/tin-dang\/[^/]+$/.test(pathname)) return null;
+  // Trang đăng tin có thanh Quay lại / Tiếp tục riêng ở đáy màn hình.
+  if (pathname.startsWith("/dang-tin")) return null;
   const { left, right } = TABS[ws];
 
   const isActive = (tab: TabConfig) => {

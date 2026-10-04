@@ -90,6 +90,7 @@ namespace kgs_api.Extensions
             services.Configure<kgs_api.Services.Assistant.GroqSettings>(config.GetSection("Groq"));
             services.AddHttpClient<kgs_api.Services.Assistant.GroqChatClient>();
             services.AddScoped<kgs_api.Services.Assistant.SearchAssistantService>();
+            services.AddScoped<kgs_api.Services.Assistant.ListingWriterService>();
             services.AddScoped<IListingReportService, ListingReportService>();
             services.AddScoped<IListingViewTracker, ListingViewTracker>();
             services.AddScoped<IListingAnalyticsService, ListingAnalyticsService>();
