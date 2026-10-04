@@ -83,6 +83,11 @@ export interface PublicListingSummaryDto {
   matchedPreferences?: string[] | null;
   /** Toà nhà của tin có mô hình 3D công khai. */
   hasBuildingModel?: boolean;
+  /** Tối đa 5 ảnh đầu — lướt ảnh ngay trên thẻ. */
+  imageUrls?: string[];
+  imageCount?: number;
+  /** Mã loại hình (AssetDomainType). */
+  assetType?: number;
 }
 
 export interface PublicListingDetailDto {

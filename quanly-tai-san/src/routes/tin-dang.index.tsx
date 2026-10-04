@@ -92,6 +92,7 @@ import {
   ChevronDown,
   List,
   Map as MapIcon,
+  Columns2,
   RotateCcw,
   Loader2,
   AlertTriangle,
@@ -108,6 +109,8 @@ export const Route = createFileRoute("/tin-dang/")({
 const DEFAULT_CENTER: [number, number] = [10.7769, 106.7009]; // TP.HCM
 const DEFAULT_RADIUS_METERS = 5000;
 const LIST_WIDTH_STORAGE_KEY = "tin-dang:list-width-percent";
+const DESKTOP_VIEW_STORAGE_KEY = "tin-dang:desktop-view";
+type DesktopView = "split" | "list" | "map";
 
 /** "8,5 trieu" — chip loc phai doc luot duoc, khong phai dem so 0. */
 const fmtShort = (v: number) => formatCurrency(v, { compact: true });
@@ -494,14 +497,32 @@ function PublicListingsPage() {
   // giữ nguyên bố cục toggle/bottom-sheet đã làm. Luôn khởi tạo 40% (khớp SSR, tránh
   // hydration mismatch vì server không đọc được localStorage) — tỷ lệ đã lưu được áp
   // lại ở effect riêng, chỉ chạy phía client sau khi mount. ----
-  const [listWidthPercent, setListWidthPercent] = useState(40);
+  // 48%: thẻ tin dạng NGANG cần cột đủ rộng để ảnh và chữ cùng thở được.
+  const [listWidthPercent, setListWidthPercent] = useState(48);
+  // Chia đôi (mặc định) · chỉ danh sách (đọc kỹ, so sánh nhiều tin) · chỉ bản đồ (tìm theo
+  // vị trí). Nhớ lựa chọn trong máy, áp lại sau khi mount như tỉ lệ cột.
+  const [desktopView, setDesktopView] = useState<DesktopView>("split");
   const [isDraggingDivider, setIsDraggingDivider] = useState(false);
   const desktopSplitRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const saved = Number(window.localStorage.getItem(LIST_WIDTH_STORAGE_KEY));
-    if (Number.isFinite(saved) && saved >= 25 && saved <= 60) setListWidthPercent(saved);
+    try {
+      const saved = Number(window.localStorage.getItem(LIST_WIDTH_STORAGE_KEY));
+      if (Number.isFinite(saved) && saved >= 25 && saved <= 60) setListWidthPercent(saved);
+      const view = window.localStorage.getItem(DESKTOP_VIEW_STORAGE_KEY);
+      if (view === "split" || view === "list" || view === "map") setDesktopView(view);
+    } catch {
+      // Trình duyệt chặn localStorage: dùng mặc định.
+    }
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(DESKTOP_VIEW_STORAGE_KEY, desktopView);
+    } catch {
+      // bỏ qua
+    }
+  }, [desktopView]);
 
   useEffect(() => {
     window.localStorage.setItem(LIST_WIDTH_STORAGE_KEY, String(listWidthPercent));
@@ -825,12 +846,16 @@ function PublicListingsPage() {
     .filter((code) => code !== 5 || searchCenter != null)
     .filter((code) => code !== 6 || prefer.length > 0) as ListingSortCode[];
 
+  // Trên điện thoại khung danh sách đã ghi số kết quả ở tay nắm — không lặp lại ở đây, nhường
+  // chỗ cho hàng nút (trước đây số "43 bất động sản" bị ép xuống ba dòng).
   const resultsBar = (
-    <div className="flex items-center justify-between gap-2">
-      <p className="text-sm text-muted-foreground tabular-nums">
-        {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
-      </p>
-      <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+      {viewportKind !== "mobile" && (
+        <p className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
+          {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-1">
         <Button
           size="sm"
           variant="ghost"
@@ -1038,11 +1063,11 @@ function PublicListingsPage() {
   // sang 4 cột ngay trước mắt người dùng.
   const listContent = query.isLoading ? (
     <div className="@container">
-      <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 @5xl:grid-cols-2">
         {Array.from({ length: 8 }).map((_, i) => (
-          <Card key={i} className="overflow-hidden py-0 gap-0">
-            <Skeleton className="aspect-[4/3] w-full rounded-none" />
-            <div className="p-4 space-y-2">
+          <Card key={i} className="flex-row gap-0 overflow-hidden py-0">
+            <Skeleton className="h-[184px] w-[40%] shrink-0 rounded-none" />
+            <div className="flex-1 space-y-2 p-4">
               <Skeleton className="h-5 w-2/3" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-1/2" />
@@ -1107,7 +1132,7 @@ function PublicListingsPage() {
           Trước đây cứng grid-cols-2 ở mọi bề rộng: kéo rộng ra thì thẻ phình to vô ích, thu
           hẹp lại thì hai thẻ chen nhau không đọc được. */}
       <div className="@container">
-        <div className="grid grid-cols-1 gap-3 @xs:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 @5xl:grid-cols-2">
           {items.map((p) => (
             <PropertyListCard
               key={p.id}
@@ -1281,6 +1306,34 @@ function PublicListingsPage() {
               </Button>
             </div>
           )}
+          {viewportKind === "desktop" && (
+            <div
+              className="mr-1 inline-flex rounded-md border p-0.5"
+              role="group"
+              aria-label="Chế độ xem"
+            >
+              {(
+                [
+                  ["split", "Chia đôi", Columns2],
+                  ["list", "Danh sách", List],
+                  ["map", "Bản đồ", MapIcon],
+                ] as const
+              ).map(([v, label, Icon]) => (
+                <Button
+                  key={v}
+                  size="sm"
+                  variant={desktopView === v ? "default" : "ghost"}
+                  className="h-8 rounded-sm px-2.5"
+                  aria-pressed={desktopView === v}
+                  title={label}
+                  onClick={() => setDesktopView(v)}
+                >
+                  <Icon className="h-3.5 w-3.5 xl:mr-1.5" />
+                  <span className="hidden xl:inline">{label}</span>
+                </Button>
+              ))}
+            </div>
+          )}
           {typeToggle}
 
           {/* Vạch ngăn: tách "đang xem loại tin nào" khỏi "lọc trong loại đó". Không có nó,
@@ -1328,7 +1381,9 @@ function PublicListingsPage() {
       {/* ---- Mobile: filter/search dạng nổi phía trên bản đồ ---- */}
       {viewportKind === "mobile" && (
         <div className="absolute top-14 inset-x-0 z-30 px-3 pt-3 flex flex-col gap-2 pointer-events-none">
-          <div className="pointer-events-auto shadow-md rounded-md">{addressSearchBox()}</div>
+          <div className="pointer-events-auto rounded-md bg-card shadow-md">
+            {addressSearchBox()}
+          </div>
           <div className="flex items-center gap-2 pointer-events-auto">
             <div className="inline-flex rounded-md border bg-card p-0.5 shadow-md">
               <Button
@@ -1384,16 +1439,22 @@ function PublicListingsPage() {
       {viewportKind === "desktop" && (
         <div ref={desktopSplitRef} className="flex-1 min-h-0 flex flex-row">
           <div
-            className="overflow-y-auto p-4 space-y-4 shrink-0"
-            style={{ width: `${listWidthPercent}%` }}
+            className={`overflow-y-auto p-4 space-y-4 shrink-0 ${desktopView === "map" ? "hidden" : ""}`}
+            style={{ width: desktopView === "list" ? "100%" : `${listWidthPercent}%` }}
           >
-            {assistantBar}
-            {appliedFilterBar}
-            {resultsBar}
-            {listContent}
+            {/* Danh sách toàn trang: giới hạn bề rộng đọc, căn giữa. */}
+            <div
+              className={desktopView === "list" ? "mx-auto max-w-[1400px] space-y-4" : "space-y-4"}
+            >
+              {assistantBar}
+              {appliedFilterBar}
+              {resultsBar}
+              {listContent}
+            </div>
           </div>
           {/* Thanh kéo chỉnh tỷ lệ List/Map — giới hạn 25%-60%, lưu vào localStorage */}
           <div
+            hidden={desktopView !== "split"}
             role="separator"
             aria-orientation="vertical"
             aria-label="Kéo để đổi tỷ lệ danh sách/bản đồ"
@@ -1402,7 +1463,11 @@ function PublicListingsPage() {
             }`}
             onMouseDown={handleDividerMouseDown}
           />
-          <div className="flex-1 min-w-0">{mapContent}</div>
+          {/* Bản đồ vẫn dựng khi ẩn (chế độ Danh sách): giữ vị trí, mức phóng và khối 3D, và
+              không tốn thêm một lượt tải bản đồ Mapbox khi chuyển lại. */}
+          <div className={`flex-1 min-w-0 ${desktopView === "list" ? "hidden" : ""}`}>
+            {mapContent}
+          </div>
         </div>
       )}
 

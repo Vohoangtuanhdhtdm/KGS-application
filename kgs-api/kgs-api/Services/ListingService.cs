@@ -940,7 +940,10 @@ namespace kgs_api.Services
                     l.Terms.DepositMonths,
                     l.Terms.PetsAllowed,
                     l.Amenities,
-                    Has3D = l.Asset.BuildingModelPublished && l.Asset.FootprintJson != null
+                    Has3D = l.Asset.BuildingModelPublished && l.Asset.FootprintJson != null,
+                    ImageUrls = l.Images.OrderBy(i => i.SortOrder).Take(5).Select(i => i.File.Url).ToList(),
+                    ImageCount = l.Images.Count,
+                    l.Asset.TypeProperty,
                 })
                 .ToListAsync(ct);
 
@@ -950,7 +953,10 @@ namespace kgs_api.Services
                 r.Location?.Y, r.Location?.X, r.DistanceMeters, r.UnitName, r.PublishedAt,
                 r.TotalMonthlyCost, r.DepositMonths, r.PetsAllowed, r.Amenities)
             {
-                HasBuildingModel = r.Has3D
+                HasBuildingModel = r.Has3D,
+                ImageUrls = r.ImageUrls,
+                ImageCount = r.ImageCount,
+                AssetType = r.TypeProperty,
             }).ToList();
         }
 

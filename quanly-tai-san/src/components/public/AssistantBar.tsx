@@ -38,6 +38,9 @@ export function AssistantBar({
   onReset: () => void;
 }) {
   const [text, setText] = useState("");
+  // Câu gợi ý chỉ hiện khi đang gõ vào ô (và ô còn trống): ba dòng ví dụ luôn mở chiếm
+  // khoảng 100px đầu danh sách — đúng chỗ người dùng đang muốn thấy kết quả.
+  const [focused, setFocused] = useState(false);
 
   const ask = useMutation({
     mutationFn: (msg: string) => assistantApi.searchIntent(msg, result),
@@ -62,7 +65,12 @@ export function AssistantBar({
   return (
     <section
       aria-label="Trợ lý tìm nhà"
-      className="space-y-2.5 rounded-lg border border-primary/25 bg-primary/[0.04] p-3"
+      className="space-y-2.5 rounded-lg border border-primary/25 bg-primary/[0.04] p-2.5"
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => {
+        // Chỉ đóng khi tiêu điểm rời KHỎI cả khối (bấm vào câu gợi ý không tính là rời).
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
+      }}
     >
       <form
         className="flex items-center gap-2"
@@ -89,7 +97,7 @@ export function AssistantBar({
         </Button>
       </form>
 
-      {!result && (
+      {!result && focused && !text && (
         <div className="flex flex-wrap gap-1.5">
           {EXAMPLES.map((ex) => (
             <button
