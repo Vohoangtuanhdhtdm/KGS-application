@@ -30,12 +30,15 @@ export function ListingTermsFields({
   onAmenitiesChange,
   /** Tin bán không có cọc/điện nước/nội quy — chỉ hiện phần tiện nghi. */
   isRent,
+  /** Trang đăng tin chọn tiện nghi ở bước thông số (bằng chip) — ở đây chỉ còn nội quy. */
+  hideAmenities = false,
 }: {
   value: ListingTermsDto;
   onChange: (next: ListingTermsDto) => void;
   amenities: string[];
   onAmenitiesChange: (next: string[]) => void;
   isRent: boolean;
+  hideAmenities?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -48,6 +51,8 @@ export function ListingTermsFields({
     onAmenitiesChange(
       amenities.includes(key) ? amenities.filter((a) => a !== key) : [...amenities, key],
     );
+
+  if (hideAmenities && !isRent) return null;
 
   return (
     <div className="space-y-5">
@@ -133,8 +138,8 @@ export function ListingTermsFields({
               </Field>
             </div>
             <p className="text-xs text-muted-foreground">
-              Phí dịch vụ, gửi xe và internet được cộng vào tổng chi phí hiển thị cho người
-              thuê. Điện và nước tính theo mức dùng nên không cộng — hiện riêng.
+              Phí dịch vụ, gửi xe và internet được cộng vào tổng chi phí hiển thị cho người thuê.
+              Điện và nước tính theo mức dùng nên không cộng — hiện riêng.
             </p>
           </div>
 
@@ -146,7 +151,10 @@ export function ListingTermsFields({
                   type="date"
                   value={value.availableFrom ? value.availableFrom.slice(0, 10) : ""}
                   onChange={(e) =>
-                    set("availableFrom", e.target.value ? new Date(e.target.value).toISOString() : null)
+                    set(
+                      "availableFrom",
+                      e.target.value ? new Date(e.target.value).toISOString() : null,
+                    )
                   }
                 />
               </Field>
@@ -182,8 +190,18 @@ export function ListingTermsFields({
         onClick={() => setExpanded((v) => !v)}
         className="w-full sm:w-auto"
       >
-        {expanded ? <ChevronUp className="h-4 w-4 mr-1.5" /> : <ChevronDown className="h-4 w-4 mr-1.5" />}
-        {expanded ? "Thu gọn" : isRent ? "Nội quy & tiện nghi" : "Tiện nghi"}
+        {expanded ? (
+          <ChevronUp className="h-4 w-4 mr-1.5" />
+        ) : (
+          <ChevronDown className="h-4 w-4 mr-1.5" />
+        )}
+        {expanded
+          ? "Thu gọn"
+          : !isRent
+            ? "Tiện nghi"
+            : hideAmenities
+              ? "Nội quy"
+              : "Nội quy & tiện nghi"}
       </Button>
 
       {expanded && (
@@ -192,8 +210,8 @@ export function ListingTermsFields({
             <div className="space-y-3">
               <p className="text-sm font-medium">Nội quy</p>
               <p className="text-xs text-muted-foreground">
-                Bỏ trống nghĩa là chưa khai, khác với &ldquo;không&rdquo;. Người thuê lọc theo
-                các mục này rất nhiều, nên khai rõ giúp tin của bạn được tìm thấy.
+                Bỏ trống nghĩa là chưa khai, khác với &ldquo;không&rdquo;. Người thuê lọc theo các
+                mục này rất nhiều, nên khai rõ giúp tin của bạn được tìm thấy.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <TriState
@@ -220,23 +238,25 @@ export function ListingTermsFields({
             </div>
           )}
 
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Tiện nghi</p>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {AMENITY_LIST.map(([key, label]) => (
-                <label
-                  key={key}
-                  className="flex items-center gap-2 text-sm cursor-pointer select-none"
-                >
-                  <Checkbox
-                    checked={amenities.includes(key)}
-                    onCheckedChange={() => toggleAmenity(key)}
-                  />
-                  {label}
-                </label>
-              ))}
+          {!hideAmenities && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Tiện nghi</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {AMENITY_LIST.map(([key, label]) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-2 text-sm cursor-pointer select-none"
+                  >
+                    <Checkbox
+                      checked={amenities.includes(key)}
+                      onCheckedChange={() => toggleAmenity(key)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -253,7 +273,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground" htmlFor={isValidElement(children) ? id : undefined}>
+      <Label
+        className="text-xs text-muted-foreground"
+        htmlFor={isValidElement(children) ? id : undefined}
+      >
         {label}
       </Label>
       {control}
@@ -289,7 +312,11 @@ function TriState({
           role="group" + aria-label để trình đọc màn hình vẫn biết ba nút này thuộc về
           câu hỏi nào. */}
       <span className="block text-xs text-muted-foreground">{label}</span>
-      <div className="inline-flex rounded-md border overflow-hidden" role="group" aria-label={label}>
+      <div
+        className="inline-flex rounded-md border overflow-hidden"
+        role="group"
+        aria-label={label}
+      >
         {opts.map(([text, v]) => (
           <button
             key={text}
