@@ -1,3 +1,4 @@
+using kgs_api.Authorization;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -18,16 +19,19 @@ namespace kgs_api.Controllers
 
         /// <summary>Số người đang tìm nhà khớp với từng tin của tôi.</summary>
         [HttpGet("my-listings/demand-counts")]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<IReadOnlyList<ListingDemandCountDto>>> DemandCounts(CancellationToken ct)
             => Ok(await _service.GetDemandCountsAsync(ct));
 
         /// <summary>Các nhu cầu ẩn danh khớp một tin của tôi.</summary>
         [HttpGet("listings/{listingId:guid}/demands")]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<IReadOnlyList<AnonymousDemandDto>>> Demands(
             Guid listingId, CancellationToken ct)
             => Ok(await _service.GetDemandsForListingAsync(listingId, ct));
 
         [HttpPost("listings/{listingId:guid}/invitations")]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<AnonymousDemandDto>> Invite(
             Guid listingId, [FromBody] InviteRequest request, CancellationToken ct)
             => Ok(await _service.InviteAsync(listingId, request, ct));

@@ -44,8 +44,16 @@ namespace kgs_api.Domain.Rules
         }
 
         /// <summary>Lý do KHÔNG được đổi quyền Admin — null nghĩa là được.</summary>
-        public static string? CannotChangeAdmin(string actorId, string targetId, bool grant, bool targetLocked, int adminCount)
+        /// <param name="targetOpenListings">Số tin CHƯA đóng (nháp, chờ duyệt, đang hiển thị, cần
+        /// sửa, bị từ chối) của người được cấp quyền. Admin không đồng thời là Chủ nhà: cấp quyền
+        /// cho người đang có tin thì những tin đó thành tin "mồ côi" — chủ không còn quản lý được
+        /// (chức năng Chủ nhà chặn tài khoản Admin), còn chính họ lại duyệt được tin của mình.</param>
+        public static string? CannotChangeAdmin(
+            string actorId, string targetId, bool grant, bool targetLocked, int adminCount, int targetOpenListings = 0)
         {
+            if (grant && targetOpenListings > 0)
+                return $"Tài khoản này đang có {targetOpenListings} tin chưa đóng. Quản trị viên không đồng thời là Chủ nhà — " +
+                       "đóng hoặc xoá các tin đó trước khi cấp quyền Admin.";
             if (!grant && actorId == targetId) return "Không thể tự thu quyền Admin của chính mình.";
             if (!grant && adminCount <= 1) return "Hệ thống phải còn ít nhất một quản trị viên.";
             if (grant && targetLocked) return "Không cấp quyền Admin cho tài khoản đang bị khoá.";

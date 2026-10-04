@@ -1,4 +1,5 @@
-﻿using kgs_api.Dtos;
+﻿using kgs_api.Authorization;
+using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +14,7 @@ namespace kgs_api.Controllers
     // B1 — SỔ ĐỐI TÁC
     // ============================================================
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/contacts")]
     public sealed class ContactsController : ControllerBase
     {

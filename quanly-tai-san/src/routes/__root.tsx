@@ -24,6 +24,11 @@ import { BottomTabBar } from "@/components/navigation/BottomTabBar";
 import { CompareBar } from "@/components/public/CompareBar";
 import { Toaster } from "@/components/ui/sonner";
 import { isPublicPath } from "@/lib/publicPaths";
+import { RealtimeSync } from "@/lib/realtime";
+import { installWindowFocusRefetch } from "@/lib/focusRefetch";
+import { AdminOwnerBlocked } from "@/components/auth/AdminOwnerBlocked";
+
+installWindowFocusRefetch();
 
 function NotFoundComponent() {
   return (
@@ -151,6 +156,7 @@ function RootComponent() {
       <AuthProvider>
         <StoreProvider>
           <AppShell />
+          <RealtimeSync />
           <Toaster position="top-right" richColors />
         </StoreProvider>
       </AuthProvider>
@@ -175,6 +181,7 @@ const MAP_PATH = "/quan-ly/ban-do";
 function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const ws = useCurrentWorkspace();
+  const { isAdmin } = useAuth();
   const isMapPage = pathname === MAP_PATH || pathname === MAP_PATH + "/";
 
   // Gắn không gian lên <html> để styles.css đổi --primary cho CẢ trang — kể cả menu thả và
@@ -220,11 +227,12 @@ function AppShell() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       {/* Màn bản đồ chiếm trọn viewport: không header, không banner. */}
-      {!isMapPage && (ws === "owner" ? <OwnerHeader /> : <PublicHeader />)}
+      {/* Admin lạc vào không gian Chủ nhà: khung Tìm nhà + màn giải thích, không dựng trang. */}
+      {!isMapPage && (ws === "owner" && !isAdmin ? <OwnerHeader /> : <PublicHeader />)}
       {!isMapPage && <EmailNotConfirmedBanner />}
       <main className={isMapPage ? "h-screen min-w-0" : "min-w-0 flex-1 pb-28"}>
         <ProtectedRoute>
-          <Outlet />
+          {ws === "owner" && isAdmin ? <AdminOwnerBlocked /> : <Outlet />}
         </ProtectedRoute>
       </main>
       <BottomTabBar />

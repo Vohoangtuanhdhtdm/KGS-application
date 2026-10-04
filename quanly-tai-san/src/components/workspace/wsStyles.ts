@@ -32,10 +32,11 @@ export const WS_CLASS: Record<
  *
  * Khách chưa đăng nhập chỉ có "Tìm nhà" — nên với họ không có công tắc nào để hiện. Không
  * gian Quản trị chỉ xuất hiện với tài khoản Admin; người thường không thấy cả sự tồn tại
- * của nó.
+ * của nó. Ngược lại, Admin không có không gian Chủ nhà — xem AppPolicies.Owner ở backend.
  */
 export function useAvailableWorkspaces(): Workspace[] {
   const { isAuthenticated, isAdmin } = useAuth();
   if (!isAuthenticated) return ["seeker"];
-  return isAdmin ? ["seeker", "owner", "admin"] : ["seeker", "owner"];
+  // Tài khoản quản trị KHÔNG đồng thời là Chủ nhà: chỉ quản trị, và xem tin như khách.
+  return isAdmin ? ["seeker", "admin"] : ["seeker", "owner"];
 }

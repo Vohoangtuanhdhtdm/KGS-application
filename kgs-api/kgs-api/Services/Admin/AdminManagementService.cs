@@ -258,7 +258,11 @@ namespace kgs_api.Services.Admin
             if (isAdmin == grant) return new AdminActionResultDto(grant ? "Đã là quản trị viên." : "Không phải quản trị viên.", 0);
 
             var adminCount = (await _users.GetUsersInRoleAsync(AdminRole)).Count;
-            var err = AdminRules.CannotChangeAdmin(_currentUser.UserId, userId, grant, await IsLockedAsync(userId, ct), adminCount);
+            var openListings = grant
+                ? await _db.Listings.CountAsync(l => l.Asset.UserId == userId && l.Status != ListingStatus.Closed, ct)
+                : 0;
+            var err = AdminRules.CannotChangeAdmin(
+                _currentUser.UserId, userId, grant, await IsLockedAsync(userId, ct), adminCount, openListings);
             if (err is not null) throw new ConflictException(err);
 
             var result = grant ? await _users.AddToRoleAsync(user, AdminRole) : await _users.RemoveFromRoleAsync(user, AdminRole);

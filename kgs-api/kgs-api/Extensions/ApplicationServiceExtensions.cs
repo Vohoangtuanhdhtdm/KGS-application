@@ -170,6 +170,17 @@ namespace kgs_api.Extensions
                     // Admin thì bị từ chối — client tự refresh và nhận token mới đúng quyền.
                     options.Events = new JwtBearerEvents
                     {
+                        // WebSocket không gửi được header Authorization: SignalR đưa token qua
+                        // query ?access_token=. Chỉ nhận cách này cho đường dẫn hub — ở API thường,
+                        // token trên URL dễ lọt vào log và lịch sử trình duyệt.
+                        OnMessageReceived = ctx =>
+                        {
+                            var token = ctx.Request.Query["access_token"];
+                            if (!string.IsNullOrEmpty(token)
+                                && ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                                ctx.Token = token;
+                            return Task.CompletedTask;
+                        },
                         OnTokenValidated = async ctx =>
                         {
                             var userId = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -183,6 +194,16 @@ namespace kgs_api.Extensions
                         },
                     };
                 });
+
+            services.AddSignalR();
+
+            // Admin KHÔNG đồng thời là Chủ nhà — xem Authorization/OwnerPolicy.cs.
+            services.AddHttpContextAccessor();
+            services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, kgs_api.Authorization.NotAdminHandler>();
+            services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, kgs_api.Authorization.OwnerForbiddenResultHandler>();
+            services.AddAuthorization(o => o.AddPolicy(kgs_api.Authorization.AppPolicies.Owner, p => p
+                .RequireAuthenticatedUser()
+                .AddRequirements(new kgs_api.Authorization.NotAdminRequirement())));
 
             services.AddHangfire(configuration =>
                 configuration

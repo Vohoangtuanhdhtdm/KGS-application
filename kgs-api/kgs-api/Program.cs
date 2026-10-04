@@ -161,6 +161,7 @@ using (var scope = app.Services.CreateScope())
 
 
 app.MapControllers();
+app.MapHub<kgs_api.Hubs.NotificationsHub>(kgs_api.Hubs.NotificationsHub.Path);
 
 // Thăm dò sống-chết cho Docker và nginx.
 //

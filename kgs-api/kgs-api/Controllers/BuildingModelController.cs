@@ -1,3 +1,4 @@
+using kgs_api.Authorization;
 using kgs_api.Dtos;
 using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -14,12 +15,12 @@ namespace kgs_api.Controllers
         public BuildingModelController(BuildingModelService models) => _models = models;
 
         [HttpGet("api/assets/{assetId:guid}/building-model")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<BuildingModelDto>> Get(Guid assetId, CancellationToken ct)
             => Ok(await _models.GetForOwnerAsync(assetId, ct));
 
         [HttpPut("api/assets/{assetId:guid}/building-model")]
-        [Authorize]
+        [Authorize(Policy = AppPolicies.Owner)]
         public async Task<ActionResult<BuildingModelDto>> Save(
             Guid assetId, [FromBody] SaveBuildingModelRequest request, CancellationToken ct)
             => Ok(await _models.SaveAsync(assetId, request, ct));

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Flag, Gauge, ListChecks, Search, ShieldCheck, Users } from "lucide-react";
+import { Flag, Gauge, ListChecks, Search, ShieldCheck, Users } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -107,12 +107,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ws-admin-ink-foreground/70 hover:bg-white/5 hover:text-ws-admin-ink-foreground"
           >
             <Search className="h-4 w-4" /> Về Tìm nhà
-          </Link>
-          <Link
-            to="/tin-cua-toi"
-            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ws-admin-ink-foreground/70 hover:bg-white/5 hover:text-ws-admin-ink-foreground"
-          >
-            <Building2 className="h-4 w-4" /> Về Chủ nhà
           </Link>
           <div className="flex items-center gap-1 px-1 pt-2">
             <div className="min-w-0 flex-1">

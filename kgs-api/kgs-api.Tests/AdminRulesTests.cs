@@ -32,6 +32,11 @@ public class AdminRulesTests
         Assert.NotNull(AdminRules.CannotChangeAdmin("a", "b", grant: false, targetLocked: false, adminCount: 1));
         Assert.NotNull(AdminRules.CannotChangeAdmin("a", "b", grant: true, targetLocked: true, adminCount: 1));
         Assert.Null(AdminRules.CannotChangeAdmin("a", "b", grant: false, targetLocked: false, adminCount: 2));
+        // Admin không đồng thời là Chủ nhà: còn tin chưa đóng thì không cấp quyền.
+        Assert.NotNull(AdminRules.CannotChangeAdmin("a", "b", grant: true, targetLocked: false, adminCount: 1, targetOpenListings: 2));
+        Assert.Null(AdminRules.CannotChangeAdmin("a", "b", grant: true, targetLocked: false, adminCount: 1, targetOpenListings: 0));
+        // Thu quyền không bị chặn bởi số tin.
+        Assert.Null(AdminRules.CannotChangeAdmin("a", "b", grant: false, targetLocked: false, adminCount: 2, targetOpenListings: 5));
     }
 
     [Fact]

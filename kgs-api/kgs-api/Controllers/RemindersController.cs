@@ -1,3 +1,4 @@
+using kgs_api.Authorization;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Services;
@@ -12,7 +13,7 @@ namespace kgs_api.Controllers
     // D1 — NHẮC LỊCH (đứng riêng, phạm vi toàn user — không nested dưới asset)
     // ============================================================
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = AppPolicies.Owner)]
     [Route("api/reminders")]
     public sealed class RemindersController : ControllerBase
     {
