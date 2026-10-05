@@ -17,7 +17,7 @@ type XY = [number, number];
 
 const M_PER_DEG = 111_320;
 /** Khe giữa hai tầng (m) — để mắt đọc được ranh giới tầng trên khối 3D. */
-const SLAB_GAP = 0.35;
+const SLAB_GAP = 0.6;
 
 // ==================== Chiếu toạ độ ====================
 
@@ -211,12 +211,14 @@ const collator = new Intl.Collator("vi", { numeric: true, sensitivity: "base" })
 
 export type CellKind = "listed" | "vacant" | "occupied" | "maintenance" | "slab";
 
+// Căn còn trống phải NỔI lên giữa toà nhà: căn đã có người dùng màu đá nhạt (lùi về nền),
+// căn trống đang đăng tin là màu đậm nhất trong cảnh.
 export const CELL_COLORS: Record<CellKind, string> = {
-  listed: "#10b981",
-  vacant: "#a7f3d0",
-  occupied: "#94a3b8",
-  maintenance: "#f59e0b",
-  slab: "#c7d2fe",
+  listed: "#059669",
+  vacant: "#6ee7b7",
+  occupied: "#e2e8f0",
+  maintenance: "#fbbf24",
+  slab: "#cbd5e1",
 };
 
 export const CELL_LABELS: Record<CellKind, string> = {
