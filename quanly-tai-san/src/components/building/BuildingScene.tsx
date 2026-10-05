@@ -30,6 +30,7 @@ const CELLS = "kgs-cells";
 const DRAFT = "kgs-draft";
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 const SELECTED = "#2563eb";
+const GROUND = "kgs-ground";
 
 export type PickMode = "building" | "draw" | null;
 
@@ -53,6 +54,10 @@ export interface BuildingSceneProps {
   height?: number | string;
   /** Nằm giữa trang dài: con lăn cuộn trang, giữ Ctrl mới phóng to. */
   cooperative?: boolean;
+  /** Chế độ trình bày cho người xem tin: nhà xung quanh mờ đi, toà nhà nằm giữa khung, đổ
+   *  bóng nền, và xoay chậm một vòng cho tới khi người xem chạm vào. Xưởng dựng thì không —
+   *  ở đó cần thấy rõ nhà xung quanh để lấy đúng khung. */
+  showcase?: boolean;
   onFatalError?: () => void;
 }
 
@@ -97,13 +102,21 @@ export default function BuildingScene({
   autoPickAt,
   height = 420,
   cooperative = false,
+  showcase = false,
   onFatalError,
 }: BuildingSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const cb = useRef({ onSelect, onPickBuilding, onAddVertex, onFatalError, pickMode });
-  cb.current = { onSelect, onPickBuilding, onAddVertex, onFatalError, pickMode };
+  const cb = useRef<{
+    onSelect?: BuildingSceneProps["onSelect"];
+    onPickBuilding?: BuildingSceneProps["onPickBuilding"];
+    onAddVertex?: BuildingSceneProps["onAddVertex"];
+    onFatalError?: () => void;
+    pickMode: PickMode;
+    stopSpin?: () => void;
+  }>({ onSelect, onPickBuilding, onAddVertex, onFatalError, pickMode });
+  cb.current = { ...cb.current, onSelect, onPickBuilding, onAddVertex, onFatalError, pickMode };
 
   const ring = useMemo(() => (building ? openRing(building.footprint) : []), [building]);
   const hasModel = ring.length >= 3;
@@ -112,6 +125,7 @@ export default function BuildingScene({
   useEffect(() => {
     if (!containerRef.current) return;
     const focus = hasModel ? centroid(ring) : center;
+    const present = showcase && hasModel;
     const m = new mapboxgl.Map({
       container: containerRef.current,
       accessToken: MAPBOX_TOKEN,
@@ -119,12 +133,29 @@ export default function BuildingScene({
       language: "vi",
       locale: GL_LOCALE_VI,
       center: focus,
-      zoom: hasModel ? zoomFor(ring) : 17.2,
-      pitch: 58,
+      // Chế độ trình bày: khung lớn hơn (hộp thoại rộng) nên tiến lại gần — toà nhà chiếm
+      // khoảng nửa chiều cao khung, vẫn thấy nền đất và phố xung quanh.
+      // Khung hẹp (điện thoại) thì lùi lại tương ứng: mỗi nửa bề rộng là một mức zoom.
+      zoom: hasModel
+        ? zoomFor(ring) +
+          (present
+            ? 0.55 + 0.8 * Math.log2(Math.min(containerRef.current.clientWidth || 700, 700) / 700)
+            : 0)
+        : 17.2,
+      pitch: present ? 55 : 58,
       bearing: -24,
       antialias: true,
       cooperativeGestures: cooperative,
     });
+    // Tâm camera là CHÂN toà nhà; toà nhà mọc lên phía trên tâm nên trông như bị đẩy lên mép
+    // trên. Đệm phía trên đẩy tâm xuống dưới, toà nhà nằm giữa khung.
+    if (present)
+      m.setPadding({
+        top: Math.round(containerRef.current.clientHeight * 0.32),
+        bottom: 0,
+        left: 0,
+        right: 0,
+      });
     m.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
     m.on("error", (e) => {
       if (isFatalGlError(e as unknown as { error?: { status?: number } }))
@@ -153,7 +184,12 @@ export default function BuildingScene({
           "source-layer": "building",
           minzoom: 14,
           filter: ["==", ["get", "extrude"], "true"],
-          paint: { ...extrude, "fill-extrusion-color": "#e2e8f0", "fill-extrusion-opacity": 0.7 },
+          // Trình bày: nhà xung quanh chỉ là bối cảnh — mờ, sáng màu, không che toà nhà chính.
+          paint: {
+            ...extrude,
+            "fill-extrusion-color": present ? "#eef0f4" : "#e2e8f0",
+            "fill-extrusion-opacity": present ? 0.38 : 0.7,
+          },
         },
         labelLayer,
       );
@@ -170,6 +206,29 @@ export default function BuildingScene({
         labelLayer,
       );
 
+      // Nền đất dưới chân toà nhà: một mảng tối nhẹ cùng nét viền, như bóng đổ — khối nhà
+      // "đứng" trên mặt đất thay vì lơ lửng giữa nền bản đồ phẳng.
+      if (present) {
+        const ground = footprintFeature(ring);
+        if (ground) {
+          m.addSource(GROUND, { type: "geojson", data: ground });
+          m.addLayer({
+            id: `${GROUND}-fill`,
+            type: "fill",
+            source: GROUND,
+            paint: { "fill-color": "#334155", "fill-opacity": 0.18 },
+          });
+          m.addLayer({
+            id: `${GROUND}-line`,
+            type: "line",
+            source: GROUND,
+            paint: { "line-color": "#475569", "line-width": 1.5, "line-opacity": 0.5 },
+          });
+        }
+        // Ánh sáng chếch từ phía tây nam: các mặt khối sáng tối khác nhau, đọc ra được chiều sâu.
+        m.setLight({ anchor: "map", position: [1.3, 210, 35], intensity: 0.42, color: "#ffffff" });
+      }
+
       m.addSource(CELLS, { type: "geojson", data: EMPTY });
       // Hai lớp vì độ mờ của fill-extrusion là thuộc tính của CẢ LỚP, không theo từng khối:
       // lớp chính cho các tầng đang thấy, lớp "bóng" mờ cho các tầng phía trên tầng đang chọn.
@@ -183,8 +242,8 @@ export default function BuildingScene({
             "fill-extrusion-color": ghost ? "#ffffff" : ["get", "color"],
             "fill-extrusion-height": ["get", "top"],
             "fill-extrusion-base": ["get", "base"],
-            "fill-extrusion-opacity": ghost ? 0.18 : 0.95,
-            "fill-extrusion-vertical-gradient": !ghost,
+            "fill-extrusion-opacity": ghost ? 0.16 : 1,
+            "fill-extrusion-vertical-gradient": false,
           },
         });
       }
@@ -241,15 +300,41 @@ export default function BuildingScene({
       m.getCanvas().style.cursor = mode === "draw" ? "crosshair" : hit ? "pointer" : "";
     });
 
+    // Xoay chậm một vòng lúc mở để người xem thấy đây là mô hình 3D, dừng ngay khi họ chạm
+    // vào (kéo, cuộn, bấm). Không xoay với người bật "giảm chuyển động".
+    let spin = 0;
+    if (present && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      let last = 0;
+      const step = (t: number) => {
+        if (last) m.setBearing(m.getBearing() + (t - last) * 0.004);
+        last = t;
+        spin = requestAnimationFrame(step);
+      };
+      const stop = () => {
+        cancelAnimationFrame(spin);
+        spin = 0;
+      };
+      m.once("load", () => (spin = requestAnimationFrame(step)));
+      for (const ev of ["mousedown", "touchstart", "wheel"] as const) m.once(ev, stop);
+      cb.current.stopSpin = stop;
+    }
+
     const ro = new ResizeObserver(() => m.resize());
     ro.observe(containerRef.current);
     setMap(m);
     return () => {
+      cancelAnimationFrame(spin);
       ro.disconnect();
       m.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Chọn tầng/căn từ danh sách bên cạnh cũng là "chạm vào" — dừng xoay để khối được chọn
+  // đứng yên cho người xem nhìn.
+  useEffect(() => {
+    if (selectedFloor != null || selectedUnitId != null) cb.current.stopSpin?.();
+  }, [selectedFloor, selectedUnitId]);
 
   // ---------- Khối căn ----------
   const cells = useMemo(
@@ -375,8 +460,10 @@ export default function BuildingScene({
   return (
     <div
       ref={containerRef}
-      className="w-full overflow-hidden rounded-md border bg-muted"
-      style={{ height }}
+      className={
+        showcase ? "h-full w-full bg-muted" : "w-full overflow-hidden rounded-md border bg-muted"
+      }
+      style={showcase ? undefined : { height }}
     />
   );
 }
