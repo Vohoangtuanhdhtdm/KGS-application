@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BarChart3, Building, Building2, FileText, Inbox, Plus, Search } from "lucide-react";
+import { BarChart3, Box, Building, Building2, FileText, Inbox, Plus, Search } from "lucide-react";
 import { ENABLE_ASSET_MANAGEMENT } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/UserMenu";
@@ -23,6 +23,8 @@ const NAV = [
   { to: "/tin-cua-toi", label: "Tin của tôi", icon: FileText },
   { to: "/yeu-cau", label: "Người hỏi thuê/mua", icon: Inbox },
   { to: "/thong-ke-tin", label: "Hiệu quả tin", icon: BarChart3 },
+  // Toà nhà / khu trọ nhiều căn: dựng mô hình 3D và đăng tin theo từng căn.
+  { to: "/toa-nha", label: "Toà nhà", icon: Box },
   ...(ENABLE_ASSET_MANAGEMENT
     ? [{ to: "/quan-ly", label: "Quản lý tài sản", icon: Building2 }]
     : []),
@@ -70,7 +72,7 @@ export function OwnerHeader() {
         <div className="ml-auto flex items-center gap-2">
           <Link
             to="/tin-dang"
-            className="hidden items-center gap-1.5 rounded-md border border-ws-seeker/30 px-3 py-1.5 text-sm font-medium text-ws-seeker transition-colors hover:bg-ws-seeker-soft lg:inline-flex"
+            className="hidden items-center gap-1.5 whitespace-nowrap rounded-md border border-ws-seeker/30 px-3 py-1.5 text-sm font-medium text-ws-seeker transition-colors hover:bg-ws-seeker-soft xl:inline-flex"
           >
             <Search className="h-4 w-4" />
             Về Tìm nhà

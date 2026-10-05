@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   cloneElement,
   isValidElement,
@@ -19,6 +19,7 @@ import {
   type PublicListingSummaryDto,
 } from "@/lib/api/listings";
 import { assistantApi } from "@/lib/api/assistant";
+import { buildingsApi, type OwnerBuilding, type OwnerBuildingUnit } from "@/lib/api/buildings";
 import { getErrorMessage } from "@/lib/api/errors";
 import {
   AMENITIES,
@@ -101,9 +102,13 @@ import {
  * nguyên ở "Tin của tôi".
  */
 // ?id= — soạn tiếp bản nháp hoặc sửa một tin đã đăng. Cùng một trang cho cả hai.
+// ?toaNha=&can= — đăng cho một căn trong toà nhà (từ trang Toà nhà, nút "Đăng tin căn này").
 export const Route = createFileRoute("/dang-tin")({
-  validateSearch: (s: Record<string, unknown>): { id?: string } =>
-    typeof s.id === "string" ? { id: s.id } : {},
+  validateSearch: (s: Record<string, unknown>): { id?: string; toaNha?: string; can?: string } => ({
+    id: typeof s.id === "string" ? s.id : undefined,
+    toaNha: typeof s.toaNha === "string" ? s.toaNha : undefined,
+    can: typeof s.can === "string" ? s.can : undefined,
+  }),
   head: () => ({ meta: [{ title: "Đăng tin — KGS" }] }),
   component: CreateListingPage,
 });
@@ -164,7 +169,7 @@ const SUBMITTABLE_STATUSES = [null, 3, 5, 6];
 function CreateListingPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { id: editingId } = Route.useSearch();
+  const { id: editingId, toaNha, can } = Route.useSearch();
   const isEditing = !!editingId;
 
   const [step, setStep] = useState(0);
@@ -211,6 +216,24 @@ function CreateListingPage() {
   const [dragOver, setDragOver] = useState(false);
 
   const [canEditProperty, setCanEditProperty] = useState(true);
+
+  // Đăng cho MỘT CĂN trong toà nhà của mình: địa chỉ, vị trí, loại hình là của toà nhà, và tin
+  // hiện đúng chỗ trên mô hình 3D. Sửa tin có sẵn của một căn: chỉ hiện nhãn căn.
+  const [buildingId, setBuildingId] = useState<string | null>(null);
+  const [unitId, setUnitId] = useState<string | null>(null);
+  const [editUnit, setEditUnit] = useState<{ assetName: string | null; unitName: string } | null>(
+    null,
+  );
+  const buildingsQ = useQuery({
+    queryKey: ["owner-buildings"],
+    queryFn: buildingsApi.mine,
+    enabled: !isEditing,
+    retry: 0,
+  });
+  const buildings = buildingsQ.data ?? [];
+  const building = buildings.find((b) => b.assetId === buildingId) ?? null;
+  const unit = building?.units.find((u) => u.id === unitId) ?? null;
+  const inBuilding = !!building || !!editUnit;
   const [moderationNote, setModerationNote] = useState<string | null>(null);
   const [status, setStatus] = useState<number | null>(null);
 
@@ -254,18 +277,60 @@ function CreateListingPage() {
     setAmenities(d.amenities);
     setImages(d.images);
     setCanEditProperty(d.canEditPropertyFields);
+    if (d.assetUnitId && d.unitName) setEditUnit({ assetName: d.assetName, unitName: d.unitName });
     setModerationNote(d.moderationNote);
     setStatus(d.status);
     // Sửa tin có sẵn: mọi bước đều đã có dữ liệu, cho nhảy tự do.
     setReached(STEPS.length - 1);
   }, [existingQ.data]);
 
+  const pickBuilding = (b: OwnerBuilding | null) => {
+    setBuildingId(b?.assetId ?? null);
+    setUnitId(null);
+    if (!b) return;
+    typeTouched.current = true;
+    setPropertyType(b.propertyType);
+    setCity(b.city);
+    setDistrict(b.district);
+    setWard(b.ward);
+    setAddressDetail(b.addressDetail);
+    if (b.latitude != null && b.longitude != null) setPin({ lat: b.latitude, lng: b.longitude });
+  };
+  const pickUnit = (u: OwnerBuildingUnit) => {
+    setUnitId(u.id);
+    if (u.area) setArea(String(u.area));
+  };
+
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || isEditing || !toaNha || !buildingsQ.data) return;
+    prefilled.current = true;
+    const b = buildingsQ.data.find((x) => x.assetId === toaNha);
+    if (!b) return;
+    pickBuilding(b);
+    const u = b.units.find((x) => x.id === can && x.listingId == null);
+    if (u) pickUnit(u);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildingsQ.data]);
+
   const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
 
   /* Trường nào có nghĩa với loại hình đang chọn. Trường bị ẩn thì KHÔNG gửi lên — giá trị cũ
      còn sót trong state (chọn nhà phố, gõ mặt tiền, rồi đổi sang phòng trọ) không được lọt
      vào tin. Pháp lý chỉ hỏi với tin BÁN. */
-  const fields = TYPE_FIELDS[(propertyType in TYPE_FIELDS ? propertyType : 99) as AssetTypeCode];
+  const NO_FIELDS = {
+    rooms: false,
+    floors: false,
+    frontage: false,
+    direction: false,
+    legal: false,
+    furniture: false,
+  };
+  // Một căn trong toà nhà: đặc điểm chung (số tầng, hướng, pháp lý…) là của TOÀ NHÀ — không
+  // hỏi lại ở từng tin, và không để một tin ghi đè lên toà nhà.
+  const fields = inBuilding
+    ? NO_FIELDS
+    : TYPE_FIELDS[(propertyType in TYPE_FIELDS ? propertyType : 99) as AssetTypeCode];
   const showLegal = fields.legal && type === 1;
   const shown = <T,>(on: boolean, v: T): T | null => (on ? v : null);
 
@@ -289,6 +354,8 @@ function CreateListingPage() {
     city,
     amenityLabels,
     highlights,
+    unitName: unit?.name ?? editUnit?.unitName ?? null,
+    unitFloor: unit?.floor ?? null,
   };
   const titleValue = autoTitle ? suggestTitle(facts) : title;
   const descriptionValue = autoDescription ? suggestDescription(facts) : description;
@@ -316,6 +383,8 @@ function CreateListingPage() {
     longitude: pin?.lng ?? null,
     terms,
     amenities,
+    assetId: building?.assetId ?? null,
+    assetUnitId: unit?.id ?? null,
   });
 
   const saveDraft = useMutation({
@@ -329,8 +398,9 @@ function CreateListingPage() {
           rentPaymentCycle: b.rentPaymentCycle,
           terms: b.terms,
           amenities: b.amenities,
-          // Chỉ gửi phần vật lý khi được phép sửa (tài sản không còn tin khác).
-          ...(canEditProperty
+          // Chỉ gửi phần vật lý khi được phép sửa (tài sản không còn tin khác). Tin của một căn
+          // KHÔNG BAO GIỜ gửi: sửa ở đây là sửa cả toà nhà.
+          ...(canEditProperty && !inBuilding
             ? {
                 city: b.city,
                 district: b.district,
@@ -429,6 +499,7 @@ function CreateListingPage() {
     const out: string[] = [];
     if (i === 0 && (!city || !district || !ward))
       out.push("chọn tỉnh/thành, quận/huyện, phường/xã");
+    if (i === 0 && building && !unit) out.push("chọn căn trong toà nhà");
     if (i === 1) {
       if (!(Number(area) > 0)) out.push("nhập diện tích");
       if (!((price ?? 0) > 0)) out.push("nhập giá");
@@ -523,7 +594,7 @@ function CreateListingPage() {
     latitude: null,
     longitude: null,
     distanceMeters: null,
-    unitName: null,
+    unitName: unit?.name ?? editUnit?.unitName ?? null,
     publishedAt: new Date().toISOString(),
     totalMonthlyCost:
       (price ?? 0) +
@@ -685,9 +756,39 @@ function CreateListingPage() {
                   ))}
                 </div>
 
-                {!canEditProperty && <PropertyLockNote />}
+                {editUnit ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+                    <Building2 className="h-4 w-4 shrink-0 text-primary" />
+                    <span>
+                      Tin của căn <b>{editUnit.unitName}</b>
+                      {editUnit.assetName ? ` · ${editUnit.assetName}` : ""} — địa chỉ và đặc điểm
+                      chung theo toà nhà.
+                    </span>
+                  </div>
+                ) : (
+                  !isEditing && (
+                    <BuildingPicker
+                      buildings={buildings}
+                      loading={buildingsQ.isLoading}
+                      building={building}
+                      unitId={unitId}
+                      onPickBuilding={pickBuilding}
+                      onPickUnit={pickUnit}
+                    />
+                  )
+                )}
 
-                <fieldset disabled={!canEditProperty} className="space-y-6 disabled:opacity-60">
+                {!canEditProperty && !editUnit && <PropertyLockNote />}
+
+                <fieldset
+                  disabled={!canEditProperty || inBuilding}
+                  className="space-y-6 disabled:opacity-60"
+                >
+                  {inBuilding && (
+                    <p className="text-xs text-muted-foreground">
+                      Loại hình, địa chỉ và vị trí lấy theo toà nhà — sửa ở trang Toà nhà.
+                    </p>
+                  )}
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Loại hình</p>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -745,7 +846,11 @@ function CreateListingPage() {
                         (nên có — tin chưa ghim không hiện trên bản đồ tìm kiếm)
                       </span>
                     </p>
-                    <LocationPinField value={pin} onChange={setPin} disabled={!canEditProperty} />
+                    <LocationPinField
+                      value={pin}
+                      onChange={setPin}
+                      disabled={!canEditProperty || inBuilding}
+                    />
                   </section>
                 </fieldset>
               </>
@@ -759,7 +864,13 @@ function CreateListingPage() {
                   title={`${typeLabel}: thông số & giá`}
                   sub="Chỉ hiện những gì có nghĩa với loại hình này."
                 />
-                {!canEditProperty && <PropertyLockNote />}
+                {!canEditProperty && !editUnit && <PropertyLockNote />}
+                {inBuilding && (
+                  <p className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    Đặc điểm chung (số tầng, hướng, pháp lý…) là của toà nhà. Ở đây chỉ cần diện
+                    tích căn, giá và tiện nghi của căn này.
+                  </p>
+                )}
 
                 <fieldset disabled={!canEditProperty} className="space-y-5 disabled:opacity-60">
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1276,6 +1387,8 @@ type Facts = {
   city: string;
   amenityLabels: string[];
   highlights: string[];
+  unitName: string | null;
+  unitFloor: number | null;
 };
 
 const nf = (n: number) => n.toLocaleString("vi-VN");
@@ -1284,6 +1397,7 @@ const nf = (n: number) => n.toLocaleString("vi-VN");
 function suggestTitle(f: Facts): string {
   let t = `${f.verb} ${f.typeLabel.toLowerCase()}`;
   if (f.area) t += ` ${nf(f.area)}m²`;
+  if (f.unitName) t += ` ${f.unitName}`;
   if (f.bedrooms) t += `, ${f.bedrooms} phòng ngủ`;
   if (f.highlights[0]) t += `, ${f.highlights[0].toLowerCase()}`;
   if (f.district) t += `, ${f.district}`;
@@ -1299,6 +1413,8 @@ function suggestDescription(f: Facts): string {
       where ? ` tại ${where}` : ""
     }.`,
   );
+  if (f.unitName)
+    lines.push(`Căn ${f.unitName}${f.unitFloor ? ` ở tầng ${f.unitFloor}` : ""} của toà nhà.`);
   const specs = [
     f.bedrooms ? `${f.bedrooms} phòng ngủ` : null,
     f.bathrooms ? `${f.bathrooms} phòng tắm` : null,
@@ -1325,6 +1441,156 @@ function PreviewCard({ listing }: { listing: PublicListingSummaryDto }) {
         onToggleSave={() => {}}
         layout="vertical"
       />
+    </div>
+  );
+}
+
+/**
+ * "Đây là một căn trong toà nhà của tôi?" — chỉ hiện khi chủ nhà đã khai toà nhà. Chưa có thì
+ * chỉ một dòng mời khai toà nhà (lối duy nhất để tin hiện trên mô hình 3D).
+ */
+function BuildingPicker({
+  buildings,
+  loading,
+  building,
+  unitId,
+  onPickBuilding,
+  onPickUnit,
+}: {
+  buildings: OwnerBuilding[];
+  loading: boolean;
+  building: OwnerBuilding | null;
+  unitId: string | null;
+  onPickBuilding: (b: OwnerBuilding | null) => void;
+  onPickUnit: (u: OwnerBuildingUnit) => void;
+}) {
+  if (loading) return null;
+  if (buildings.length === 0)
+    return (
+      <Link
+        to="/toa-nha"
+        className="flex items-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+      >
+        <Building2 className="h-4 w-4 shrink-0 text-primary" />
+        <span className="flex-1">
+          Có toà nhà / khu trọ nhiều căn? <b className="text-foreground">Khai toà nhà</b> để người
+          tìm nhà xem 3D từng căn và đăng tin theo căn.
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0" />
+      </Link>
+    );
+
+  const floors = new Map<number, OwnerBuildingUnit[]>();
+  for (const u of building?.units ?? []) {
+    const f = u.floor ?? 0;
+    floors.set(f, [...(floors.get(f) ?? []), u]);
+  }
+  const floorKeys = [...floors.keys()].sort((a, b) => b - a);
+
+  return (
+    <div className="space-y-3 rounded-xl border p-3">
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted/50 p-1 text-sm">
+        <button
+          type="button"
+          aria-pressed={!building}
+          onClick={() => onPickBuilding(null)}
+          className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
+            !building ? "bg-card shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          Nhà / căn độc lập
+        </button>
+        <button
+          type="button"
+          aria-pressed={!!building}
+          onClick={() => !building && onPickBuilding(buildings[0])}
+          className={`inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-colors ${
+            building ? "bg-card shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          <Building2 className="h-3.5 w-3.5" /> Căn trong toà nhà
+        </button>
+      </div>
+
+      {building && (
+        <div className="space-y-3">
+          {buildings.length > 1 && (
+            <Select
+              value={building.assetId}
+              onValueChange={(v) => onPickBuilding(buildings.find((b) => b.assetId === v) ?? null)}
+            >
+              <SelectTrigger aria-label="Toà nhà">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {buildings.map((b) => (
+                  <SelectItem key={b.assetId} value={b.assetId}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <p className="text-xs text-muted-foreground">
+            {buildings.length === 1 && <b className="text-foreground">{building.name} · </b>}
+            Chọn căn muốn đăng. Căn đã có tin (kể cả nháp) không chọn được — mở tin đó để sửa.
+          </p>
+          <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+            {floorKeys.map((f) => (
+              <div key={f} className="flex items-start gap-2">
+                <span className="w-14 shrink-0 pt-1 text-xs text-muted-foreground">
+                  {f ? `Tầng ${f}` : "Khác"}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {floors.get(f)!.map((u) => {
+                    const taken = u.listingId != null;
+                    const on = u.id === unitId;
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        disabled={taken}
+                        aria-pressed={on}
+                        title={
+                          taken
+                            ? "Căn này đã có tin"
+                            : u.status !== 1
+                              ? "Căn đang đánh dấu có người / đang sửa"
+                              : undefined
+                        }
+                        onClick={() => onPickUnit(u)}
+                        className={`rounded-md border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                          on
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : u.status === 1
+                              ? "hover:bg-accent"
+                              : "border-dashed text-muted-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {u.name}
+                        {u.area ? <span className="opacity-70"> · {u.area}m²</span> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {floorKeys.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Toà nhà chưa có căn nào —{" "}
+                <Link
+                  to="/toa-nha/$id"
+                  params={{ id: building.assetId }}
+                  className="text-primary underline"
+                >
+                  thêm căn
+                </Link>
+                .
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
