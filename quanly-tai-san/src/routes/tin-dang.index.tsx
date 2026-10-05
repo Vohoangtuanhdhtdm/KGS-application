@@ -18,7 +18,7 @@ import {
 import { TravelTimeControl } from "@/components/listings/TravelTimeControl";
 import { PropertyFiltersPanel } from "@/components/public/PropertyFiltersPanel";
 import { AssistantBar } from "@/components/public/AssistantBar";
-import type { AssistantAnchor, AssistantResult } from "@/lib/api/assistant";
+import { assistantApi, type AssistantAnchor, type AssistantResult } from "@/lib/api/assistant";
 import { geocodeForward } from "@/lib/geocode";
 import { matchReasons } from "@/lib/matchReasons";
 import {
@@ -53,7 +53,7 @@ import {
   type PublicListingSummaryDto,
 } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
-import { type ListingTypeCode } from "@/constants/enums";
+import { type AssetTypeCode, type ListingTypeCode } from "@/constants/enums";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PropertyListCard } from "@/components/public/PropertyListCard";
 import { MobileListSheet } from "@/components/public/MobileListSheet";
@@ -101,7 +101,51 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 
+/**
+ * Tham số trên URL — lối vào từ trang chủ, liên kết chia sẻ, ô khu vực…
+ *
+ * Trước đây trang này KHÔNG đọc URL: trang chủ chuyển sang `/tin-dang?keyword=…&city=…` nhưng
+ * mọi điều kiện bị bỏ qua và người dùng thấy toàn bộ tin như chưa lọc gì. Nay các tham số chỉ
+ * được áp MỘT LẦN lúc mở trang (sau đó bộ lọc trên trang là nguồn sự thật).
+ *
+ * `q` là một câu tiếng Việt gửi cho trợ lý — trang chủ có ô "Mô tả căn bạn cần".
+ */
+export interface ListingsSearchParams {
+  q?: string;
+  keyword?: string;
+  city?: string;
+  district?: string;
+  type?: ListingTypeCode;
+  priceMin?: number;
+  priceMax?: number;
+  /** Mã loại hình (AssetDomainType). */
+  loai?: number;
+  has3D?: boolean;
+}
+
+const numParam = (v: unknown): number | undefined => {
+  const n = typeof v === "number" ? v : typeof v === "string" && v.trim() ? Number(v) : NaN;
+  return Number.isFinite(n) ? n : undefined;
+};
+const strParam = (v: unknown): string | undefined =>
+  typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : undefined;
+
 export const Route = createFileRoute("/tin-dang/")({
+  validateSearch: (s: Record<string, unknown>): ListingsSearchParams => {
+    const type = numParam(s.type);
+    return {
+      q: strParam(s.q),
+      keyword: strParam(s.keyword),
+      city: strParam(s.city),
+      district: strParam(s.district),
+      type: type === 1 || type === 2 ? type : undefined,
+      priceMin: numParam(s.priceMin),
+      priceMax: numParam(s.priceMax),
+      loai: numParam(s.loai),
+      has3D:
+        s.has3D === true || s.has3D === "1" || s.has3D === 1 || s.has3D === "true" || undefined,
+    };
+  },
   head: () => ({ meta: [{ title: "Tin đăng bất động sản — KGS" }] }),
   component: PublicListingsPage,
 });
@@ -780,6 +824,44 @@ function PublicListingsPage() {
     setAssistant(r);
     if (!sameAnchor(previous, r.anchor)) void applyAnchor(r.anchor);
   };
+
+  // Áp tham số URL một lần lúc mở trang (xem ListingsSearchParams).
+  const initialSearch = Route.useSearch();
+  const appliedUrl = useRef(false);
+  useEffect(() => {
+    if (appliedUrl.current) return;
+    appliedUrl.current = true;
+    const u = initialSearch;
+    if (u.type) setType(u.type);
+    if (u.city) setCity(u.city);
+    if (u.district) setDistrict(u.district);
+    if (u.priceMin != null) setPriceMin(u.priceMin);
+    if (u.priceMax != null) setPriceMax(u.priceMax);
+    if (u.keyword) {
+      setKeywordInput(u.keyword);
+      setKeyword(u.keyword);
+    }
+    if (u.loai != null || u.has3D) {
+      setProp({
+        ...EMPTY_PROPERTY_FILTERS,
+        types: u.loai != null ? [u.loai as AssetTypeCode] : [],
+        has3D: !!u.has3D,
+      });
+    }
+    if (u.q) {
+      const q = u.q;
+      toast.promise(assistantApi.searchIntent(q, null), {
+        loading: "Trợ lý đang đọc yêu cầu của bạn…",
+        success: (r) => {
+          applyAssistant(r);
+          return "Đã lọc theo yêu cầu — xem trợ lý hiểu thế nào ở khung phía trên.";
+        },
+        error: (e) => getErrorMessage(e, "Trợ lý tạm thời không dùng được — hãy lọc bằng tay."),
+      });
+    }
+    // Chỉ chạy lúc mở trang.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetAssistant = () => {
     clearAllFilters();
