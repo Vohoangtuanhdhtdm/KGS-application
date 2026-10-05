@@ -1,6 +1,16 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Calculator, Handshake, Heart, Inbox, LineChart, LogIn, User, X } from "lucide-react";
+import {
+  Building2,
+  Calculator,
+  Handshake,
+  Heart,
+  Inbox,
+  LineChart,
+  LogIn,
+  User,
+  X,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { WORKSPACES } from "@/lib/workspace";
 import { WS_CLASS, useAvailableWorkspaces } from "@/components/workspace/wsStyles";
@@ -62,6 +72,13 @@ export function AccountSheet({
         { label: "Yêu cầu xem nhà đã gửi", icon: Inbox, path: "/yeu-cau", search: { tab: "sent" } },
         { label: "Lời mời xem nhà", icon: Handshake, path: "/yeu-cau", search: { tab: "invites" } },
       ],
+    });
+  }
+
+  if (isAuthenticated && current === "owner") {
+    groups.push({
+      title: "Chủ nhà",
+      items: [{ label: "Toà nhà & khu trọ (3D)", icon: Building2, path: "/toa-nha" }],
     });
   }
 

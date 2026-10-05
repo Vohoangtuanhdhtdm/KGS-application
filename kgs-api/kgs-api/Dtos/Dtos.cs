@@ -136,7 +136,10 @@ namespace kgs_api.Dtos
         [Required, MaxLength(100)] string Name,
         int? FloorNumber,
         double? Area,
-        string? Notes);
+        string? Notes,
+        /// <summary>null = giữ nguyên. Chủ nhà tự đánh dấu "đã có người / đang sửa" để mô hình
+        /// 3D tô đúng màu.</summary>
+        UnitStatus? Status = null);
 
     public sealed record AssetUnitDto(
         Guid Id, string Name, int? FloorNumber, double? Area, UnitStatus Status, string? Notes);

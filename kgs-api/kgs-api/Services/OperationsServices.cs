@@ -56,6 +56,7 @@ namespace kgs_api.Services
             unit.FloorNumber = request.FloorNumber;
             unit.Area = request.Area;
             unit.Notes = request.Notes;
+            if (request.Status is not null) unit.Status = request.Status.Value;
 
             await _uow.SaveChangesAsync(ct);
             return ToDto(unit);

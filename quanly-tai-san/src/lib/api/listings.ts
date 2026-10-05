@@ -226,6 +226,10 @@ export interface CreateListingDirectInput {
 
   terms?: ListingTermsDto | null;
   amenities?: string[];
+
+  /** Đăng cho một căn trong toà nhà có sẵn (xem trang Toà nhà). */
+  assetId?: string | null;
+  assetUnitId?: string | null;
 }
 
 export interface EditListingDto {
@@ -261,6 +265,11 @@ export interface EditListingDto {
   /** Ghim vị trí hiện tại, null nếu chưa ghim. */
   latitude: number | null;
   longitude: number | null;
+  assetId: string;
+  /** Tin của một căn trong toà nhà. */
+  assetUnitId: string | null;
+  assetName: string | null;
+  unitName: string | null;
 }
 
 /** Khop voi enum ListingSort phia backend. */
@@ -458,5 +467,6 @@ export interface OwnerProfile {
 }
 
 export const ownersApi = {
-  profile: (id: string) => api<OwnerProfile>(`/owners/${encodeURIComponent(id)}`, { skipAuth: true }),
+  profile: (id: string) =>
+    api<OwnerProfile>(`/owners/${encodeURIComponent(id)}`, { skipAuth: true }),
 };

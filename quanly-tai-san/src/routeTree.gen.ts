@@ -34,6 +34,8 @@ import { Route as NguoiDangIdRouteImport } from './routes/nguoi-dang.$id'
 import { Route as QuanLyIndexRouteImport } from './routes/quan-ly.index'
 import { Route as TinDangIndexRouteImport } from './routes/tin-dang.index'
 import { Route as TinDangSlugRouteImport } from './routes/tin-dang.$slug'
+import { Route as ToaNhaIndexRouteImport } from './routes/toa-nha.index'
+import { Route as ToaNhaIdRouteImport } from './routes/toa-nha.$id'
 import { Route as YeuCauIndexRouteImport } from './routes/yeu-cau.index'
 import { Route as QuanLyBanDoIndexRouteImport } from './routes/quan-ly.ban-do.index'
 import { Route as QuanLyDoiTacIndexRouteImport } from './routes/quan-ly.doi-tac.index'
@@ -172,6 +174,16 @@ const TinDangSlugRoute = TinDangSlugRouteImport.update({
   path: '/tin-dang/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToaNhaIndexRoute = ToaNhaIndexRouteImport.update({
+  id: '/toa-nha/',
+  path: '/toa-nha/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToaNhaIdRoute = ToaNhaIdRouteImport.update({
+  id: '/toa-nha/$id',
+  path: '/toa-nha/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const YeuCauIndexRoute = YeuCauIndexRouteImport.update({
   id: '/yeu-cau/',
   path: '/yeu-cau/',
@@ -256,9 +268,11 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/nguoi-dang/$id': typeof NguoiDangIdRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
+  '/toa-nha/$id': typeof ToaNhaIdRoute
   '/da-luu/': typeof DaLuuIndexRoute
   '/quan-ly/': typeof QuanLyIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
+  '/toa-nha/': typeof ToaNhaIndexRoute
   '/yeu-cau/': typeof YeuCauIndexRoute
   '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
   '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
@@ -295,9 +309,11 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/nguoi-dang/$id': typeof NguoiDangIdRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
+  '/toa-nha/$id': typeof ToaNhaIdRoute
   '/da-luu': typeof DaLuuIndexRoute
   '/quan-ly': typeof QuanLyIndexRoute
   '/tin-dang': typeof TinDangIndexRoute
+  '/toa-nha': typeof ToaNhaIndexRoute
   '/yeu-cau': typeof YeuCauIndexRoute
   '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
   '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
@@ -335,9 +351,11 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/nguoi-dang/$id': typeof NguoiDangIdRoute
   '/tin-dang/$slug': typeof TinDangSlugRoute
+  '/toa-nha/$id': typeof ToaNhaIdRoute
   '/da-luu/': typeof DaLuuIndexRoute
   '/quan-ly/': typeof QuanLyIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
+  '/toa-nha/': typeof ToaNhaIndexRoute
   '/yeu-cau/': typeof YeuCauIndexRoute
   '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
   '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
@@ -376,9 +394,11 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/nguoi-dang/$id'
     | '/tin-dang/$slug'
+    | '/toa-nha/$id'
     | '/da-luu/'
     | '/quan-ly/'
     | '/tin-dang/'
+    | '/toa-nha/'
     | '/yeu-cau/'
     | '/quan-ly/hop-dong/$id'
     | '/quan-ly/hop-dong/moi'
@@ -415,9 +435,11 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/nguoi-dang/$id'
     | '/tin-dang/$slug'
+    | '/toa-nha/$id'
     | '/da-luu'
     | '/quan-ly'
     | '/tin-dang'
+    | '/toa-nha'
     | '/yeu-cau'
     | '/quan-ly/hop-dong/$id'
     | '/quan-ly/hop-dong/moi'
@@ -454,9 +476,11 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/nguoi-dang/$id'
     | '/tin-dang/$slug'
+    | '/toa-nha/$id'
     | '/da-luu/'
     | '/quan-ly/'
     | '/tin-dang/'
+    | '/toa-nha/'
     | '/yeu-cau/'
     | '/quan-ly/hop-dong/$id'
     | '/quan-ly/hop-dong/moi'
@@ -494,9 +518,11 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   NguoiDangIdRoute: typeof NguoiDangIdRoute
   TinDangSlugRoute: typeof TinDangSlugRoute
+  ToaNhaIdRoute: typeof ToaNhaIdRoute
   DaLuuIndexRoute: typeof DaLuuIndexRoute
   QuanLyIndexRoute: typeof QuanLyIndexRoute
   TinDangIndexRoute: typeof TinDangIndexRoute
+  ToaNhaIndexRoute: typeof ToaNhaIndexRoute
   YeuCauIndexRoute: typeof YeuCauIndexRoute
   QuanLyHopDongIdRoute: typeof QuanLyHopDongIdRoute
   QuanLyHopDongMoiRoute: typeof QuanLyHopDongMoiRoute
@@ -688,6 +714,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TinDangSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/toa-nha/': {
+      id: '/toa-nha/'
+      path: '/toa-nha'
+      fullPath: '/toa-nha/'
+      preLoaderRoute: typeof ToaNhaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/toa-nha/$id': {
+      id: '/toa-nha/$id'
+      path: '/toa-nha/$id'
+      fullPath: '/toa-nha/$id'
+      preLoaderRoute: typeof ToaNhaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/yeu-cau/': {
       id: '/yeu-cau/'
       path: '/yeu-cau'
@@ -798,9 +838,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   NguoiDangIdRoute: NguoiDangIdRoute,
   TinDangSlugRoute: TinDangSlugRoute,
+  ToaNhaIdRoute: ToaNhaIdRoute,
   DaLuuIndexRoute: DaLuuIndexRoute,
   QuanLyIndexRoute: QuanLyIndexRoute,
   TinDangIndexRoute: TinDangIndexRoute,
+  ToaNhaIndexRoute: ToaNhaIndexRoute,
   YeuCauIndexRoute: YeuCauIndexRoute,
   QuanLyHopDongIdRoute: QuanLyHopDongIdRoute,
   QuanLyHopDongMoiRoute: QuanLyHopDongMoiRoute,

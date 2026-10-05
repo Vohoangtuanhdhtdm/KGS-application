@@ -401,77 +401,105 @@ namespace kgs_api.Services
             if (request.Type == ListingType.Rent && request.RentPaymentCycle is null)
                 throw new ValidationFailedException("Tin cho thuê bắt buộc phải chọn chu kỳ thanh toán.");
 
-            // Tên tỉnh/quận về dạng chính thức — để "TP. HCM" và "Thành phố Hồ Chí Minh" không
-            // thành hai nơi khác nhau trong bộ lọc. Xem AdministrativeNames.
-            var city = AdministrativeNames.CanonicalCity(request.City)!;
-            var address = new Address
+            Asset? asset;
+            Guid? unitId = null;
+            if (request.AssetId is Guid buildingId)
             {
-                City = city,
-                District = AdministrativeNames.CanonicalDistrict(city, request.District)!,
-                Ward = request.Ward.Trim(),
-                Detail = request.AddressDetail?.Trim() ?? string.Empty
-            };
-
-            // Dùng lại tài sản nếu người dùng đã có một cái ở ĐÚNG địa chỉ này. Không có
-            // bước này thì đăng tin lần hai cho cùng căn nhà sẽ đẻ ra tài sản trùng, và
-            // Giai đoạn 4 sẽ thừa hưởng một danh mục đầy bản sao.
-            var asset = await _assets.Query()
-                .FirstOrDefaultAsync(a => a.UserId == userId
-                                       && a.Address.City == address.City
-                                       && a.Address.District == address.District
-                                       && a.Address.Ward == address.Ward
-                                       && a.Address.Detail == address.Detail, ct);
-
-            if (asset is null)
-            {
-                asset = new Asset
+                // Đăng cho một căn trong toà nhà có sẵn: địa chỉ, vị trí, loại hình là của toà
+                // nhà — không tạo tài sản mới, không ghi đè đặc điểm toà nhà bằng số của một căn.
+                asset = await _assets.Query()
+                    .FirstOrDefaultAsync(a => a.Id == buildingId && a.UserId == userId, ct)
+                    ?? throw new NotFoundException("Không tìm thấy toà nhà.");
+                if (request.AssetUnitId is Guid uid)
                 {
-                    UserId = userId,
-                    // Tên tài sản suy từ địa chỉ — người đăng không nhập, cũng không thấy.
-                    Name = string.IsNullOrWhiteSpace(address.Detail)
-                        ? $"{address.Ward}, {address.District}"
-                        : $"{address.Detail}, {address.District}",
-                    TypeProperty = request.PropertyType,
-                    OwnershipType = AssetOwnershipType.Owned,
-                    Status = AssetStatus.InUse,
-                    Address = address,
-                    Location = request.Latitude is not null && request.Longitude is not null
-                        ? _geometryFactory.CreatePoint(new Coordinate(request.Longitude.Value, request.Latitude.Value))
-                        : null,
-                    Area = request.Area,
-                    Frontage = request.Frontage,
-                    Bedrooms = request.Bedrooms,
-                    Bathrooms = request.Bathrooms,
-                    Floors = request.Floors,
-                    HouseDirection = PropertyVocabulary.NormalizeDirection(request.HouseDirection),
-                    LegalStatus = PropertyVocabulary.NormalizeLegal(request.LegalStatus),
-                    FurnitureState = PropertyVocabulary.NormalizeFurniture(request.FurnitureState)
-                };
-                await _assets.AddAsync(asset, ct);
+                    var unit = await _units.Query()
+                        .FirstOrDefaultAsync(u => u.Id == uid && u.AssetId == buildingId, ct)
+                        ?? throw new NotFoundException("Không tìm thấy căn thuộc toà nhà này.");
+                    // Một căn — một tin chưa đóng. Tin thứ hai cho cùng căn (kể cả bản nháp) sẽ
+                    // làm mô hình 3D và người tìm nhà không biết tin nào là thật.
+                    var busy = await _listings.Query().AnyAsync(l =>
+                        l.AssetUnitId == uid && l.Status != ListingStatus.Closed, ct);
+                    if (busy)
+                        throw new ConflictException(
+                            $"Căn {unit.Name} đã có tin chưa đóng — mở tin đó ở \"Tin của tôi\" để sửa thay vì tạo mới.");
+                    unit.Area ??= request.Area;
+                    unitId = uid;
+                }
             }
             else
             {
-                // Tài sản đã có: cập nhật những đặc điểm người đăng vừa khai, nhưng KHÔNG
-                // ghi đè bằng giá trị rỗng — tin mới thiếu thông tin không được xoá thông
-                // tin cũ đang đúng.
-                asset.Area ??= request.Area;
-                asset.Frontage ??= request.Frontage;
-                asset.Bedrooms ??= request.Bedrooms;
-                asset.Bathrooms ??= request.Bathrooms;
-                asset.Floors ??= request.Floors;
-                asset.HouseDirection ??= PropertyVocabulary.NormalizeDirection(request.HouseDirection);
-                asset.LegalStatus ??= PropertyVocabulary.NormalizeLegal(request.LegalStatus);
-                asset.FurnitureState ??= PropertyVocabulary.NormalizeFurniture(request.FurnitureState);
+                // Tên tỉnh/quận về dạng chính thức — để "TP. HCM" và "Thành phố Hồ Chí Minh" không
+                // thành hai nơi khác nhau trong bộ lọc. Xem AdministrativeNames.
+                var city = AdministrativeNames.CanonicalCity(request.City)!;
+                var address = new Address
+                {
+                    City = city,
+                    District = AdministrativeNames.CanonicalDistrict(city, request.District)!,
+                    Ward = request.Ward.Trim(),
+                    Detail = request.AddressDetail?.Trim() ?? string.Empty
+                };
 
-                if (asset.Location is null && request.Latitude is not null && request.Longitude is not null)
-                    asset.Location = _geometryFactory.CreatePoint(
-                        new Coordinate(request.Longitude.Value, request.Latitude.Value));
+                // Dùng lại tài sản nếu người dùng đã có một cái ở ĐÚNG địa chỉ này. Không có
+                // bước này thì đăng tin lần hai cho cùng căn nhà sẽ đẻ ra tài sản trùng, và
+                // Giai đoạn 4 sẽ thừa hưởng một danh mục đầy bản sao.
+                asset = await _assets.Query()
+                    .FirstOrDefaultAsync(a => a.UserId == userId
+                                           && a.Address.City == address.City
+                                           && a.Address.District == address.District
+                                           && a.Address.Ward == address.Ward
+                                           && a.Address.Detail == address.Detail, ct);
+
+                if (asset is null)
+                {
+                    asset = new Asset
+                    {
+                        UserId = userId,
+                        // Tên tài sản suy từ địa chỉ — người đăng không nhập, cũng không thấy.
+                        Name = string.IsNullOrWhiteSpace(address.Detail)
+                            ? $"{address.Ward}, {address.District}"
+                            : $"{address.Detail}, {address.District}",
+                        TypeProperty = request.PropertyType,
+                        OwnershipType = AssetOwnershipType.Owned,
+                        Status = AssetStatus.InUse,
+                        Address = address,
+                        Location = request.Latitude is not null && request.Longitude is not null
+                            ? _geometryFactory.CreatePoint(new Coordinate(request.Longitude.Value, request.Latitude.Value))
+                            : null,
+                        Area = request.Area,
+                        Frontage = request.Frontage,
+                        Bedrooms = request.Bedrooms,
+                        Bathrooms = request.Bathrooms,
+                        Floors = request.Floors,
+                        HouseDirection = PropertyVocabulary.NormalizeDirection(request.HouseDirection),
+                        LegalStatus = PropertyVocabulary.NormalizeLegal(request.LegalStatus),
+                        FurnitureState = PropertyVocabulary.NormalizeFurniture(request.FurnitureState)
+                    };
+                    await _assets.AddAsync(asset, ct);
+                }
+                else
+                {
+                    // Tài sản đã có: cập nhật những đặc điểm người đăng vừa khai, nhưng KHÔNG
+                    // ghi đè bằng giá trị rỗng — tin mới thiếu thông tin không được xoá thông
+                    // tin cũ đang đúng.
+                    asset.Area ??= request.Area;
+                    asset.Frontage ??= request.Frontage;
+                    asset.Bedrooms ??= request.Bedrooms;
+                    asset.Bathrooms ??= request.Bathrooms;
+                    asset.Floors ??= request.Floors;
+                    asset.HouseDirection ??= PropertyVocabulary.NormalizeDirection(request.HouseDirection);
+                    asset.LegalStatus ??= PropertyVocabulary.NormalizeLegal(request.LegalStatus);
+                    asset.FurnitureState ??= PropertyVocabulary.NormalizeFurniture(request.FurnitureState);
+
+                    if (asset.Location is null && request.Latitude is not null && request.Longitude is not null)
+                        asset.Location = _geometryFactory.CreatePoint(
+                            new Coordinate(request.Longitude.Value, request.Latitude.Value));
+                }
             }
 
             var listing = new Listing
             {
                 Asset = asset,
-                AssetUnitId = null,
+                AssetUnitId = unitId,
                 Title = request.Title.Trim(),
                 Description = request.Description,
                 Price = request.Price,
@@ -636,6 +664,7 @@ namespace kgs_api.Services
         {
             var listing = await _listings.Query().AsNoTracking()
                 .Include(l => l.Asset)
+                .Include(l => l.AssetUnit)
                 .FirstOrDefaultAsync(l => l.Id == listingId && l.Asset.UserId == _currentUser.UserId, ct)
                 ?? throw new NotFoundException("Không tìm thấy tin đăng.");
 
@@ -656,12 +685,14 @@ namespace kgs_api.Services
                 listing.Id, listing.Status, listing.Type, listing.Title, listing.Description,
                 listing.Price, listing.RentPaymentCycle,
                 a.Address.City, a.Address.District, a.Address.Ward, a.Address.Detail,
-                a.TypeProperty, a.Area, a.Frontage, a.Bedrooms, a.Bathrooms, a.Floors,
+                a.TypeProperty, listing.AssetUnit?.Area ?? a.Area, a.Frontage, a.Bedrooms, a.Bathrooms, a.Floors,
                 a.HouseDirection, a.LegalStatus, a.FurnitureState,
                 ToTermsDto(listing.Terms), listing.Amenities, images,
-                CanEditPropertyFields: otherListings == 0,
+                // Tin của một căn: đặc điểm vật lý là của TOÀ NHÀ — không sửa từ một tin.
+                CanEditPropertyFields: otherListings == 0 && listing.AssetUnitId == null,
                 listing.ModerationNote,
-                a.Location?.Y, a.Location?.X);   // Y=lat, X=lng
+                a.Location?.Y, a.Location?.X,   // Y=lat, X=lng
+                a.Id, listing.AssetUnitId, a.Name, listing.AssetUnit?.Name);
         }
 
         public async Task<OwnerListingDto> BumpAsync(Guid listingId, CancellationToken ct = default)

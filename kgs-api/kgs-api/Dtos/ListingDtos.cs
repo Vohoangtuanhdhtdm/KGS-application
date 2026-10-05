@@ -105,7 +105,14 @@ namespace kgs_api.Dtos
 
         // ---- Điều kiện thuê ----
         ListingTermsDto? Terms,
-        List<string>? Amenities);
+        List<string>? Amenities,
+
+        // ---- Đăng cho MỘT CĂN trong toà nhà của mình (xem OwnerBuildingService) ----
+        /// <summary>Toà nhà có sẵn — khi có, địa chỉ và đặc điểm toà nhà lấy từ đây, không tạo
+        /// tài sản mới.</summary>
+        Guid? AssetId = null,
+        /// <summary>Căn trong toà nhà đó. Tin gắn vào căn thì hiện đúng chỗ trên mô hình 3D.</summary>
+        Guid? AssetUnitId = null);
 
     public sealed record ListingImageDto(Guid Id, string Url, int SortOrder);
 
@@ -137,7 +144,14 @@ namespace kgs_api.Dtos
 
         /// <summary>Ghim vị trí hiện tại của tài sản, null nếu chưa ghim.</summary>
         double? Latitude,
-        double? Longitude);
+        double? Longitude,
+
+        /// <summary>Tin của một căn trong toà nhà: tên toà nhà và tên căn để biểu mẫu hiện rõ
+        /// "Căn P.502 · 127 Trần Thái Tông" và khoá phần địa chỉ.</summary>
+        Guid AssetId = default,
+        Guid? AssetUnitId = null,
+        string? AssetName = null,
+        string? UnitName = null);
 
     public sealed record PublicListingSearchQuery(
         ListingType? Type,
