@@ -14,13 +14,16 @@ namespace kgs_api.Services
         private readonly IRepository<Asset> _assets;
         private readonly IRepository<AssetUnit> _units;
         private readonly IRepository<LeaseContract> _contracts;
+        private readonly IRepository<Listing> _listings;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
 
         public AssetUnitService(IRepository<Asset> assets, IRepository<AssetUnit> units,
-            IRepository<LeaseContract> contracts, IUnitOfWork uow, ICurrentUserService currentUser)
+            IRepository<LeaseContract> contracts, IRepository<Listing> listings,
+            IUnitOfWork uow, ICurrentUserService currentUser)
         {
-            _assets = assets; _units = units; _contracts = contracts; _uow = uow; _currentUser = currentUser;
+            _assets = assets; _units = units; _contracts = contracts; _listings = listings;
+            _uow = uow; _currentUser = currentUser;
         }
 
         public async Task<AssetUnitDto> CreateAsync(Guid assetId, AssetUnitRequest request, CancellationToken ct = default)
@@ -52,6 +55,11 @@ namespace kgs_api.Services
             await EnsureOwnedAssetAsync(assetId, ct);
             var unit = await GetUnitAsync(assetId, unitId, ct);
 
+            var duplicated = await _units.Query()
+                .AnyAsync(u => u.AssetId == assetId && u.Id != unitId && u.Name == request.Name.Trim(), ct);
+            if (duplicated)
+                throw new ConflictException($"Tài sản đã có tầng/phòng tên '{request.Name.Trim()}'.");
+
             unit.Name = request.Name.Trim();
             unit.FloorNumber = request.FloorNumber;
             unit.Area = request.Area;
@@ -71,6 +79,14 @@ namespace kgs_api.Services
                 .AnyAsync(c => c.AssetUnitId == unitId && c.Status == ContractStatus.Active, ct);
             if (hasActiveContract)
                 throw new ConflictException("Tầng/phòng còn hợp đồng đang hiệu lực — chấm dứt hợp đồng trước khi xoá.");
+
+            // Khoá ngoại Listing → AssetUnit là cascade: xoá căn sẽ XOÁ LUÔN tin của căn, kể cả
+            // tin đã duyệt cùng lượt xem, lượt hỏi thuê. Không cho xoá khi căn còn bất kỳ tin nào.
+            var listings = await _listings.Query().CountAsync(l => l.AssetUnitId == unitId, ct);
+            if (listings > 0)
+                throw new ConflictException(
+                    $"Căn này có {listings} tin đăng (kể cả nháp hoặc đã đóng) — xoá bản nháp ở \"Tin của tôi\" " +
+                    "hoặc giữ căn lại và đánh dấu \"Đang sửa chữa\". Tin đã từng đăng được giữ để còn lịch sử.");
 
             _units.Remove(unit);
             await _uow.SaveChangesAsync(ct);

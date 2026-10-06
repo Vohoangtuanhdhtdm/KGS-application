@@ -756,17 +756,22 @@ function CreateListingPage() {
                   ))}
                 </div>
 
-                {editUnit ? (
+                {editUnit || (draftId && building && unit) ? (
+                  /* Bản nháp đã tạo thì căn đã cố định: đổi toà/căn lúc này không được lưu (tin
+                     gắn căn từ lúc tạo), nên không cho đổi — chỉ hiện nhãn. */
                   <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
                     <Building2 className="h-4 w-4 shrink-0 text-primary" />
                     <span>
-                      Tin của căn <b>{editUnit.unitName}</b>
-                      {editUnit.assetName ? ` · ${editUnit.assetName}` : ""} — địa chỉ và đặc điểm
-                      chung theo toà nhà.
+                      Tin của căn <b>{editUnit?.unitName ?? unit?.name}</b>
+                      {(editUnit?.assetName ?? building?.name)
+                        ? ` · ${editUnit?.assetName ?? building?.name}`
+                        : ""}{" "}
+                      — địa chỉ và đặc điểm chung theo toà nhà.
                     </span>
                   </div>
                 ) : (
-                  !isEditing && (
+                  !isEditing &&
+                  !draftId && (
                     <BuildingPicker
                       buildings={buildings}
                       loading={buildingsQ.isLoading}
