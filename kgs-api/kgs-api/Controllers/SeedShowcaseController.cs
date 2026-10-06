@@ -8,7 +8,8 @@ namespace kgs_api.Controllers
     ///
     /// POST api/dev/showcase              dựng lại từ đầu (xoá bộ cũ của chính nó trước)
     /// POST api/dev/showcase?replaceLegacy=true   xoá luôn 120 tin ngẫu nhiên của bộ demo cũ
-    /// POST api/dev/showcase/clear        xoá bộ trình diễn, giữ tài khoản</summary>
+    /// POST api/dev/showcase/clear        xoá bộ trình diễn, giữ tài khoản
+    /// &amp;purgeUntagged=true                     xoá luôn dữ liệu tạo tay khi thử nghiệm (mọi tài khoản), giữ tài khoản</summary>
     [ApiController]
     [Authorize]
     [Route("api/dev/showcase")]
@@ -23,10 +24,11 @@ namespace kgs_api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Seed([FromQuery] bool replaceLegacy = false, CancellationToken ct = default)
+        public async Task<IActionResult> Seed(
+            [FromQuery] bool replaceLegacy = false, [FromQuery] bool purgeUntagged = false, CancellationToken ct = default)
         {
             if (!_env.IsDevelopment()) return NotFound();
-            return Ok(await _seeder.SeedAsync(replaceLegacy, ct));
+            return Ok(await _seeder.SeedAsync(replaceLegacy, ct, purgeUntagged));
         }
 
         [HttpPost("clear")]

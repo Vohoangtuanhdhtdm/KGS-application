@@ -44,13 +44,14 @@ namespace kgs_api.Services.Seeding
 
         // ==================== Dựng ====================
 
-        public async Task<Result> SeedAsync(bool replaceLegacy, CancellationToken ct)
+        public async Task<Result> SeedAsync(bool replaceLegacy, CancellationToken ct, bool purgeUntagged = false)
         {
-            await ClearAsync(replaceLegacy, ct);
+            await ClearAsync(replaceLegacy, ct, purgeUntagged);
 
             var rnd = new Random(RandomSeed);
             var now = DateTime.UtcNow;
             var people = await EnsurePeopleAsync();
+            var adminId = (await _users.GetUsersInRoleAsync("Admin")).OrderBy(u => u.CreatedAt).FirstOrDefault()?.Id;
             string OwnerId(Owner o) => people[o switch
             {
                 Owner.Ngoc => "ngoc", Owner.Hung => "hung", Owner.Bao => "bao", Owner.Ha => "ha", _ => "kho",
@@ -147,6 +148,7 @@ namespace kgs_api.Services.Seeding
             var live = listings.Where(l => l.Status == ListingStatus.Approved).ToList();
             var (views, saved, inquiries, reports) = await EngagementAsync(live, people, rnd, now, ct);
             var (demands, invitations) = await DemandsAsync(listings, people, now, ct);
+            reports += await AdminCasesAsync(live, people, adminId, now, ct);
             await NotificationsAsync(listings, people, now, ct);
 
             return new Result(
@@ -164,8 +166,31 @@ namespace kgs_api.Services.Seeding
         /// <summary>Xoá bộ trình diễn: tài sản có nhãn (tin, căn, lượt xem, lưu, yêu cầu, báo vi
         /// phạm, lời mời xoá dây chuyền theo) và các nhu cầu đã lưu của bộ này. Tài khoản giữ lại.
         /// <paramref name="replaceLegacy"/>: xoá luôn dữ liệu của bộ demo ngẫu nhiên cũ.</summary>
-        public async Task<int> ClearAsync(bool replaceLegacy, CancellationToken ct)
+        public async Task<int> ClearAsync(bool replaceLegacy, CancellationToken ct, bool purgeUntagged = false)
         {
+            var purged = 0;
+            if (purgeUntagged)
+            {
+                // Dữ liệu tạo tay khi thử nghiệm (không thuộc bộ nào): xoá tài sản — tin, căn, ảnh,
+                // lượt xem, yêu cầu… xoá dây chuyền theo. Tài khoản giữ nguyên. Ảnh thật trên
+                // Cloudinary được xếp hàng xoá (FileCleanupJob) chứ không bỏ mồ côi trên mây.
+                var known = new[] { Tag, "[demo-3d]", "[demo-gd1]" };
+                var stray = await _db.Assets.Where(a => a.Notes == null || !known.Contains(a.Notes)).ToListAsync(ct);
+                var ids = stray.Select(a => a.Id).ToList();
+                var files = (await _db.ListingImages.Where(i => ids.Contains(i.Listing.AssetId))
+                        .Select(i => new { i.File.PublicId, i.File.Url, i.File.ContentType }).ToListAsync(ct))
+                    .Concat(await _db.AssetMedia.Where(m => ids.Contains(m.AssetId))
+                        .Select(m => new { m.File.PublicId, m.File.Url, m.File.ContentType }).ToListAsync(ct));
+                foreach (var f in files.Where(f => !string.IsNullOrEmpty(f.PublicId) && f.Url.Contains("res.cloudinary.com")))
+                    _db.FileDeletionQueueItems.Add(new FileDeletionQueueItem
+                    {
+                        PublicId = f.PublicId,
+                        ResourceType = f.ContentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true ? "image" : "raw",
+                    });
+                _db.Assets.RemoveRange(stray);
+                purged = stray.Count;
+            }
+
             // Toà nhà demo 3D cũ đứng đúng chỗ toà Xô Viết Nghệ Tĩnh của bộ này — luôn thay.
             var tags = replaceLegacy
                 ? new[] { Tag, "[demo-3d]", "[demo-gd1]" }
@@ -186,7 +211,7 @@ namespace kgs_api.Services.Seeding
             _db.Notifications.RemoveRange(notes);
 
             await _db.SaveChangesAsync(ct);
-            return assets.Count;
+            return assets.Count + purged;
         }
 
         // ==================== Tin nguyên căn ====================
@@ -485,9 +510,9 @@ namespace kgs_api.Services.Seeding
                 LegalStatus = "Sổ hồng riêng",
                 FurnitureState = b.Type == AssetDomainType.Office ? "Cơ bản" : "Đầy đủ",
                 Notes = Tag,
-                FootprintJson = JsonSerializer.Serialize(footprint),
-                FloorHeightMeters = b.FloorHeight,
-                BuildingModelPublished = true,
+                FootprintJson = b.Modeled ? JsonSerializer.Serialize(footprint) : null,
+                FloorHeightMeters = b.Modeled ? b.FloorHeight : null,
+                BuildingModelPublished = b.Modeled,
             };
 
             var units = new List<AssetUnit>();
@@ -507,6 +532,19 @@ namespace kgs_api.Services.Seeding
                     units.Add(unit);
                     if (!vacant) continue;
 
+                    // Không phải căn trống nào cũng đã có tin — đủ các ca chủ nhà thật gặp:
+                    //   • toà mới khai (chưa 3D): một bản nháp, còn lại chưa đăng;
+                    //   • toà đã có 3D: cứ 4 căn trống thì 1 căn chưa đăng tin (nút "Đăng tin căn
+                    //     này", ảnh chung của toà), căn trống thứ hai đang chờ duyệt.
+                    var unitStatus = ListingStatus.Approved;
+                    if (!b.Modeled)
+                    {
+                        if (n > 0) { n++; continue; }
+                        unitStatus = ListingStatus.Draft;
+                    }
+                    else if (n % 4 == 3) { n++; continue; }
+                    else if (n == 1) unitStatus = ListingStatus.Pending;
+
                     var sale = b.SaleShare > 0 && n % 2 == 1 && rnd.NextDouble() < b.SaleShare * 2;
                     var price = UnitPrice(b, f, area, sale, rnd);
                     var amenities = UnitAmenities(b);
@@ -519,12 +557,12 @@ namespace kgs_api.Services.Seeding
                         Price = price,
                         Type = sale ? ListingType.Sale : ListingType.Rent,
                         RentPaymentCycle = sale ? null : PaymentCycle.Monthly,
-                        Status = ListingStatus.Approved,
-                        Slug = $"{(sale ? "ban" : "thue")}-{b.Key}-{Slugify(name)}-{(uint)rnd.Next():x6}",
-                        PublishedAt = now.AddDays(-(1 + rnd.Next(0, 25))),
+                        Status = unitStatus,
+                        Slug = unitStatus == ListingStatus.Draft ? null : $"{(sale ? "ban" : "thue")}-{b.Key}-{Slugify(name)}-{(uint)rnd.Next():x6}",
+                        PublishedAt = unitStatus == ListingStatus.Approved ? now.AddDays(-(1 + rnd.Next(0, 25))) : null,
                         Amenities = amenities,
                         Terms = sale ? new ListingTerms() : Terms(b.Type, amenities, "", rnd, now),
-                        Images = Images(b.Images, ListingStatus.Approved, n + b.Floors, rnd),
+                        Images = Images(b.Images, unitStatus, n + b.Floors, rnd),
                     });
                     n++;
                 }
@@ -640,6 +678,102 @@ namespace kgs_api.Services.Seeding
             _db.Set<ListingReport>().AddRange(reports);
             await _db.SaveChangesAsync(ct);
             return (views.Count, saved.Count, inquiries.Count, reports.Count);
+        }
+
+        /// <summary>Ca của khu quản trị: báo vi phạm ĐÃ xử lý (bỏ qua; xác nhận rồi trả về sửa) và
+        /// một tài khoản đăng tin lừa đảo đã bị khoá, tin bị gỡ — đúng như các thao tác thật để
+        /// lại (trạng thái tin, sự kiện kiểm duyệt, ghi chú, người xử lý). Trả về số báo cáo.</summary>
+        private async Task<int> AdminCasesAsync(
+            List<Listing> live, Dictionary<string, string> people, string? adminId, DateTime now, CancellationToken ct)
+        {
+            var reports = new List<ListingReport>();
+            var rentals = live.Where(l => l.Type == ListingType.Rent && l.AssetUnit == null).Skip(14).Take(2).ToList();
+            if (rentals.Count > 0)
+                reports.Add(new ListingReport
+                {
+                    ListingId = rentals[0].Id, ReporterUserId = people["mai"], Reason = ListingReportReason.WrongInfo,
+                    Detail = "Ảnh trông không giống phòng thật.", Status = ListingReportStatus.Dismissed,
+                    CreatedAt = now.AddDays(-9), HandledAt = now.AddDays(-8), HandledByUserId = adminId,
+                    HandlerNote = "Đã đối chiếu ảnh với chủ tin — đúng phòng, không vi phạm.",
+                });
+            if (rentals.Count > 1)
+            {
+                var l = rentals[1];
+                reports.Add(new ListingReport
+                {
+                    ListingId = l.Id, ReporterUserId = people["khoa"], Reason = ListingReportReason.WrongInfo,
+                    Detail = "Tin ghi giá 3,5 triệu nhưng gọi thì chủ báo 4 triệu chưa gồm điện nước.", Status = ListingReportStatus.Resolved,
+                    CreatedAt = now.AddDays(-6), HandledAt = now.AddDays(-5), HandledByUserId = adminId,
+                    HandlerNote = "Trả về cho chủ tin cập nhật giá đúng.",
+                });
+                l.Status = ListingStatus.ChangesRequested;
+                l.ModerationNote = "Theo báo cáo của người dùng: giá trên tin chưa đúng thực tế. Cập nhật giá và chi phí rồi gửi duyệt lại.";
+                _db.Set<ListingModerationEvent>().Add(new ListingModerationEvent
+                {
+                    // Vòng 5: luôn sau các vòng đã có (tin từng bị trả về có tới 4 vòng).
+                    Listing = l, Action = ModerationAction.ChangesRequested, Round = 5, CreatedAt = now.AddDays(-5),
+                    Note = l.ModerationNote, Reasons = new() { ModerationReason.PriceOrCostIssue },
+                });
+            }
+
+            // Tài khoản lừa đảo: 2 tin phòng trọ giá rẻ bất thường, đã duyệt rồi bị gỡ khi khoá.
+            var spam = await _users.FindByIdAsync(people["spam"]);
+            var place = Places.First(p => p.Key == "q10-3thang2");
+            var reason = "Đăng tin lừa đảo: yêu cầu chuyển cọc trước khi xem phòng, ảnh lấy từ tin của người khác.";
+            for (var k = 0; k < 2; k++)
+            {
+                var asset = new Asset
+                {
+                    UserId = people["spam"], Name = $"Phòng trọ Ba Tháng Hai #{k + 1}", TypeProperty = AssetDomainType.Room,
+                    OwnershipType = AssetOwnershipType.Owned, Status = AssetStatus.Vacant, Notes = Tag,
+                    Address = new Address { City = place.City, District = place.District, Ward = place.Ward, Detail = $"{200 + k} {place.Street}" },
+                    Location = _gf.CreatePoint(new Coordinate(place.Lng + 0.001 * (k + 1), place.Lat)), Area = 25, Bedrooms = 1, Bathrooms = 1,
+                };
+                var pub = now.AddDays(-4 + k);
+                var listing = new Listing
+                {
+                    Asset = asset, Type = ListingType.Rent, RentPaymentCycle = PaymentCycle.Monthly,
+                    Title = $"Phòng trọ 25 m² full nội thất chỉ 1,5 triệu gần ĐH Bách Khoa #{k + 1}",
+                    Description = "Phòng đẹp giá rẻ nhất khu vực, chuyển cọc giữ phòng trước qua tài khoản, xem phòng sau.",
+                    Price = 1_500_000, Status = ListingStatus.Rejected,
+                    Slug = $"thue-phong-tro-q10-vipham-{k + 1}", PublishedAt = pub, CreatedAt = pub.AddHours(-3),
+                    ModerationNote = AdminRules.LockTakedownNote(reason, wasPending: false),
+                    Amenities = new() { AmenityKeys.AirConditioner, AmenityKeys.Furnished },
+                    Terms = new ListingTerms { DepositMonths = 1 },
+                    Images = Images("room", ListingStatus.Approved, 40 + k, new Random(RandomSeed + 7 + k)),
+                };
+                _db.Assets.Add(asset);
+                _db.Set<Listing>().Add(listing);
+                void Ev(ModerationAction a, int round, DateTime at, string? note = null, List<ModerationReason>? rs = null)
+                    => _db.Set<ListingModerationEvent>().Add(new ListingModerationEvent
+                    {
+                        Listing = listing, Action = a, Round = round, CreatedAt = at, Note = note, Reasons = rs ?? new(),
+                    });
+                Ev(ModerationAction.Submitted, 1, pub.AddHours(-2));
+                Ev(ModerationAction.Approved, 2, pub);
+                Ev(ModerationAction.TakenDown, 3, now.AddDays(-1), listing.ModerationNote,
+                    new() { ModerationReason.ProhibitedContent });
+                if (k == 0)
+                    reports.Add(new ListingReport
+                    {
+                        Listing = listing, ReporterUserId = people["huy"], Reason = ListingReportReason.Scam,
+                        Detail = "Chủ tin đòi chuyển khoản 1 triệu giữ phòng trước khi cho xem, gọi lại thì chặn số.",
+                        Status = ListingReportStatus.Resolved, CreatedAt = now.AddDays(-2),
+                        HandledAt = now.AddDays(-1), HandledByUserId = adminId, HandlerNote = "Xác nhận lừa đảo — gỡ tin và khoá tài khoản.",
+                    });
+            }
+            if (spam is not null)
+            {
+                spam.LockoutEnabled = true;
+                spam.LockoutEnd = AdminRules.LockEnd(new DateTimeOffset(now), null);
+                spam.AdminLockReason = reason;
+                spam.AdminLockedAt = now.AddDays(-1);
+                spam.AdminLockedByUserId = adminId;
+            }
+
+            _db.Set<ListingReport>().AddRange(reports);
+            await _db.SaveChangesAsync(ct);
+            return reports.Count;
         }
 
         /// <summary>Nhu cầu đã lưu và lời mời xem nhà — dữ liệu cho ghép đôi hai chiều. Lời mời
