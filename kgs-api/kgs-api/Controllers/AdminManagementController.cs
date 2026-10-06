@@ -9,6 +9,7 @@ namespace kgs_api.Controllers
     /// <summary>Quản trị mọi tin đăng (không chỉ hàng đợi duyệt) và người dùng.</summary>
     [ApiController]
     [Authorize(Roles = "Admin")]
+    [kgs_api.Hubs.SignalAdmins]
     [Route("api/admin")]
     public sealed class AdminManagementController : ControllerBase
     {
@@ -32,8 +33,10 @@ namespace kgs_api.Controllers
             [FromQuery] string? q, [FromQuery] ListingStatus? status, [FromQuery] ListingType? type,
             [FromQuery] AssetDomainType? assetType, [FromQuery] string? city, [FromQuery] string? ownerId,
             [FromQuery] bool reportedOnly = false, [FromQuery] string? sort = null,
-            [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
-            => Ok(await _svc.SearchListingsAsync(q, status, type, assetType, city, ownerId, reportedOnly, sort, page, pageSize, ct));
+            [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+            /// <summary>unit = tin theo căn (trong toà nhà) · whole = tin nguyên căn.</summary>
+            [FromQuery] string? kind = null, CancellationToken ct = default)
+            => Ok(await _svc.SearchListingsAsync(q, status, type, assetType, city, ownerId, reportedOnly, sort, page, pageSize, ct, kind));
 
         [HttpPost("all-listings/{listingId:guid}/take-down")]
         public async Task<ActionResult<AdminActionResultDto>> TakeDown(

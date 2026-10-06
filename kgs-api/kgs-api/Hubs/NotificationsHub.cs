@@ -17,5 +17,16 @@ namespace kgs_api.Hubs
     {
         public const string Path = "/hubs/notifications";
         public const string EventName = "notification";
+
+        /// <summary>Mọi quản trị viên đang kết nối — nhận "hàng đợi vừa đổi" (xem SignalAdmins).</summary>
+        public const string AdminsGroup = "admins";
+        public const string AdminEventName = "admin-queue";
+
+        public override async Task OnConnectedAsync()
+        {
+            if (Context.User?.IsInRole("Admin") == true)
+                await Groups.AddToGroupAsync(Context.ConnectionId, AdminsGroup);
+            await base.OnConnectedAsync();
+        }
     }
 }

@@ -38,13 +38,16 @@ namespace kgs_api.Services.Admin
 
         public async Task<PagedAdminResult<AdminListingRowDto>> SearchListingsAsync(
             string? q, ListingStatus? status, ListingType? type, AssetDomainType? assetType, string? city,
-            string? ownerId, bool reportedOnly, string? sort, int page, int pageSize, CancellationToken ct)
+            string? ownerId, bool reportedOnly, string? sort, int page, int pageSize, CancellationToken ct,
+            string? kind = null)
         {
             pageSize = Math.Clamp(pageSize, 1, 100);
             page = Math.Max(page, 1);
             var src = _db.Listings.AsNoTracking().AsQueryable();
 
             if (status is not null) src = src.Where(l => l.Status == status);
+            if (kind == "unit") src = src.Where(l => l.AssetUnitId != null);
+            else if (kind == "whole") src = src.Where(l => l.AssetUnitId == null);
             if (type is not null) src = src.Where(l => l.Type == type);
             if (assetType is not null) src = src.Where(l => l.Asset.TypeProperty == assetType);
             var canonCity = AdministrativeNames.CanonicalCity(city);

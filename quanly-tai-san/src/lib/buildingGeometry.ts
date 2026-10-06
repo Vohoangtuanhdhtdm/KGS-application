@@ -312,3 +312,15 @@ export function footprintFeature(ring: LngLat[]): GeoJSON.Feature<GeoJSON.Polygo
     geometry: { type: "Polygon", coordinates: [[...r, r[0]]] },
   };
 }
+
+/**
+ * Tên căn đọc trong câu: "P.502" → "căn P.502". Tên đã tự mang loại ("Căn 3.01", "Sàn 5A",
+ * "Ki-ốt 1", "Cửa hàng 2") thì giữ nguyên — không thành "căn Căn 3.01".
+ * @param cap viết hoa chữ đầu (đầu câu / nhãn).
+ */
+export function unitLabel(name: string, cap = false): string {
+  const n = name.trim();
+  const typed = /^(căn|sàn|ki-?ốt|cửa hàng|phòng|tầng|sảnh)(\s|$)/i.test(n);
+  const s = typed ? n.charAt(0).toLowerCase() + n.slice(1) : `căn ${n}`;
+  return cap ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}

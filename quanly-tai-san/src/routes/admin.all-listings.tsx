@@ -85,6 +85,7 @@ function AllListingsPage() {
   const [status, setStatus] = useState<string>(ALL);
   const [type, setType] = useState<string>(ALL);
   const [reportedOnly, setReportedOnly] = useState(false);
+  const [kind, setKind] = useState<string>(ALL);
   const [sort, setSort] = useState<NonNullable<AdminListingQuery["sort"]>>("newest");
   const [page, setPage] = useState(1);
   const [takingDown, setTakingDown] = useState<AdminListingRow | null>(null);
@@ -95,7 +96,7 @@ function AllListingsPage() {
     const t = setTimeout(() => setQ(text.trim()), 300);
     return () => clearTimeout(t);
   }, [text]);
-  useEffect(() => setPage(1), [q, status, type, reportedOnly, sort, ownerId]);
+  useEffect(() => setPage(1), [q, status, type, reportedOnly, sort, ownerId, kind]);
 
   const filters: AdminListingQuery = {
     q,
@@ -103,6 +104,7 @@ function AllListingsPage() {
     type: type === ALL ? "" : (Number(type) as 1 | 2),
     ownerId,
     reportedOnly: reportedOnly || undefined,
+    kind: kind === ALL ? undefined : (kind as "unit" | "whole"),
     sort,
     page,
     pageSize: PAGE_SIZE,
@@ -158,6 +160,16 @@ function AllListingsPage() {
             <SelectItem value={ALL}>Bán & thuê</SelectItem>
             <SelectItem value="1">Bán</SelectItem>
             <SelectItem value="2">Cho thuê</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={kind} onValueChange={setKind}>
+          <SelectTrigger className="w-[170px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Mọi tin</SelectItem>
+            <SelectItem value="unit">Tin theo căn (toà nhà)</SelectItem>
+            <SelectItem value="whole">Tin nguyên căn</SelectItem>
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>

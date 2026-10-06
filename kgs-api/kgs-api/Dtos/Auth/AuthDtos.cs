@@ -138,7 +138,11 @@ namespace kgs_api.Dtos.Auth
         string OwnerName,
         string OwnerEmail,
         DateTime CreatedAt,
-        int ImageCount);
+        int ImageCount,
+        /// <summary>Ảnh bìa — duyệt lướt danh sách thấy ngay tin có ảnh thật hay không.</summary>
+        string? ThumbnailUrl = null,
+        /// <summary>Tin của một căn: tên toà nhà chứa căn.</summary>
+        string? BuildingName = null);
 
     /// <summary>Toàn bộ nội dung admin cần để RA QUYẾT ĐỊNH, trong một lời gọi.
     ///
@@ -170,7 +174,13 @@ namespace kgs_api.Dtos.Auth
         int OwnerListingCount,
 
         DateTime CreatedAt,
-        string? ModerationNote);
+        string? ModerationNote,
+
+        // Tin của một căn trong toà nhà — admin xem được toà nhà và vị trí căn trên mô hình.
+        Guid? AssetId = null,
+        string? BuildingName = null,
+        bool HasBuildingModel = false,
+        bool BuildingModelPublished = false);
 
     /// <summary>Duyệt hoặc từ chối nhiều tin cùng lúc. Hàng đợi kiểm duyệt thật luôn có
     /// những cụm tin rõ ràng cùng loại; bắt bấm từng cái là bắt làm việc thừa.</summary>

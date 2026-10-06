@@ -19,6 +19,7 @@ namespace kgs_api.Controllers
     /// BIẾT VÌ SAO khi bị từ chối. Thiếu một trong hai thì kiểm duyệt chỉ là hình thức.</summary>
     [ApiController]
     [Authorize(Roles = "Admin")]          // ← chặn ở tầng framework, không cần check thủ công
+    [kgs_api.Hubs.SignalAdmins]           // admin khác đang mở hàng đợi thấy ngay tin vừa xử lý
     [Route("api/admin/listings")]
     public sealed class AdminListingsController : ControllerBase
     {
@@ -74,7 +75,9 @@ namespace kgs_api.Controllers
                     l.Asset.Address.City, l.Asset.Address.District,
                     l.AssetUnit != null ? l.AssetUnit.Name : null,
                     l.Asset.User.Name, l.Asset.User.Email!, l.CreatedAt,
-                    l.Images.Count))
+                    l.Images.Count,
+                    l.Images.OrderBy(i => i.SortOrder).Select(i => i.File.Url).FirstOrDefault(),
+                    l.AssetUnit != null ? l.Asset.Name : null))
                 .ToListAsync(ct);
 
             return Ok(new { items, page, pageSize, totalCount = total });
@@ -109,7 +112,9 @@ namespace kgs_api.Controllers
                     // Đếm tin của cùng người đăng: một tài khoản có 40 tin chờ duyệt là
                     // tín hiệu rất khác với một tài khoản có 1 tin.
                     OwnerListingCount = _db.Listings.Count(x => x.Asset.UserId == l.Asset.UserId),
-                    l.CreatedAt, l.ModerationNote
+                    l.CreatedAt, l.ModerationNote,
+                    l.AssetId, AssetName = l.Asset.Name, HasUnit = l.AssetUnitId != null,
+                    HasModel = l.Asset.FootprintJson != null, l.Asset.BuildingModelPublished,
                 })
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException("Không tìm thấy tin đăng.");
@@ -142,7 +147,9 @@ namespace kgs_api.Controllers
                 row.HouseDirection, row.LegalStatus, row.FurnitureState,
                 row.ImageUrls, row.Amenities, completeness,
                 row.OwnerId, row.OwnerName, row.OwnerEmail, row.OwnerPhone, row.OwnerListingCount,
-                row.CreatedAt, row.ModerationNote));
+                row.CreatedAt, row.ModerationNote,
+                row.HasUnit ? row.AssetId : null, row.HasUnit ? row.AssetName : null,
+                row.HasModel, row.BuildingModelPublished));
         }
 
         /// <summary>Duyệt tin đăng.</summary>

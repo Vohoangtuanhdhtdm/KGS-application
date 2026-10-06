@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { unitLabel } from "@/lib/buildingGeometry";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -366,7 +367,7 @@ function EditUnitDialog({
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Căn {unit.name}</DialogTitle>
+          <DialogTitle>{unitLabel(unit.name, true)}</DialogTitle>
           <DialogDescription>
             Tình trạng quyết định màu của căn trên mô hình 3D người tìm nhà thấy.
           </DialogDescription>

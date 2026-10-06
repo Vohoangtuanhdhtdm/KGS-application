@@ -57,9 +57,10 @@ const TABS: { value: ReportStatusCode | "all"; label: string }[] = [
 
 function AdminReportsPage() {
   const [tab, setTab] = useState<ReportStatusCode | "all">(1);
-  const [resolving, setResolving] = useState<{ report: ListingReportDto; confirmed: boolean } | null>(
-    null,
-  );
+  const [resolving, setResolving] = useState<{
+    report: ListingReportDto;
+    confirmed: boolean;
+  } | null>(null);
 
   const query = useQuery({
     queryKey: ["admin-reports", tab],
@@ -77,9 +78,9 @@ function AdminReportsPage() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Kiểm duyệt trước khi đăng chỉ chặn được thứ nhìn là biết sai. Phần lớn cái sai thật
-        sự — phòng đã cho thuê, ảnh lấy của nhà khác, đòi cọc trước khi xem — chỉ lộ ra sau
-        khi có người gọi điện hỏi.
+        Kiểm duyệt trước khi đăng chỉ chặn được thứ nhìn là biết sai. Phần lớn cái sai thật sự —
+        phòng đã cho thuê, ảnh lấy của nhà khác, đòi cọc trước khi xem — chỉ lộ ra sau khi có người
+        gọi điện hỏi.
       </p>
 
       <div className="flex flex-wrap gap-1.5">
@@ -186,9 +187,7 @@ function ReportCard({
             </p>
 
             {!pending && r.handlerNote && (
-              <p className="text-xs text-muted-foreground">
-                Ghi chú xử lý: {r.handlerNote}
-              </p>
+              <p className="text-xs text-muted-foreground">Ghi chú xử lý: {r.handlerNote}</p>
             )}
           </div>
 
@@ -206,8 +205,8 @@ function ReportCard({
             </Button>
           ) : (
             <p className="w-40 shrink-0 text-right text-xs text-muted-foreground">
-              Tin không còn hiển thị công khai ({LISTING_STATUS[r.listingStatus].toLowerCase()})
-              nên không mở xem được.
+              Tin không còn hiển thị công khai ({LISTING_STATUS[r.listingStatus].toLowerCase()}) nên
+              không mở xem được.
             </p>
           )}
         </div>
@@ -303,10 +302,7 @@ function ResolveDialog({
                 : "Đánh dấu báo cáo là đúng. Tin đã không còn hiển thị nên không cần xử lý thêm."
               : "Đánh dấu tin này không vi phạm. Báo cáo sẽ được đóng lại, tin giữ nguyên."}
             {others > 0 && (
-              <>
-                {" "}
-                Thao tác này đóng luôn {others} báo cáo đang chờ khác trên cùng tin.
-              </>
+              <> Thao tác này đóng luôn {others} báo cáo đang chờ khác trên cùng tin.</>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -373,4 +369,3 @@ function ResolveDialog({
     </Dialog>
   );
 }
-

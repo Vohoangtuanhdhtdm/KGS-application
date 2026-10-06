@@ -30,7 +30,14 @@ namespace kgs_api.Services.Admin
         int Days, AdminKpisDto Kpis, IReadOnlyList<DailyPointDto> Daily, ModerationStatsDto Moderation,
         ReportStatsDto Reports,
         /// <summary>Tin đang hiển thị theo loại hình (mã AssetDomainType) và theo tỉnh/thành.</summary>
-        IReadOnlyList<CountDto> LiveByType, IReadOnlyList<CountDto> LiveByCity);
+        IReadOnlyList<CountDto> LiveByType, IReadOnlyList<CountDto> LiveByCity,
+        AdminBuildingStatsDto? Buildings = null);
+
+    /// <summary>Toà nhà nhiều căn và mô hình 3D: bao nhiêu toà, bao nhiêu đã công khai 3D, bao
+    /// nhiêu căn còn trống chưa đăng tin (việc chủ nhà còn có thể làm), tỉ lệ tin xem được 3D.</summary>
+    public sealed record AdminBuildingStatsDto(
+        int Buildings, int Modeled, int Published, int Units, int VacantUnits,
+        int VacantWithoutListing, int UnitListingsLive, int LiveListings);
 
     /// <summary>Số liệu cho trang tổng quan quản trị — trả lời "hệ thống đang khoẻ không": hàng
     /// đợi có dồn không, duyệt nhanh hay chậm, người đăng hay sai ở đâu, báo vi phạm có được
@@ -133,7 +140,20 @@ namespace kgs_api.Services.Admin
             var byCity = (await live.GroupBy(l => l.Asset.Address.City).Select(g => new { g.Key, C = g.Count() }).ToListAsync(ct))
                 .Select(x => new CountDto(x.Key, x.C)).OrderByDescending(c => c.Count).ToList();
 
-            return new AdminOverviewDto(days, kpis, daily, moderation, reportStats, byType, byCity);
+            var bq = _db.Assets.AsNoTracking().Where(a => a.Units.Any() || a.FootprintJson != null);
+            var buildings = new AdminBuildingStatsDto(
+                await bq.CountAsync(ct),
+                await bq.CountAsync(a => a.FootprintJson != null, ct),
+                await bq.CountAsync(a => a.FootprintJson != null && a.BuildingModelPublished, ct),
+                await _db.AssetUnits.CountAsync(ct),
+                await _db.AssetUnits.CountAsync(u => u.Status == UnitStatus.Vacant, ct),
+                await _db.AssetUnits.CountAsync(u => u.Status == UnitStatus.Vacant
+                    && !_db.Listings.Any(l => l.AssetUnitId == u.Id && l.Status != ListingStatus.Closed), ct),
+                await _db.Listings.CountAsync(l => l.AssetUnitId != null && l.Status == ListingStatus.Approved
+                    && l.Asset.FootprintJson != null && l.Asset.BuildingModelPublished, ct),
+                await _db.Listings.CountAsync(l => l.Status == ListingStatus.Approved, ct));
+
+            return new AdminOverviewDto(days, kpis, daily, moderation, reportStats, byType, byCity, buildings);
         }
 
         /// <summary>Phân vị theo cách "gần nhất" — đủ cho số liệu hiển thị; null khi rỗng.</summary>

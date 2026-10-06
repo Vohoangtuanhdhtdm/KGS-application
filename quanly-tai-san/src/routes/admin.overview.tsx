@@ -3,6 +3,7 @@ import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
+  Box,
   ArrowRight,
   Gauge,
   type LucideIcon,
@@ -15,7 +16,7 @@ import {
   Home,
 } from "lucide-react";
 import { AdminRoute } from "@/components/auth/ProtectedRoute";
-import { adminOverviewApi, type CountItem } from "@/lib/api/admin";
+import { adminOverviewApi, type AdminOverview, type CountItem } from "@/lib/api/admin";
 import { REPORT_REASON } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { ASSET_TYPE, MODERATION_REASON } from "@/constants/enums";
@@ -256,6 +257,8 @@ function OverviewPage() {
             </Card>
           </div>
 
+          {d.buildings && d.buildings.buildings > 0 && <BuildingsCard b={d.buildings} />}
+
           <p className="text-xs text-muted-foreground">
             <Inbox className="mr-1 inline h-3.5 w-3.5" />
             {d.kpis.inquiriesNew} yêu cầu xem nhà và {d.kpis.invitationsNew} lời mời xem nhà (ghép
@@ -429,5 +432,45 @@ function HBarChart({
       <div className="mb-2 text-sm font-medium">{title}</div>
       {body}
     </div>
+  );
+}
+
+/**
+ * Toà nhà nhiều căn và mô hình 3D: bao nhiêu toà, bao nhiêu đã công khai 3D, tỉ lệ tin xem
+ * được 3D trên tổng tin đang hiển thị, và số căn trống CHƯA đăng tin — nguồn cung chủ nhà còn
+ * có thể đưa lên mà chưa đưa.
+ */
+function BuildingsCard({ b }: { b: NonNullable<AdminOverview["buildings"]> }) {
+  const share = b.liveListings ? Math.round((b.unitListingsLive / b.liveListings) * 100) : 0;
+  const items: [string, string, string][] = [
+    [
+      "Toà nhà",
+      String(b.buildings),
+      `${b.published} công khai 3D · ${b.modeled - b.published} đang ẩn · ${b.buildings - b.modeled} chưa dựng`,
+    ],
+    ["Căn", String(b.units), `${b.vacantUnits} đang trống`],
+    ["Căn trống chưa đăng tin", String(b.vacantWithoutListing), "chủ nhà còn có thể đăng"],
+    ["Tin xem được 3D", `${share}%`, `${b.unitListingsLive}/${b.liveListings} tin đang hiển thị`],
+  ];
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Box className="h-4 w-4 text-muted-foreground" /> Toà nhà &amp; mô hình 3D
+        </CardTitle>
+        <Link to="/admin/buildings" className="text-sm text-primary hover:underline">
+          Mở danh sách toà nhà
+        </Link>
+      </CardHeader>
+      <CardContent className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {items.map(([label, value, sub]) => (
+          <div key={label}>
+            <div className="text-xs text-muted-foreground">{label}</div>
+            <div className="text-2xl font-semibold tabular-nums">{value}</div>
+            <div className="text-xs text-muted-foreground">{sub}</div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { unitLabel } from "@/lib/buildingGeometry";
 import { useQuery } from "@tanstack/react-query";
 import { Box, Building2, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -95,8 +96,9 @@ export function ListingBuilding3D({
 
             {focus && (
               <p className="text-sm text-muted-foreground">
-                Tin này là căn <span className="font-semibold text-foreground">{focus.name}</span>,
-                tầng {focus.floor} — viền xanh trên hình.
+                Tin này là{" "}
+                <span className="font-semibold text-foreground">{unitLabel(focus.name)}</span>, tầng{" "}
+                {focus.floor} — viền xanh trên hình.
               </p>
             )}
 

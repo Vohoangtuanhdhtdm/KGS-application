@@ -64,6 +64,14 @@ namespace kgs_api.Services
             return await ToDtoAsync(asset, null, publicView: false, ct);
         }
 
+        /// <summary>Quản trị viên: mô hình của bất kỳ toà nhà nào, kể cả chưa công khai.</summary>
+        public async Task<BuildingModelDto> GetForAdminAsync(Guid assetId, CancellationToken ct)
+        {
+            var asset = await _assets.Query().AsNoTracking().FirstOrDefaultAsync(a => a.Id == assetId, ct)
+                ?? throw new NotFoundException("Không tìm thấy toà nhà.");
+            return await ToDtoAsync(asset, null, publicView: false, ct);
+        }
+
         // ==================== Người tìm nhà ====================
 
         /// <summary>Mô hình của toà nhà chứa tin này — null khi chủ nhà chưa dựng hoặc chưa công khai.</summary>

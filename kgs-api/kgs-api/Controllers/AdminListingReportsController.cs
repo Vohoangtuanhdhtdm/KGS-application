@@ -12,6 +12,7 @@ namespace kgs_api.Controllers
     /// bấm, tin vẫn nằm đó, và lần sau họ không bấm nữa. Hai nửa phải đi cùng nhau.</summary>
     [ApiController]
     [Authorize(Roles = "Admin")]
+    [kgs_api.Hubs.SignalAdmins]
     [Route("api/admin/listing-reports")]
     public sealed class AdminListingReportsController : ControllerBase
     {

@@ -71,6 +71,7 @@ namespace kgs_api.Controllers
         /// <see cref="Domain.Entity.SubEntity.ListingReport"/>.</summary>
         [HttpPost("{slug}/reports")]
         [Authorize]
+        [kgs_api.Hubs.SignalAdmins]
         [EnableRateLimiting(RateLimitingExtensions.ContactOthers)]
         public async Task<IActionResult> Report(
             string slug, [FromBody] CreateListingReportRequest request,
@@ -143,6 +144,7 @@ namespace kgs_api.Controllers
 
         [HttpPost("{listingId:guid}/submit")]
         [Authorize(Policy = AppPolicies.Owner)]
+        [kgs_api.Hubs.SignalAdmins]
         public async Task<ActionResult<OwnerListingDto>> Submit(Guid listingId, CancellationToken ct)
             => Ok(await _listings.SubmitAsync(listingId, ct));
 

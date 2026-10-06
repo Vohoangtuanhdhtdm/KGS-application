@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { unitLabel } from "@/lib/buildingGeometry";
 import {
   cloneElement,
   isValidElement,
@@ -762,7 +763,7 @@ function CreateListingPage() {
                   <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
                     <Building2 className="h-4 w-4 shrink-0 text-primary" />
                     <span>
-                      Tin của căn <b>{editUnit?.unitName ?? unit?.name}</b>
+                      Tin của <b>{unitLabel(editUnit?.unitName ?? unit?.name ?? "")}</b>
                       {(editUnit?.assetName ?? building?.name)
                         ? ` · ${editUnit?.assetName ?? building?.name}`
                         : ""}{" "}
@@ -1419,7 +1420,9 @@ function suggestDescription(f: Facts): string {
     }.`,
   );
   if (f.unitName)
-    lines.push(`Căn ${f.unitName}${f.unitFloor ? ` ở tầng ${f.unitFloor}` : ""} của toà nhà.`);
+    lines.push(
+      `${unitLabel(f.unitName, true)}${f.unitFloor ? ` ở tầng ${f.unitFloor}` : ""} của toà nhà.`,
+    );
   const specs = [
     f.bedrooms ? `${f.bedrooms} phòng ngủ` : null,
     f.bathrooms ? `${f.bathrooms} phòng tắm` : null,
