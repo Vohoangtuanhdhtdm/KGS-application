@@ -35,8 +35,9 @@ namespace kgs_api.Services.OwnerBuildings
         [Range(-90, 90)] double Latitude,
         [Range(-180, 180)] double Longitude,
         [Range(1, 60)] int Floors,
-        /// <summary>0 = chưa sinh căn (tự khai sau).</summary>
-        [Range(0, 30)] int UnitsPerFloor,
+        /// <summary>Ít nhất 1: toà nhà không có căn nào thì không có gì để đăng tin hay tô trên
+        /// mô hình (và không hiện trong danh sách toà nhà).</summary>
+        [Range(1, 30)] int UnitsPerFloor,
         /// <summary>Tầng đầu tiên có căn — nhà trọ/chung cư mini hay để tầng 1 làm chỗ để xe.</summary>
         [Range(1, 60)] int FirstUnitFloor,
         [Range(0, 2000)] double? UnitArea);
@@ -130,7 +131,6 @@ namespace kgs_api.Services.OwnerBuildings
                 {
                     UserId = userId,
                     Name = name,
-                    TypeProperty = r.PropertyType,
                     OwnershipType = AssetOwnershipType.Owned,
                     Status = AssetStatus.InUse,
                     Address = address,
@@ -141,7 +141,9 @@ namespace kgs_api.Services.OwnerBuildings
             {
                 asset.Name = name;
             }
-            asset.TypeProperty = r.PropertyType;
+            // Tài sản có sẵn ở địa chỉ này có thể đang có tin nguyên căn: đổi loại hình ở đây sẽ
+            // đổi luôn loại hình của tin đó. Chỉ đặt loại hình cho tài sản mới tạo.
+            if (_db.Entry(asset).State == EntityState.Added) asset.TypeProperty = r.PropertyType;
             asset.Floors = Math.Max(asset.Floors ?? 0, r.Floors);
             asset.Location = _geometry.CreatePoint(new Coordinate(r.Longitude, r.Latitude));
 
@@ -163,7 +165,8 @@ namespace kgs_api.Services.OwnerBuildings
             }
 
             await _db.SaveChangesAsync(ct);
-            return (await ListAsync(ct)).First(b => b.AssetId == asset.Id);
+            return (await ListAsync(ct)).FirstOrDefault(b => b.AssetId == asset.Id)
+                ?? throw new ConflictException("Toà nhà chưa có căn nào.");
         }
     }
 }

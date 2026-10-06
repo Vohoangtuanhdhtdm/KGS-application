@@ -769,6 +769,11 @@ namespace kgs_api.Services
                 && request.Latitude is null)
                 return;   // client không gửi phần này
 
+            // Tin của MỘT CĂN: địa chỉ, diện tích, loại hình… là của cả toà nhà. Sửa từ một tin
+            // sẽ đổi luôn mọi căn khác (đã gặp: sửa tin P.201 dời cả toà nhà sang quận khác).
+            // Biểu mẫu đã khoá phần này, nhưng máy chủ không được tin vào biểu mẫu.
+            if (listing.AssetUnitId is not null) return;
+
             var hasOtherListings = await _listings.Query()
                 .AnyAsync(l => l.AssetId == listing.AssetId && l.Id != listing.Id, ct);
             if (hasOtherListings) return;

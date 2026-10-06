@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Box, Building2, Loader2, MapPin, Plus } from "lucide-react";
@@ -336,7 +336,7 @@ function CreateBuildingDialog({
               <NumBox
                 label="Căn mỗi tầng"
                 value={perFloor}
-                onChange={(v) => setPerFloor(clampInt(v, 0, 30))}
+                onChange={(v) => setPerFloor(clampInt(v, 1, 30))}
               />
               <NumBox
                 label="Có căn từ tầng"
@@ -401,7 +401,7 @@ function NumBox({
   value: number;
   onChange: (v: string) => void;
 }) {
-  const id = `nb-${label}`;
+  const id = useId();
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
