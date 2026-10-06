@@ -39,6 +39,9 @@ export function RealtimeSync() {
       .build();
 
     conn.on("notification", refreshActive);
+    // Quản trị viên: chủ tin vừa gửi duyệt, có người báo vi phạm, admin khác vừa xử lý tin…
+    // (xem SignalAdmins ở backend) — hàng đợi và các số đếm tự làm mới.
+    conn.on("admin-queue", refreshActive);
     conn.onreconnected(refreshActive);
 
     let stopped = false;
@@ -55,6 +58,7 @@ export function RealtimeSync() {
     return () => {
       stopped = true;
       conn.off("notification");
+      conn.off("admin-queue");
       void conn.stop();
     };
   }, [isAuthenticated, userId, qc]);

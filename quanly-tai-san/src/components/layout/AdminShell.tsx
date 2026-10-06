@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Flag, Gauge, ListChecks, Search, ShieldCheck, Users } from "lucide-react";
+import { Box, Flag, Gauge, ListChecks, Search, ShieldCheck, Users } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -40,6 +40,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     { to: "/admin/listings", label: "Duyệt tin đăng", icon: ShieldCheck, badge: pending },
     { to: "/admin/reports", label: "Báo vi phạm", icon: Flag, badge: 0 },
     { to: "/admin/all-listings", label: "Tất cả tin đăng", icon: ListChecks, badge: 0 },
+    { to: "/admin/buildings", label: "Toà nhà 3D", icon: Box, badge: 0 },
     { to: "/admin/users", label: "Người dùng", icon: Users, badge: 0 },
   ];
 

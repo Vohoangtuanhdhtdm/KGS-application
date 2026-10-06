@@ -1,4 +1,5 @@
 import { api, toQuery } from "./http";
+import type { BuildingModel } from "./buildingModel";
 import type { ListingReportDto, ReportStatusCode } from "./listings";
 import type { ListingTypeCode, ListingStatusCode } from "@/constants/enums";
 import type {
@@ -19,6 +20,10 @@ export interface AdminPendingListing {
   unitName: string | null;
   imageCount: number;
   createdAt: string;
+  /** Ảnh bìa. */
+  thumbnailUrl?: string | null;
+  /** Tin của một căn: tên toà nhà. */
+  buildingName?: string | null;
 }
 
 // ⚠️ KHÔNG có totalPages — khác PagedResult<T> chuẩn
@@ -76,6 +81,11 @@ export interface AdminListingDetail {
   ownerListingCount: number;
   createdAt: string;
   moderationNote: string | null;
+  /** Tin của một căn trong toà nhà. */
+  assetId?: string | null;
+  buildingName?: string | null;
+  hasBuildingModel?: boolean;
+  buildingModelPublished?: boolean;
 }
 
 export interface BulkModerateResult {
@@ -232,6 +242,8 @@ export interface AdminListingQuery {
   assetType?: number | "";
   ownerId?: string;
   reportedOnly?: boolean;
+  /** unit = tin theo căn (trong toà nhà) · whole = tin nguyên căn. */
+  kind?: "unit" | "whole";
   sort?: "newest" | "reports" | "views" | "price";
   page?: number;
   pageSize?: number;
@@ -316,8 +328,52 @@ export interface AdminOverview {
   /** Khoá = mã AssetDomainType dạng chuỗi. */
   liveByType: CountItem[];
   liveByCity: CountItem[];
+  /** Toà nhà nhiều căn và mô hình 3D. */
+  buildings?: {
+    buildings: number;
+    modeled: number;
+    published: number;
+    units: number;
+    vacantUnits: number;
+    vacantWithoutListing: number;
+    unitListingsLive: number;
+    liveListings: number;
+  } | null;
 }
 
 export const adminOverviewApi = {
   get: (days: number) => api<AdminOverview>(`/admin/overview?days=${days}`),
+};
+
+// ============================================================
+// Toà nhà 3D — góc nhìn quản trị
+// ============================================================
+
+export interface AdminBuildingRow {
+  assetId: string;
+  name: string;
+  city: string;
+  district: string;
+  addressDetail: string;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  floors: number;
+  units: number;
+  vacantUnits: number;
+  liveListings: number;
+  pendingListings: number;
+  hasModel: boolean;
+  published: boolean;
+  createdAt: string;
+}
+
+export const adminBuildingsApi = {
+  list: (f: { q?: string; model?: "published" | "hidden" | "none" } = {}) =>
+    api<AdminBuildingRow[]>(`/admin/buildings${toQuery(f)}`),
+  get: (assetId: string) => api<BuildingModel>(`/admin/buildings/${assetId}`),
+  /** Ẩn mô hình khỏi trang công khai — lý do gửi chủ nhà. */
+  hide: (assetId: string, reason: string) =>
+    api<void>(`/admin/buildings/${assetId}/hide`, { method: "POST", body: { reason } }),
+  show: (assetId: string) => api<void>(`/admin/buildings/${assetId}/show`, { method: "POST" }),
 };

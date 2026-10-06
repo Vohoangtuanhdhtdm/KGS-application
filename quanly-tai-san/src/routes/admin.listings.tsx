@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { unitLabel } from "@/lib/buildingGeometry";
 import { useEffect, useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { adminApi, type AdminPendingListing } from "@/lib/api/admin";
+import { adminApi, type AdminListingDetail, type AdminPendingListing } from "@/lib/api/admin";
+import { AdminBuildingViewDialog } from "@/components/admin/AdminBuildingViewDialog";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import {
@@ -40,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import {
   AlertTriangle,
+  Box,
   Check,
   ImageIcon,
   Inbox,
@@ -61,7 +64,8 @@ export const Route = createFileRoute("/admin/listings")({
   ),
 });
 
-const STAT_ORDER: ListingStatusCode[] = [1, 2, 3, 4];
+// "Cần chỉnh sửa" (6) là hàng chờ phía chủ tin — admin cần thấy nó dồn tới đâu.
+const STAT_ORDER: ListingStatusCode[] = [1, 6, 2, 3, 4];
 const STAT_TONE: Record<ListingStatusCode, string> = {
   1: "text-muted-foreground",
   2: "text-success",
@@ -231,9 +235,11 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
       </div>
 
       {/* Thống kê */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         {STAT_ORDER.map((code) => {
-          const found = statsQ.data?.byStatus.find((s) => String(s.status) === LISTING_STATUS_KEY[code]);
+          const found = statsQ.data?.byStatus.find(
+            (s) => String(s.status) === LISTING_STATUS_KEY[code],
+          );
           return (
             <Card key={code}>
               <CardContent className="p-4">
@@ -369,8 +375,8 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
           <DialogHeader>
             <DialogTitle>Yêu cầu chủ tin chỉnh sửa</DialogTitle>
             <DialogDescription>
-              Tin không bị xoá và không mang tiếng bị từ chối. Chủ tin sửa xong sẽ gửi duyệt
-              lại, và thấy đúng những mục bạn chọn dưới đây.
+              Tin không bị xoá và không mang tiếng bị từ chối. Chủ tin sửa xong sẽ gửi duyệt lại, và
+              thấy đúng những mục bạn chọn dưới đây.
             </DialogDescription>
           </DialogHeader>
 
@@ -387,9 +393,7 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
                     onClick={() => toggleReason(code)}
                     aria-pressed={chon}
                     className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                      chon
-                        ? "border-primary bg-primary/5 font-medium"
-                        : "hover:bg-accent"
+                      chon ? "border-primary bg-primary/5 font-medium" : "hover:bg-accent"
                     }`}
                   >
                     {MODERATION_REASON[code]}
@@ -400,7 +404,8 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
 
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">
-                Ghi chú {changeReasons.has(99) ? "(bắt buộc khi chọn Lý do khác)" : "(không bắt buộc)"}
+                Ghi chú{" "}
+                {changeReasons.has(99) ? "(bắt buộc khi chọn Lý do khác)" : "(không bắt buộc)"}
               </Label>
               <Textarea
                 rows={3}
@@ -426,7 +431,9 @@ export function AdminModerationPage({ embedded = false }: { embedded?: boolean }
             <p className="text-xs text-muted-foreground">Chọn ít nhất một mục cần sửa.</p>
           )}
           {thieuGhiChu && (
-            <p className="text-xs text-destructive">Chọn "Lý do khác" thì phải ghi rõ cần sửa gì.</p>
+            <p className="text-xs text-destructive">
+              Chọn "Lý do khác" thì phải ghi rõ cần sửa gì.
+            </p>
           )}
         </DialogContent>
       </Dialog>
@@ -519,15 +526,39 @@ function QueueRow({
   return (
     <li
       className={`flex items-start gap-3 p-3 cursor-pointer transition-colors ${
-        active ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/50 border-l-2 border-l-transparent"
+        active
+          ? "bg-primary/5 border-l-2 border-l-primary"
+          : "hover:bg-muted/50 border-l-2 border-l-transparent"
       }`}
       onClick={onSelect}
     >
       <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
         <Checkbox checked={checked} onCheckedChange={onToggle} aria-label="Chọn tin" />
       </div>
+      {/* Ảnh bìa: lướt hàng đợi là thấy ngay tin có ảnh thật hay không. */}
+      {l.thumbnailUrl ? (
+        <img
+          src={l.thumbnailUrl}
+          alt=""
+          loading="lazy"
+          className="h-14 w-16 shrink-0 rounded-md border object-cover"
+        />
+      ) : (
+        <div className="grid h-14 w-16 shrink-0 place-items-center rounded-md border border-dashed text-muted-foreground">
+          <ImageIcon className="h-4 w-4" />
+        </div>
+      )}
       <div className="min-w-0 flex-1 space-y-1">
         <div className="text-sm font-medium leading-snug line-clamp-2">{l.title}</div>
+        {l.unitName && (
+          <div className="inline-flex max-w-full items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+            <Box className="h-3 w-3 shrink-0" />
+            <span className="truncate">
+              {unitLabel(l.unitName, true)}
+              {l.buildingName ? ` · ${l.buildingName}` : ""}
+            </span>
+          </div>
+        )}
         <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
           <span>{formatCurrency(l.price)}</span>
           <span className="inline-flex items-center gap-1">
@@ -545,6 +576,44 @@ function QueueRow({
         <div className="text-xs text-muted-foreground truncate">{l.ownerName}</div>
       </div>
     </li>
+  );
+}
+
+/**
+ * Tin của một căn: toà nhà nào, mô hình 3D đang công khai hay chưa, và nút mở mô hình với căn
+ * được chọn sẵn — để kiểm tra căn trong tin có thật nằm ở toà nhà đó, tầng đó.
+ */
+function UnitBuildingNote({ d }: { d: AdminListingDetail }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm">
+      <Box className="h-4 w-4 shrink-0 text-primary" />
+      <span className="min-w-0 flex-1">
+        <b>{unitLabel(d.unitName!, true)}</b> · {d.buildingName}
+        <span className="text-muted-foreground">
+          {" "}
+          —{" "}
+          {!d.hasBuildingModel
+            ? "toà nhà chưa dựng mô hình 3D"
+            : d.buildingModelPublished
+              ? "mô hình 3D đang công khai"
+              : "mô hình 3D đang ẩn"}
+        </span>
+      </span>
+      {d.hasBuildingModel && (
+        <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+          Xem toà nhà 3D
+        </Button>
+      )}
+      {open && (
+        <AdminBuildingViewDialog
+          assetId={d.assetId!}
+          title={d.buildingName ?? "Toà nhà"}
+          focusUnitName={d.unitName}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </div>
   );
 }
 
@@ -643,6 +712,7 @@ function PreviewPanel({
             </span>
           </div>
           <h2 className="text-lg font-semibold leading-snug">{d.title}</h2>
+          {d.unitName && d.assetId && <UnitBuildingNote d={d} />}
           <div className="text-primary font-semibold">
             {formatCurrency(d.price)}
             {d.type === 2 && d.totalMonthlyCost > d.price && (
@@ -717,7 +787,12 @@ function PreviewPanel({
             <PenLine className="h-4 w-4 mr-1.5" />
             Yêu cầu chỉnh sửa
           </Button>
-          <Button variant="ghost" disabled={busy} onClick={onReject} className="text-destructive hover:text-destructive">
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onClick={onReject}
+            className="text-destructive hover:text-destructive"
+          >
             <X className="h-4 w-4 mr-1.5" />
             Từ chối
           </Button>

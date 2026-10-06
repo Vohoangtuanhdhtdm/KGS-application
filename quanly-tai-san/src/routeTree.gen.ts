@@ -25,6 +25,7 @@ import { Route as ThongBaoRouteImport } from './routes/thong-bao'
 import { Route as ThongKeTinRouteImport } from './routes/thong-ke-tin'
 import { Route as TinCuaToiRouteImport } from './routes/tin-cua-toi'
 import { Route as AdminAllListingsRouteImport } from './routes/admin.all-listings'
+import { Route as AdminBuildingsRouteImport } from './routes/admin.buildings'
 import { Route as AdminListingsRouteImport } from './routes/admin.listings'
 import { Route as AdminOverviewRouteImport } from './routes/admin.overview'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
@@ -127,6 +128,11 @@ const TinCuaToiRoute = TinCuaToiRouteImport.update({
 const AdminAllListingsRoute = AdminAllListingsRouteImport.update({
   id: '/admin/all-listings',
   path: '/admin/all-listings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBuildingsRoute = AdminBuildingsRouteImport.update({
+  id: '/admin/buildings',
+  path: '/admin/buildings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminListingsRoute = AdminListingsRouteImport.update({
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/all-listings': typeof AdminAllListingsRoute
+  '/admin/buildings': typeof AdminBuildingsRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -303,6 +310,7 @@ export interface FileRoutesByTo {
   '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/all-listings': typeof AdminAllListingsRoute
+  '/admin/buildings': typeof AdminBuildingsRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -345,6 +353,7 @@ export interface FileRoutesById {
   '/thong-ke-tin': typeof ThongKeTinRoute
   '/tin-cua-toi': typeof TinCuaToiRoute
   '/admin/all-listings': typeof AdminAllListingsRoute
+  '/admin/buildings': typeof AdminBuildingsRoute
   '/admin/listings': typeof AdminListingsRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/reports': typeof AdminReportsRoute
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/thong-ke-tin'
     | '/tin-cua-toi'
     | '/admin/all-listings'
+    | '/admin/buildings'
     | '/admin/listings'
     | '/admin/overview'
     | '/admin/reports'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/thong-ke-tin'
     | '/tin-cua-toi'
     | '/admin/all-listings'
+    | '/admin/buildings'
     | '/admin/listings'
     | '/admin/overview'
     | '/admin/reports'
@@ -470,6 +481,7 @@ export interface FileRouteTypes {
     | '/thong-ke-tin'
     | '/tin-cua-toi'
     | '/admin/all-listings'
+    | '/admin/buildings'
     | '/admin/listings'
     | '/admin/overview'
     | '/admin/reports'
@@ -512,6 +524,7 @@ export interface RootRouteChildren {
   ThongKeTinRoute: typeof ThongKeTinRoute
   TinCuaToiRoute: typeof TinCuaToiRoute
   AdminAllListingsRoute: typeof AdminAllListingsRoute
+  AdminBuildingsRoute: typeof AdminBuildingsRoute
   AdminListingsRoute: typeof AdminListingsRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
   AdminReportsRoute: typeof AdminReportsRoute
@@ -649,6 +662,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/all-listings'
       fullPath: '/admin/all-listings'
       preLoaderRoute: typeof AdminAllListingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/buildings': {
+      id: '/admin/buildings'
+      path: '/admin/buildings'
+      fullPath: '/admin/buildings'
+      preLoaderRoute: typeof AdminBuildingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/listings': {
@@ -832,6 +852,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThongKeTinRoute: ThongKeTinRoute,
   TinCuaToiRoute: TinCuaToiRoute,
   AdminAllListingsRoute: AdminAllListingsRoute,
+  AdminBuildingsRoute: AdminBuildingsRoute,
   AdminListingsRoute: AdminListingsRoute,
   AdminOverviewRoute: AdminOverviewRoute,
   AdminReportsRoute: AdminReportsRoute,
