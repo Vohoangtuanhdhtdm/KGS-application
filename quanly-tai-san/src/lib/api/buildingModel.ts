@@ -13,6 +13,8 @@ export interface BuildingUnitListing {
   price: number;
   type: 1 | 2;
   rentPaymentCycle: 1 | 2 | 3 | 4 | null;
+  /** Tối đa 6 ảnh đầu của tin. */
+  imageUrls?: string[];
 }
 
 export interface BuildingUnit {
@@ -35,6 +37,8 @@ export interface BuildingModel {
   focusUnitId: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** Ảnh chung của toà nhà (ảnh bìa các tin trong toà) — cho căn chưa có tin. */
+  buildingImages?: string[];
 }
 
 export interface SaveBuildingModelInput {

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Layers } from "lucide-react";
+import { ArrowRight, Box, LayoutGrid, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,8 @@ import {
   type CellKind,
 } from "@/lib/buildingGeometry";
 import { BuildingSceneClient } from "./BuildingSceneClient";
+import { FloorPlan } from "./FloorPlan";
+import { UnitPhotos } from "./UnitPhotos";
 
 const LEGEND: CellKind[] = ["listed", "vacant", "occupied", "maintenance"];
 
@@ -44,6 +46,8 @@ export function BuildingExplorer({
   const [unitId, setUnitId] = useState<string | null>(focus?.id ?? null);
   const [floor, setFloor] = useState<number | null>(focus?.floor ?? null);
   const unit = model.units.find((u) => u.id === unitId) ?? null;
+  // "3D" (khối toà nhà) hay "Mặt bằng" (một tầng nhìn từ trên xuống, ảnh căn lấp ô).
+  const [view, setView] = useState<"3d" | "plan">("3d");
 
   const floors = Array.from({ length: model.floors }, (_, i) => model.floors - i);
   const vacantTotal = model.units.filter((u) => u.status === 1).length;
@@ -56,7 +60,20 @@ export function BuildingExplorer({
   const pickFloor = (f: number | null) => {
     setFloor(f);
     if (f == null || unit?.floor !== f) setUnitId(null);
+    if (f == null) setView("3d");
   };
+  // Mở mặt bằng khi chưa chọn tầng: lấy tầng cao nhất có căn trống (hoặc có căn).
+  const openPlan = () => {
+    if (floor == null) {
+      const withUnits = floors.filter((f) => (byFloor.get(f)?.length ?? 0) > 0);
+      const best =
+        withUnits.find((f) => byFloor.get(f)!.some((u) => u.status === 1)) ?? withUnits[0] ?? null;
+      if (best == null) return;
+      setFloor(best);
+    }
+    setView("plan");
+  };
+  const showPlan = view === "plan" && floor != null;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
@@ -72,10 +89,60 @@ export function BuildingExplorer({
           }}
           height="100%"
           showcase
+          fallbackImage={model.buildingImages?.[0] ?? null}
         />
 
+        {/* Mặt bằng phủ lên trên — cảnh 3D vẫn dựng bên dưới để chuyển lại không phải tải
+            bản đồ lần nữa (mỗi lần tải là một lượt tính phí Mapbox). */}
+        {showPlan && (
+          <div className="absolute inset-0 z-10 flex flex-col bg-card pb-4 pl-16 pr-2 pt-14 sm:pl-20 sm:pr-4">
+            <p className="mb-2 text-sm font-medium">
+              Tầng {floor}{" "}
+              <span className="font-normal text-muted-foreground">· nhìn từ trên xuống</span>
+            </p>
+            <div className="min-h-0 flex-1">
+              <FloorPlan
+                model={model}
+                floor={floor!}
+                selectedUnitId={unitId}
+                onSelect={(id) => setUnitId(id)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 3D / Mặt bằng */}
+        <div
+          role="group"
+          aria-label="Kiểu xem"
+          className="absolute right-14 top-3 z-20 inline-flex rounded-lg border bg-card/95 p-0.5 shadow-sm backdrop-blur"
+        >
+          <button
+            type="button"
+            aria-pressed={!showPlan}
+            onClick={() => setView("3d")}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium",
+              !showPlan ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+            )}
+          >
+            <Box className="h-3.5 w-3.5" /> 3D
+          </button>
+          <button
+            type="button"
+            aria-pressed={showPlan}
+            onClick={openPlan}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium",
+              showPlan ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Mặt bằng
+          </button>
+        </div>
+
         {/* Thanh tầng — như bảng nút thang máy, tầng cao ở trên. */}
-        <div className="pointer-events-none absolute inset-y-3 left-3 flex flex-col justify-center">
+        <div className="pointer-events-none absolute inset-y-3 left-3 z-20 flex flex-col justify-center">
           <div
             role="group"
             aria-label="Chọn tầng"
@@ -109,7 +176,12 @@ export function BuildingExplorer({
         </div>
 
         {/* Chú giải màu — nằm trong khung, cạnh thứ nó giải thích. */}
-        <div className="pointer-events-none absolute left-16 right-14 top-3 hidden flex-wrap gap-1.5 sm:flex">
+        <div
+          className={cn(
+            "pointer-events-none absolute left-16 right-48 top-3 hidden flex-wrap gap-1.5 lg:flex",
+            showPlan && "lg:hidden",
+          )}
+        >
           {LEGEND.map((k) => (
             <span
               key={k}
@@ -124,14 +196,16 @@ export function BuildingExplorer({
           ))}
         </div>
 
-        <p className="pointer-events-none absolute bottom-8 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/70 px-3 py-1 text-[11px] text-background sm:block">
-          Bấm vào một căn · kéo chuột phải để xoay · cuộn để phóng to
+        <p className="pointer-events-none absolute bottom-8 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/70 px-3 py-1 text-[11px] text-background sm:block">
+          {showPlan
+            ? "Bấm vào một căn để xem ảnh và giá"
+            : "Bấm vào một căn · kéo chuột phải để xoay · cuộn để phóng to"}
         </p>
       </div>
 
       <div className="space-y-3">
         {/* Điện thoại: chú giải nằm dưới mô hình, không đè lên khối nhà. */}
-        <div className="-mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground sm:hidden">
+        <div className="-mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground lg:hidden">
           {LEGEND.map((k) => (
             <span key={k} className="inline-flex items-center gap-1">
               <span
@@ -153,6 +227,7 @@ export function BuildingExplorer({
             unit={unit}
             currentSlug={currentSlug}
             editorPreview={editorPreview}
+            fallbackImages={model.buildingImages ?? []}
             onClose={() => setUnitId(null)}
           />
         ) : (
@@ -184,10 +259,20 @@ export function BuildingExplorer({
                     u.id === unitId && "border-primary bg-primary/5 ring-1 ring-primary",
                   )}
                 >
-                  <span
-                    className="h-6 w-1.5 shrink-0 rounded-full border border-black/10"
-                    style={{ background: CELL_COLORS[cellKind(u)] }}
-                  />
+                  {u.listing?.imageUrls?.[0] ? (
+                    <img
+                      src={u.listing.imageUrls[0]}
+                      alt=""
+                      loading="lazy"
+                      className="h-9 w-12 shrink-0 rounded border-l-4 object-cover"
+                      style={{ borderLeftColor: CELL_COLORS[cellKind(u)] }}
+                    />
+                  ) : (
+                    <span
+                      className="h-9 w-1.5 shrink-0 rounded-full border border-black/10"
+                      style={{ background: CELL_COLORS[cellKind(u)] }}
+                    />
+                  )}
                   <span className="min-w-0">
                     <span className="block font-medium">{u.name}</span>
                     <span className="block truncate text-muted-foreground">
@@ -283,17 +368,26 @@ function UnitCard({
   unit,
   currentSlug,
   editorPreview,
+  fallbackImages,
   onClose,
 }: {
   unit: BuildingUnit;
   currentSlug?: string;
   editorPreview: boolean;
+  /** Ảnh chung của toà nhà — cho căn chưa có tin. */
+  fallbackImages: string[];
   onClose: () => void;
 }) {
   const l = unit.listing;
   const isCurrent = !!l && l.slug === currentSlug;
+  const own = l?.imageUrls ?? [];
   return (
-    <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
+    <div className="space-y-2.5 rounded-lg border border-primary/40 bg-primary/5 p-3 text-sm">
+      <UnitPhotos
+        images={own.length ? own : fallbackImages}
+        shared={own.length === 0 && fallbackImages.length > 0}
+        alt={`Ảnh ${unit.name}`}
+      />
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="font-semibold">{unit.name}</div>
