@@ -12,7 +12,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GL_LOCALE_VI, GL_STYLES, MAPBOX_TOKEN, isFatalGlError } from "@/lib/mapEngine";
-import type { LngLat } from "@/lib/api/buildingModel";
+import type { BuildingUnit, LngLat } from "@/lib/api/buildingModel";
+import { formatListingPrice } from "@/lib/api/listings";
 import {
   CELL_COLORS,
   buildCells,
@@ -31,6 +32,9 @@ const DRAFT = "kgs-draft";
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 const SELECTED = "#2563eb";
 const GROUND = "kgs-ground";
+const SLABS = "kgs-slabs";
+/** Bề dày sàn giữa hai tầng — khớp khe SLAB_GAP để lại giữa các khối căn. */
+const SLAB_THICKNESS = 0.6;
 
 export type PickMode = "building" | "draw" | null;
 
@@ -58,6 +62,8 @@ export interface BuildingSceneProps {
    *  bóng nền, và xoay chậm một vòng cho tới khi người xem chạm vào. Xưởng dựng thì không —
    *  ở đó cần thấy rõ nhà xung quanh để lấy đúng khung. */
   showcase?: boolean;
+  /** Ảnh chung của toà nhà — cho bong bóng khi rê chuột lên căn chưa có ảnh riêng. */
+  fallbackImage?: string | null;
   onFatalError?: () => void;
 }
 
@@ -103,6 +109,7 @@ export default function BuildingScene({
   height = 420,
   cooperative = false,
   showcase = false,
+  fallbackImage = null,
   onFatalError,
 }: BuildingSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -115,8 +122,19 @@ export default function BuildingScene({
     onFatalError?: () => void;
     pickMode: PickMode;
     stopSpin?: () => void;
+    units?: BuildingUnit[];
+    fallbackImage?: string | null;
   }>({ onSelect, onPickBuilding, onAddVertex, onFatalError, pickMode });
-  cb.current = { ...cb.current, onSelect, onPickBuilding, onAddVertex, onFatalError, pickMode };
+  cb.current = {
+    ...cb.current,
+    onSelect,
+    onPickBuilding,
+    onAddVertex,
+    onFatalError,
+    pickMode,
+    units: building?.units,
+    fallbackImage,
+  };
 
   const ring = useMemo(() => (building ? openRing(building.footprint) : []), [building]);
   const hasModel = ring.length >= 3;
@@ -229,6 +247,35 @@ export default function BuildingScene({
         m.setLight({ anchor: "map", position: [1.3, 210, 35], intensity: 0.42, color: "#ffffff" });
       }
 
+      // Trình bày: bóng đổ góc khuất (chân tường, khe giữa các khối) và bo mép khối — khối
+      // hết trông như hộp nhựa. Hai thuộc tính này có từ Mapbox GL v3.
+      const polish = present
+        ? {
+            layout: { "fill-extrusion-edge-radius": 0.3 },
+            ao: {
+              "fill-extrusion-ambient-occlusion-intensity": 0.35,
+              "fill-extrusion-ambient-occlusion-radius": 2.5,
+            },
+          }
+        : { layout: {}, ao: {} };
+
+      // Sàn giữa các tầng + mái: một tấm mỏng sẫm, nhô ra mép một chút như ban công — đọc
+      // ra được từng tầng thay vì một khối liền.
+      m.addSource(SLABS, { type: "geojson", data: EMPTY });
+      m.addLayer({
+        id: SLABS,
+        type: "fill-extrusion",
+        source: SLABS,
+        layout: polish.layout,
+        paint: {
+          "fill-extrusion-color": ["get", "color"],
+          "fill-extrusion-height": ["get", "top"],
+          "fill-extrusion-base": ["get", "base"],
+          "fill-extrusion-opacity": 1,
+          ...polish.ao,
+        },
+      });
+
       m.addSource(CELLS, { type: "geojson", data: EMPTY });
       // Hai lớp vì độ mờ của fill-extrusion là thuộc tính của CẢ LỚP, không theo từng khối:
       // lớp chính cho các tầng đang thấy, lớp "bóng" mờ cho các tầng phía trên tầng đang chọn.
@@ -238,12 +285,22 @@ export default function BuildingScene({
           type: "fill-extrusion",
           source: CELLS,
           filter: ["==", ["get", "ghost"], ghost],
+          layout: ghost ? {} : polish.layout,
           paint: {
-            "fill-extrusion-color": ghost ? "#ffffff" : ["get", "color"],
+            // Rê chuột lên căn: căn sáng lên (feature-state, không phải dựng lại dữ liệu).
+            "fill-extrusion-color": ghost
+              ? "#ffffff"
+              : [
+                  "case",
+                  ["boolean", ["feature-state", "hover"], false],
+                  ["get", "hoverColor"],
+                  ["get", "color"],
+                ],
             "fill-extrusion-height": ["get", "top"],
             "fill-extrusion-base": ["get", "base"],
             "fill-extrusion-opacity": ghost ? 0.16 : 1,
             "fill-extrusion-vertical-gradient": false,
+            ...(ghost ? {} : polish.ao),
           },
         });
       }
@@ -293,11 +350,44 @@ export default function BuildingScene({
       const p = cell?.properties as Partial<CellProps> | undefined;
       cb.current.onSelect?.(p?.unitId ?? null, p?.floor ?? null);
     });
+    // Bong bóng khi rê chuột lên một căn: ảnh, tên căn, giá — thấy căn trông thế nào mà chưa
+    // cần bấm. Chỉ ở chế độ trình bày (người tìm nhà).
+    const popup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 14,
+      maxWidth: "220px",
+      className: "kgs-unit-popup",
+    });
+    let hovered: string | number | null = null;
+    const setHover = (id: string | number | null) => {
+      if (hovered === id) return;
+      if (hovered != null) m.setFeatureState({ source: CELLS, id: hovered }, { hover: false });
+      hovered = id;
+      if (id != null) m.setFeatureState({ source: CELLS, id }, { hover: true });
+    };
     m.on("mousemove", (e) => {
       const mode = cb.current.pickMode;
       const layers = mode === "building" ? [CTX] : mode ? [] : [CELLS];
-      const hit = layers.length > 0 && m.queryRenderedFeatures(e.point, { layers }).length > 0;
-      m.getCanvas().style.cursor = mode === "draw" ? "crosshair" : hit ? "pointer" : "";
+      const hits = layers.length > 0 ? m.queryRenderedFeatures(e.point, { layers }) : [];
+      m.getCanvas().style.cursor = mode === "draw" ? "crosshair" : hits.length ? "pointer" : "";
+      if (mode) return;
+      const cell = hits[0];
+      setHover(cell?.id ?? null);
+      const p = cell?.properties as Partial<CellProps> | undefined;
+      const u = p?.unitId ? cb.current.units?.find((x) => x.id === p.unitId) : null;
+      if (!present || !u) {
+        popup.remove();
+        return;
+      }
+      popup
+        .setLngLat(e.lngLat)
+        .setHTML(unitPopupHtml(u, cb.current.fallbackImage ?? null))
+        .addTo(m);
+    });
+    m.getCanvas().addEventListener("mouseleave", () => {
+      setHover(null);
+      popup.remove();
     });
 
     // Xoay chậm một vòng lúc mở để người xem thấy đây là mô hình 3D, dừng ngay khi họ chạm
@@ -342,6 +432,40 @@ export default function BuildingScene({
     [building, hasModel],
   );
 
+  // Sàn tầng + mái (chế độ trình bày). Đang chọn một tầng thì không vẽ sàn các tầng phía trên
+  // — các tầng đó đang mờ, sàn sẫm của chúng sẽ che mất tầng được chọn.
+  useEffect(() => {
+    if (!map || !loaded || !map.getSource(SLABS)) return;
+    const src = map.getSource(SLABS) as mapboxgl.GeoJSONSource;
+    if (!showcase || !building || !hasModel) {
+      src.setData(EMPTY);
+      return;
+    }
+    const c = centroid(ring);
+    const ledge = ring.map(
+      (p) => [c[0] + (p[0] - c[0]) * 1.025, c[1] + (p[1] - c[1]) * 1.025] as LngLat,
+    );
+    const closed = [...ledge, ledge[0]];
+    const h = building.floorHeightMeters;
+    // Chọn tầng N: chỉ vẽ sàn đến trần tầng N-1 — tầng N để hở trần, thấy mặt trên các căn.
+    const top = selectedFloor != null ? selectedFloor - 1 : building.floors;
+    const features: GeoJSON.Feature[] = [];
+    for (let f = 1; f <= top; f++) {
+      const roof = f === building.floors;
+      features.push({
+        type: "Feature",
+        properties: {
+          base: f * h - SLAB_THICKNESS,
+          top: f * h + (roof ? 0.5 : 0),
+          color: roof ? "#475569" : "#94a3b8",
+        },
+        geometry: { type: "Polygon", coordinates: [closed] },
+      });
+    }
+    src.setData({ type: "FeatureCollection", features });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, loaded, showcase, building, hasModel, ringKeyForSlabs(ring), selectedFloor]);
+
   useEffect(() => {
     if (!map || !loaded) return;
     const src = map.getSource(CELLS) as mapboxgl.GeoJSONSource;
@@ -362,7 +486,10 @@ export default function BuildingScene({
             : dim
               ? mix(CELL_COLORS[p.kind], "#ffffff", 0.55)
               : CELL_COLORS[p.kind];
-        return { ...f, properties: { ...p, ghost, color } };
+        return {
+          ...f,
+          properties: { ...p, ghost, color, hoverColor: mix(color, "#ffffff", 0.35) },
+        };
       }),
     });
   }, [map, loaded, cells, selectedFloor, selectedUnitId]);
@@ -466,6 +593,38 @@ export default function BuildingScene({
       style={showcase ? undefined : { height }}
     />
   );
+}
+
+const ringKeyForSlabs = (ring: LngLat[]) => ring.map((p) => p.join(",")).join(";");
+
+const esc = (s: string) =>
+  s.replace(
+    /[&<>"']/g,
+    (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!,
+  );
+
+/** Nội dung bong bóng khi rê chuột lên căn. Chuỗi tự dựng nên phải escape mọi văn bản. */
+function unitPopupHtml(u: BuildingUnit, fallback: string | null): string {
+  const own = u.listing?.imageUrls?.[0] ?? null;
+  const img = own ?? fallback;
+  const status = u.listing
+    ? `<span style="color:#047857;font-weight:600">${esc(formatListingPrice(u.listing.price, u.listing.type, u.listing.rentPaymentCycle))}</span>`
+    : u.status === 1
+      ? '<span style="color:#047857">Còn trống · chưa đăng tin</span>'
+      : u.status === 3
+        ? '<span style="color:#b45309">Đang sửa chữa</span>'
+        : '<span style="color:#64748b">Đã có người</span>';
+  return `<div style="font:12px/1.35 system-ui,sans-serif;color:#0f172a">${
+    img
+      ? `<div style="position:relative"><img src="${esc(img)}" alt="" style="display:block;width:196px;height:110px;object-fit:cover;border-radius:6px"/>${
+          own
+            ? ""
+            : '<span style="position:absolute;left:4px;top:4px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;padding:1px 5px;border-radius:4px">Ảnh chung</span>'
+        }</div>`
+      : ""
+  }<div style="margin-top:${img ? 6 : 0}px;font-weight:600">${esc(u.name)}${
+    u.floor ? ` · tầng ${u.floor}` : ""
+  }${u.area ? ` · ${u.area} m²` : ""}</div><div>${status}</div></div>`;
 }
 
 function idsAt(map: mapboxgl.Map, pts: LngLat[]): (string | number)[] {

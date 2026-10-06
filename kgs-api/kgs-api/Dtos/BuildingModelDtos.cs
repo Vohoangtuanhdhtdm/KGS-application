@@ -9,7 +9,9 @@ namespace kgs_api.Dtos
 
     /// <summary>Tin đăng gắn với một căn — để người tìm bấm vào căn là thấy tin và liên hệ.</summary>
     public sealed record BuildingUnitListingDto(
-        string Slug, string Title, decimal Price, ListingType Type, PaymentCycle? RentPaymentCycle);
+        string Slug, string Title, decimal Price, ListingType Type, PaymentCycle? RentPaymentCycle,
+        /// <summary>Tối đa 6 ảnh đầu của tin — chọn căn trên mô hình là thấy căn trông thế nào.</summary>
+        List<string>? ImageUrls = null);
 
     public sealed record BuildingUnitDto(
         Guid Id,
@@ -33,7 +35,10 @@ namespace kgs_api.Dtos
         Guid? FocusUnitId,
         /// <summary>Vị trí tài sản — để xưởng dựng tự lấy khung toà nhà trên bản đồ tại đây.</summary>
         double? Latitude,
-        double? Longitude);
+        double? Longitude,
+        /// <summary>Ảnh chung của toà nhà (lấy từ các tin đang hiển thị trong toà) — hiện cho
+        /// căn trống chưa có tin, để người xem vẫn hình dung được.</summary>
+        List<string>? BuildingImages = null);
 
     /// <summary>Một tin đang hiển thị trong toà nhà — cho cửa sổ bấm vào toà nhà trên bản đồ tìm kiếm.</summary>
     public sealed record BuildingListingPreviewDto(

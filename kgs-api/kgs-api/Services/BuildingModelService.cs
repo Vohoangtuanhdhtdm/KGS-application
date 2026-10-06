@@ -170,9 +170,22 @@ namespace kgs_api.Services
             var listings = await _listings.Query().AsNoTracking()
                 .Where(l => l.AssetId == asset.Id && l.AssetUnitId != null && l.Status == ListingStatus.Approved)
                 .OrderByDescending(l => l.PublishedAt)
-                .Select(l => new { l.AssetUnitId, l.Slug, l.Title, l.Price, l.Type, l.RentPaymentCycle })
+                .Select(l => new { l.Id, l.AssetUnitId, l.Slug, l.Title, l.Price, l.Type, l.RentPaymentCycle })
                 .ToListAsync(ct);
             var byUnit = listings.GroupBy(l => l.AssetUnitId!.Value).ToDictionary(g => g.Key, g => g.First());
+
+            // Ảnh của các tin đó — một truy vấn cho cả toà nhà, cắt 6 ảnh mỗi tin ở bộ nhớ.
+            var shownIds = byUnit.Values.Select(l => l.Id).ToList();
+            var images = shownIds.Count == 0
+                ? new Dictionary<Guid, List<string>>()
+                : (await _listings.Query().AsNoTracking()
+                        .Where(l => shownIds.Contains(l.Id))
+                        .SelectMany(l => l.Images.Select(i => new { i.ListingId, i.SortOrder, i.File.Url }))
+                        .ToListAsync(ct))
+                    .GroupBy(i => i.ListingId)
+                    .ToDictionary(g => g.Key, g => g.OrderBy(i => i.SortOrder).Take(6).Select(i => i.Url).ToList());
+            // Ảnh chung: ảnh bìa của từng tin trong toà, tối đa 8.
+            var buildingImages = images.Values.Where(v => v.Count > 0).Select(v => v[0]).Take(8).ToList();
 
             var footprint = string.IsNullOrEmpty(asset.FootprintJson)
                 ? new List<double[]>()
@@ -192,11 +205,13 @@ namespace kgs_api.Services
                 units.Select(u => new BuildingUnitDto(
                     u.Id, u.Name, u.FloorNumber, u.Area, u.Status,
                     byUnit.TryGetValue(u.Id, out var l)
-                        ? new BuildingUnitListingDto(l.Slug!, l.Title, l.Price, l.Type, l.RentPaymentCycle)
+                        ? new BuildingUnitListingDto(l.Slug!, l.Title, l.Price, l.Type, l.RentPaymentCycle,
+                            images.TryGetValue(l.Id, out var imgs) ? imgs : new List<string>())
                         : null)).ToList(),
                 focusUnitId,
                 asset.Location?.Y,
-                asset.Location?.X);
+                asset.Location?.X,
+                buildingImages);
         }
 
         /// <summary>Khung phải là một đa giác hợp lý: 3–200 điểm, toạ độ hợp lệ, diện tích từ
