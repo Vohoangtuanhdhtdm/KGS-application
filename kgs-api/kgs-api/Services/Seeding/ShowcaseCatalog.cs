@@ -35,6 +35,9 @@ namespace kgs_api.Services.Seeding
             new("kho", "kinhdoanh.demo@kgs.test", "Công ty TNHH Kho vận Sài Gòn", "0283822468", 40), // văn phòng, kho, mặt bằng
             new("mai", "timnha.giadinh@kgs.test", "Võ Thị Mai", "0978123456", 3),           // gia đình đi mua nhà
             new("huy", "timnha.sinhvien@kgs.test", "Huỳnh Gia Huy", "0966234567", 2),       // sinh viên ĐH Thủ Dầu Một
+            // Tài khoản đăng tin lừa đảo đã bị quản trị khoá — để khu quản trị có ca thật: báo vi
+            // phạm đã xử lý, tin bị gỡ, tài khoản bị khoá kèm lý do.
+            new("spam", "vipham.demo@kgs.test", "Trương Văn Tâm", "0901000999", 1),
         };
 
         // ==================== Địa điểm ====================
@@ -245,7 +248,10 @@ namespace kgs_api.Services.Seeding
             string Key, string Name, string Place, Owner Owner, AssetDomainType Type, int Floors,
             double FloorHeight, double Width, double Depth, double RotateDeg,
             Func<int, (string Name, double Area)[]> Units, double VacantRate, double SaleShare,
-            string Images, string Description);
+            string Images, string Description,
+            /// <summary>false = chủ nhà mới khai toà nhà và danh sách căn, CHƯA dựng khung 3D —
+            /// trang "Toà nhà" của chủ nhà có ca "Chưa dựng mô hình 3D".</summary>
+            bool Modeled = true);
 
         public static readonly Building[] Buildings =
         {
@@ -279,6 +285,13 @@ namespace kgs_api.Services.Seeding
                     : Enumerable.Range(1, 4).Select(k => ($"Căn {f}.0{k}", k is 1 or 4 ? 72.0 : 56.0)).ToArray(),
                 0.4, 0.5, "apartment",
                 "Toà căn hộ 10 tầng cách biển Mỹ Khê 300 m, hồ bơi tầng thượng, phù hợp ở hoặc cho thuê du lịch."),
+            new("b-dbp", "Nhà trọ Điện Biên Phủ (mới khai)", "bt-dbp", Owner.Ngoc, AssetDomainType.Room,
+                6, 3.1, 16, 12, 0,
+                f => f == 1 ? Array.Empty<(string, double)>()
+                    : Enumerable.Range(1, 4).Select(k => ($"P.{f}0{k}", k == 1 ? 28.0 : 22.0)).ToArray(),
+                0.45, 0, "room",
+                "Nhà trọ 6 tầng mới hoàn thiện, tầng 1 để xe, thang máy, gần Landmark 81.",
+                Modeled: false),
         };
 
         // ==================== Ảnh ====================
