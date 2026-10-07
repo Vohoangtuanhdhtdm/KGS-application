@@ -306,6 +306,131 @@
   cursor: pointer;
 }
 
+/* Màu loại tin trên bản đồ: Bán = navy, Cho thuê = xanh ngọc — đúng sắc của --primary và
+   --success ở giao diện sáng, nhưng viết cứng CÓ CHỦ Ý. Viên giá nằm trên ảnh bản đồ, mà
+   ảnh bản đồ luôn sáng bất kể giao diện; lấy token thì ở giao diện tối hai màu này chuyển
+   sang tông nhạt, viên giá thành viền nhạt trên nền trắng và chữ trắng trên nền nhạt. */
+:root {
+  --map-sale: oklch(0.302 0.103 272.1);
+  --map-rent: oklch(0.487 0.092 171.5);
+}
+
+/* Viên giá (HTML ở propertyMapShared.ts › pillHtml). Nền trắng chữ tối cũng viết cứng vì
+   cùng lý do. Mũi nhọn dưới đáy chỉ đúng vào vị trí căn nhà — marker neo tại mũi nhọn. */
+.kgs-pill {
+  --pill-c: var(--map-sale);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  border: 1.5px solid var(--pill-c);
+  font: 700 12px/1 var(--font-sans);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  box-shadow:
+    0 2px 6px rgb(16 24 40 / 0.18),
+    0 1px 2px rgb(16 24 40 / 0.1);
+  transform-origin: 50% calc(100% + 6px);
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+.kgs-pill--rent {
+  --pill-c: var(--map-rent);
+}
+.kgs-pill::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  border-right: 1.5px solid var(--pill-c);
+  border-bottom: 1.5px solid var(--pill-c);
+  border-bottom-right-radius: 2px;
+  transform: translateX(-50%) rotate(45deg);
+}
+.kgs-pill:hover,
+.kgs-pill.is-hover,
+.kgs-pill.is-active {
+  background: var(--pill-c);
+  color: #fff;
+  transform: scale(1.12);
+  box-shadow:
+    0 6px 16px rgb(16 24 40 / 0.28),
+    0 2px 4px rgb(16 24 40 / 0.14);
+}
+/* Đang mở thẻ: thêm quầng sáng để nổi hơn hẳn viên chỉ được rê qua. */
+.kgs-pill.is-active {
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, var(--pill-c) 25%, transparent),
+    0 6px 16px rgb(16 24 40 / 0.28);
+}
+.kgs-pill__from {
+  margin-right: 3px;
+  font-weight: 500;
+  font-size: 11px;
+  opacity: 0.7;
+}
+/* Huy hiệu số tin của viên gộp — đảo màu so với thân viên. */
+.kgs-pill__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: -6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--pill-c);
+  color: #fff;
+  font-size: 11px;
+}
+.kgs-pill:hover .kgs-pill__count,
+.kgs-pill.is-hover .kgs-pill__count,
+.kgs-pill.is-active .kgs-pill__count {
+  background: #fff;
+  color: var(--pill-c);
+}
+/* Chừa chỗ cho mũi nhọn: phần tử marker của GL neo ở đáy (anchor: bottom). */
+.kgs-pill-host {
+  display: flex;
+  padding-bottom: 6px;
+}
+/* Leaflet: icon cỡ 0×0 đặt tại toạ độ, viên giá tự dời lên để mũi nhọn chạm toạ độ. */
+.kgs-pill-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  padding-bottom: 6px;
+  transform: translate(-50%, -100%);
+}
+
+/* Nhãn loại tin trong thẻ xem nhanh — cùng màu với viên giá. */
+.kgs-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--map-sale);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+}
+.kgs-type-badge--rent {
+  background: var(--map-rent);
+}
+
 /* Nút yêu thích ở PropertyListCard — phóng to nhẹ rồi trở lại khi bấm, phản hồi rõ ràng
    nhưng không phô trương (không confetti/particle). Chạy lại mỗi lần nhờ đổi `key` ở card. */
 @keyframes heart-pop {
@@ -689,6 +814,64 @@
   border-radius: 8px;
   font-family: inherit;
   box-shadow: 0 4px 12px rgb(16 24 40 / 0.14);
+}
+
+/* Thẻ xem nhanh của viên giá (cả GL lẫn Leaflet): khung bo tròn, sát mép để ảnh tràn viền,
+   nền theo giao diện (thẻ nổi lên trên bản đồ, không nằm trong ảnh bản đồ như viên giá). */
+.mapboxgl-popup.kgs-listing-popup .mapboxgl-popup-content,
+.leaflet-popup.kgs-listing-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--color-popover);
+  color: var(--color-popover-foreground);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    0 12px 32px rgb(16 24 40 / 0.22),
+    0 2px 6px rgb(16 24 40 / 0.1);
+}
+/* .leaflet-container đặt sẵn font Helvetica 12px — trả về font của ứng dụng. */
+.leaflet-popup.kgs-listing-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.leaflet-popup.kgs-listing-popup .leaflet-popup-content p {
+  margin: 0;
+}
+/* Thẻ luôn mở phía trên viên giá (anchor: bottom) — mũi tên chỉ xuống, cùng màu nền thẻ. */
+.mapboxgl-popup.kgs-listing-popup .mapboxgl-popup-tip {
+  border-top-color: var(--color-popover);
+}
+.leaflet-popup.kgs-listing-popup .leaflet-popup-tip {
+  background: var(--color-popover);
+}
+/* Nút đóng: chấm tròn trắng nổi trên góc ảnh — nút mặc định là chữ × trơn, chìm vào ảnh. */
+.mapboxgl-popup.kgs-listing-popup .mapboxgl-popup-close-button,
+.leaflet-popup.kgs-listing-popup a.leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.92);
+  color: #111827;
+  font:
+    400 18px/1 system-ui,
+    sans-serif;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  transition: background-color 150ms;
+}
+.mapboxgl-popup.kgs-listing-popup .mapboxgl-popup-close-button:hover,
+.leaflet-popup.kgs-listing-popup a.leaflet-popup-close-button:hover {
+  background: #fff;
+  color: #111827;
 }
 
 /* Lop noi cua Radix (Select, Popover, DropdownMenu, Tooltip).

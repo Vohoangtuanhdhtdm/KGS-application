@@ -492,6 +492,11 @@ function PublicListingsPage() {
           thumbnailUrl: p.thumbnailUrl,
           unitName: p.unitName,
           rentPaymentCycle: p.rentPaymentCycle,
+          area: p.area,
+          bedrooms: p.bedrooms,
+          bathrooms: p.bathrooms,
+          district: p.district,
+          city: p.city,
         })),
     [items],
   );
