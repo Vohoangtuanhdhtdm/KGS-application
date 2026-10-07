@@ -24,7 +24,7 @@ import {
   groupLabel,
   groupPoints,
   isValidLatLng,
-  pillStyle,
+  pillHtml,
   type PillGroup,
   type PropertyMapPoint,
 } from "./propertyMapShared";
@@ -85,6 +85,32 @@ function buildingsFC(list: MapBuilding[]): GeoJSON.FeatureCollection {
         geometry: { type: "Polygon" as const, coordinates: [[...ring, ring[0]]] },
       })),
   };
+}
+
+/** Bật/tắt trạng thái trên viên giá có sẵn — đổi lớp thay vì dựng lại để hiệu ứng chuyển mượt. */
+function setPillState(el: HTMLElement, hovered: boolean, active: boolean) {
+  const pill = el.firstElementChild as HTMLElement | null;
+  pill?.classList.toggle("is-hover", hovered);
+  pill?.classList.toggle("is-active", active);
+  el.style.zIndex = active ? "11" : hovered ? "10" : "";
+}
+
+/**
+ * Popup của GL không tự kéo bản đồ như Leaflet: viên giá gần mép thì thẻ (cao ~340px) tràn ra
+ * ngoài khung. Gọi sau khi React đã vẽ nội dung thẻ, dịch bản đồ vừa đủ cho thẻ lọt vào. Mép
+ * dưới chừa rộng hơn vì nút "Tìm nhà theo thời gian đi làm" nổi ở góc dưới khung bản đồ.
+ */
+function panPopupIntoView(map: mapboxgl.Map, popup: mapboxgl.Popup) {
+  const el = popup.getElement();
+  if (!el || !popup.isOpen()) return;
+  const box = el.getBoundingClientRect();
+  const frame = map.getContainer().getBoundingClientRect();
+  const pad = { top: 12, right: 12, bottom: 56, left: 12 };
+  const shift = (start: number, end: number, min: number, max: number) =>
+    start < min ? start - min : end > max ? Math.min(end - max, start - min) : 0;
+  const dx = shift(box.left, box.right, frame.left + pad.left, frame.right - pad.right);
+  const dy = shift(box.top, box.bottom, frame.top + pad.top, frame.bottom - pad.bottom);
+  if (dx || dy) map.panBy([dx, dy], { duration: 300 });
 }
 
 function ariaFor(g: PillGroup): string {
@@ -168,6 +194,8 @@ export default function GlPropertyMap({
   const [popupHost, setPopupHost] = useState<HTMLElement | null>(null);
   /** Các tin của viên giá đang mở — một tin thì thẻ xem nhanh, nhiều tin thì danh sách. */
   const [popupPoints, setPopupPoints] = useState<PropertyMapPoint[] | null>(null);
+  /** Viên giá đang mở thẻ — giữ sáng để người dùng biết thẻ đang nói về điểm nào. */
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
   // ---- Toà nhà 3D ----
   const [is3D, setIs3D] = useState(false);
@@ -339,10 +367,18 @@ export default function GlPropertyMap({
     const popup = new mapboxgl.Popup({
       closeButton: true,
       closeOnClick: true,
-      offset: 18,
-      maxWidth: "220px",
+      // Luôn mở phía trên viên giá, cách đủ chiều cao viên giá (~34px) để không đè lên nó.
+      // Không để GL tự chọn hướng: hướng tự chọn đổi theo vị trí, nên sau khi kéo bản đồ cho
+      // thẻ lọt khung thì GL lật thẻ sang phía kia và thẻ lại tràn ra mép đối diện.
+      anchor: "bottom",
+      offset: 40,
+      maxWidth: "300px",
+      className: "kgs-listing-popup",
     }).setDOMContent(host);
-    popup.on("close", () => setPopupPoints(null));
+    popup.on("close", () => {
+      setPopupPoints(null);
+      setActiveKey(null);
+    });
     popupRef.current = popup;
 
     const bHost = document.createElement("div");
@@ -396,19 +432,21 @@ export default function GlPropertyMap({
       const existing = pills.get(g.key);
       if (existing) {
         existing.group = g;
-        existing.el.firstElementChild!.textContent = groupLabel(g);
+        // Giữ nguyên trạng thái sáng hiện có — effect hover bên dưới không chạy lại ở đây.
+        const pill = existing.el.firstElementChild;
+        existing.el.innerHTML = pillHtml(g, {
+          hovered: pill?.classList.contains("is-hover"),
+          active: pill?.classList.contains("is-active"),
+        });
         existing.el.setAttribute("aria-label", ariaFor(g));
         continue;
       }
       const el = document.createElement("div");
-      el.className = "property-pill-marker";
+      el.className = "property-pill-marker kgs-pill-host";
       el.setAttribute("role", "button");
       el.setAttribute("tabindex", "0");
       el.setAttribute("aria-label", ariaFor(g));
-      const inner = document.createElement("div");
-      inner.style.cssText = pillStyle(g.points[0], false);
-      inner.textContent = groupLabel(g);
-      el.appendChild(inner);
+      el.innerHTML = pillHtml(g);
       // Rê vào viên gộp: làm nổi thẻ của tin rẻ nhất — tin mà viên giá đang ghi "từ".
       el.addEventListener("mouseenter", () =>
         cb.current.onHoverPoint((pills.get(g.key)?.group ?? g).points[0].id),
@@ -421,7 +459,11 @@ export default function GlPropertyMap({
         cb.current.onClickPoint(cur.points[0].id);
         const withCard = cur.points.filter((x) => x.slug && x.title);
         if (withCard.length && popupRef.current) {
+          // Đóng thẻ đang mở TRƯỚC khi đặt nội dung mới: sự kiện "close" của nó xoá
+          // popupPoints/activeKey — chạy sau thì thẻ mới mở ra rỗng.
+          popupRef.current.remove();
           setPopupPoints(withCard);
+          setActiveKey(g.key);
           popupRef.current.setLngLat([cur.lng, cur.lat]).addTo(map);
         }
       };
@@ -430,7 +472,8 @@ export default function GlPropertyMap({
         if (e.key === "Enter") open(e);
       });
 
-      const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
+      // Neo ở mũi nhọn dưới đáy viên giá — mũi nhọn chỉ đúng vào vị trí căn nhà.
+      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([g.lng, g.lat])
         .addTo(map);
       pills.set(g.key, { marker, el, group: g });
@@ -442,12 +485,16 @@ export default function GlPropertyMap({
   // Hover: đổi style NGAY trên phần tử có sẵn, không dựng lại marker — dựng lại sẽ làm popup
   // đang mở mất chỗ neo và gây nháy. Viên gộp sáng lên khi rê vào BẤT KỲ tin nào của nó.
   useEffect(() => {
-    for (const { el, group } of pillsRef.current.values()) {
-      const hovered = groupHovered(group, hoveredId);
-      (el.firstElementChild as HTMLElement).style.cssText = pillStyle(group.points[0], hovered);
-      el.style.zIndex = hovered ? "10" : "";
+    for (const [key, { el, group }] of pillsRef.current) {
+      setPillState(el, groupHovered(group, hoveredId), key === activeKey);
     }
-  }, [hoveredId, validKey]);
+  }, [hoveredId, activeKey, validKey]);
+
+  // Thẻ vừa có nội dung (React đã commit vào khung popup) → kéo bản đồ cho thẻ lọt khung.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && popupRef.current && popupPoints) panPopupIntoView(map, popupRef.current);
+  }, [popupPoints]);
 
   const areaKey = areaPolygon ? `${areaPolygon.length}:${areaPolygon[0]?.join(",")}` : "";
 
@@ -646,7 +693,7 @@ export default function GlPropertyMap({
               <MiniGroupCard points={popupPoints} />
             )}
             {/* Chung một vị trí nên thời gian đi lại của tin đầu đúng cho cả nhóm. */}
-            {popupExtra?.(popupPoints[0])}
+            {popupExtra && <div className="px-3 pb-3">{popupExtra(popupPoints[0])}</div>}
           </>,
           popupHost,
         )}

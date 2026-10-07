@@ -8,17 +8,16 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, Circle, useMap, useMapEvents } from "react-leaflet";
 import { BaseTileLayer } from "./BaseTileLayer";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatCurrency } from "@/lib/format";
 import type { LatLng } from "@/hooks/useGeolocationOnDemand";
 import type { MapViewApi } from "@/lib/mapEngine";
 import {
   MOVE_THRESHOLD_METERS,
   groupHovered,
-  groupLabel,
   groupPoints,
   isValidLatLng,
-  pillStyle,
+  pillHtml,
   type PillGroup,
   type PropertyMapPoint,
 } from "./propertyMapShared";
@@ -27,12 +26,16 @@ import { MiniGroupCard } from "./MiniGroupCard";
 
 export type { PropertyMapPoint } from "./propertyMapShared";
 
-function pillIcon(group: PillGroup, hovered: boolean): L.DivIcon {
+function pillIcon(group: PillGroup, hovered: boolean, active: boolean): L.DivIcon {
   return L.divIcon({
-    html: `<div style="${pillStyle(group.points[0], hovered)}">${groupLabel(group)}</div>`,
+    // Viên giá rộng hẹp tuỳ con số nên không khai được iconSize: icon cỡ 0×0 đặt đúng toạ độ,
+    // .kgs-pill-anchor tự dời viên giá lên trên sao cho mũi nhọn chạm toạ độ đó.
+    html: `<div class="kgs-pill-anchor">${pillHtml(group, { hovered, active })}</div>`,
     className: "property-pill-marker", // reset style mặc định của leaflet cho div icon
-    iconSize: undefined,
-    iconAnchor: [hovered ? 30 : 26, 14],
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+    // Thẻ xem nhanh mở phía trên viên giá, không đè lên nó.
+    popupAnchor: [0, -36],
   });
 }
 
@@ -153,9 +156,13 @@ export default function PropertyMap({
 }: PropertyMapProps) {
   // Tin chung toạ độ (các căn của một toà nhà) gộp thành một viên — xem groupPoints.
   const groups = useMemo(() => groupPoints(points), [points]);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
   const icons = useMemo(
-    () => new Map(groups.map((g) => [g.key, pillIcon(g, groupHovered(g, hoveredId))])),
-    [groups, hoveredId],
+    () =>
+      new Map(
+        groups.map((g) => [g.key, pillIcon(g, groupHovered(g, hoveredId), g.key === activeKey)]),
+      ),
+    [groups, hoveredId, activeKey],
   );
 
   const handleMoveEnd = (map: L.Map) => {
@@ -242,15 +249,25 @@ export default function PropertyMap({
                   ? `Tin đăng giá ${formatCurrency(p.price, { compact: true })}`
                   : `${g.points.length} tin đăng cùng vị trí`
               }
+              zIndexOffset={g.key === activeKey ? 1000 : groupHovered(g, hoveredId) ? 900 : 0}
               eventHandlers={{
                 mouseover: () => onHoverPoint(p.id),
                 mouseout: () => onHoverPoint(null),
                 click: () => onClickPoint(p.id),
+                popupopen: () => setActiveKey(g.key),
+                popupclose: () => setActiveKey((k) => (k === g.key ? null : k)),
               }}
             >
               {/* Popup xem nhanh — song song với hành vi cuộn danh sách (onClickPoint ở trên) */}
               {withCard.length > 0 && (
-                <Popup autoPan={false} closeButton minWidth={200}>
+                <Popup
+                  autoPanPaddingTopLeft={[12, 12]}
+                  autoPanPaddingBottomRight={[12, 56]}
+                  closeButton
+                  minWidth={260}
+                  maxWidth={300}
+                  className="kgs-listing-popup"
+                >
                   {withCard.length === 1 ? (
                     <MiniPropertyCard point={withCard[0]} />
                   ) : (

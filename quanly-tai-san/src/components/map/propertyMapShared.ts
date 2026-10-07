@@ -3,15 +3,8 @@
  * (PropertyMap). Tách riêng để bản GL không phải import từ tệp Leaflet — làm vậy sẽ kéo cả
  * thư viện Leaflet vào gói tải của bản GL.
  */
-import type { ListingTypeCode, PaymentCycleCode } from "@/constants/enums";
+import { LISTING_TYPE, type ListingTypeCode, type PaymentCycleCode } from "@/constants/enums";
 import { formatCurrency } from "@/lib/format";
-
-// Bán = navy (màu primary chủ đạo của app), Cho thuê = xanh (màu success) —
-// dùng đúng token ngữ nghĩa hệ thống, không tạo bảng màu riêng cho Marketplace.
-export const TYPE_BORDER: Record<ListingTypeCode, string> = {
-  1: "var(--color-primary)",
-  2: "var(--color-success)",
-};
 
 // Lệch quá 500m so với searchCenter mới coi là "đã pan/zoom lệch" — hiện nút "Tìm trong khu vực này"
 export const MOVE_THRESHOLD_METERS = 500;
@@ -30,6 +23,12 @@ export interface PropertyMapPoint {
   rentPaymentCycle?: PaymentCycleCode | null;
   /** Tên căn/phòng khi tin đăng riêng một căn — phân biệt các tin trong viên giá gộp. */
   unitName?: string | null;
+  // Thông số cho thẻ xem nhanh — thiếu thì thẻ chỉ bỏ dòng đó.
+  area?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  district?: string | null;
+  city?: string | null;
 }
 
 /** Toạ độ dùng được: có thật, hữu hạn, và nằm trong dải hợp lệ của Trái Đất. */
@@ -44,27 +43,42 @@ export function isValidLatLng(lat: unknown, lng: unknown): boolean {
   );
 }
 
-/**
- * Style của viên giá, dùng chung cho cả hai động cơ.
- *
- * "white" và "#111827" là màu cứng CÓ CHỦ Ý, đừng đổi sang token. Viên thuốc giá nằm trên
- * ẢNH BẢN ĐỒ, mà ảnh bản đồ luôn sáng bất kể người dùng đang dùng giao diện sáng hay tối.
- * Đổi sang --color-card / --color-foreground thì ở giao diện tối nó thành viên thuốc tối chữ
- * sáng đặt trên nền bản đồ sáng — không đọc được. Viền thì ngược lại: nó mang ý nghĩa loại
- * tin nên vẫn lấy từ token (xem TYPE_BORDER).
- */
-export function pillStyle(point: PropertyMapPoint, hovered: boolean): string {
-  const border = TYPE_BORDER[point.type];
-  const padding = hovered ? "5px 11px" : "4px 10px";
-  const bg = hovered ? border : "white";
-  const color = hovered ? "white" : "#111827";
-  const shadow = hovered ? "0 4px 10px rgba(0,0,0,0.25)" : "0 1px 3px rgba(0,0,0,0.15)";
-  const scale = hovered ? "scale(1.15)" : "scale(1)";
-  return `display:inline-flex;align-items:center;padding:${padding};border-radius:999px;background:${bg};color:${color};border:2px solid ${border};font-size:12px;font-weight:600;white-space:nowrap;box-shadow:${shadow};transform:${scale};transition:transform 150ms, background 150ms, color 150ms;`;
+/** "5,4tr" / "8,5 tỷ" — viên giá chật chỗ, "triệu" viết tắt; "tỷ" đã ngắn nên giữ nguyên. */
+export function pillLabel(point: PropertyMapPoint): string {
+  return formatCurrency(point.price, { compact: true }).replace(" triệu", "tr");
 }
 
-export function pillLabel(point: PropertyMapPoint): string {
-  return formatCurrency(point.price, { compact: true });
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/**
+ * HTML của viên giá, dùng chung cho cả hai động cơ. Hình dáng nằm ở lớp .kgs-pill
+ * (styles.css), ở đây chỉ chọn biến thể:
+ *   • --sale / --rent: màu viền + màu khi sáng lên theo loại tin
+ *   • is-hover: đang rê chuột (ở bản đồ hoặc ở thẻ trong danh sách)
+ *   • is-active: viên giá đang mở thẻ xem nhanh
+ * Viên gộp có thêm huy hiệu số tin ở đầu và chữ "từ" trước giá rẻ nhất.
+ */
+export function pillHtml(
+  g: PillGroup,
+  state: { hovered?: boolean; active?: boolean } = {},
+): string {
+  const p = g.points[0];
+  const cls = [
+    "kgs-pill",
+    p.type === 2 ? "kgs-pill--rent" : "kgs-pill--sale",
+    state.hovered ? "is-hover" : "",
+    state.active ? "is-active" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const price = escapeHtml(pillLabel(p));
+  const inner =
+    g.points.length === 1
+      ? `<span class="kgs-pill__price">${price}</span>`
+      : `<span class="kgs-pill__count">${g.points.length}</span><span class="kgs-pill__price"><span class="kgs-pill__from">từ</span>${price}</span>`;
+  return `<div class="${cls}" title="${escapeHtml(LISTING_TYPE[p.type] ?? "")}">${inner}</div>`;
 }
 
 /**
@@ -96,10 +110,10 @@ export function groupPoints(points: PropertyMapPoint[]): PillGroup[] {
   return [...map.values()];
 }
 
+/** Nhãn đọc thành lời (aria-label) — viết đủ "triệu", không viết tắt như trên viên giá. */
 export function groupLabel(g: PillGroup): string {
-  return g.points.length === 1
-    ? pillLabel(g.points[0])
-    : `${g.points.length} tin · từ ${pillLabel(g.points[0])}`;
+  const price = formatCurrency(g.points[0].price, { compact: true });
+  return g.points.length === 1 ? price : `${g.points.length} tin · từ ${price}`;
 }
 
 export function groupHovered(g: PillGroup, hoveredId: string | null): boolean {
