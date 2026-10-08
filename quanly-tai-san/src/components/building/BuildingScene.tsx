@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { GL_LOCALE_VI, GL_STYLES, MAPBOX_TOKEN, isFatalGlError } from "@/lib/mapEngine";
 import type { BuildingUnit, LngLat } from "@/lib/api/buildingModel";
 import { formatListingPrice } from "@/lib/api/listings";
+import { sunPosition } from "@/lib/sun";
 import {
   CELL_COLORS,
   buildCells,
@@ -64,7 +65,69 @@ export interface BuildingSceneProps {
   showcase?: boolean;
   /** Ảnh chung của toà nhà — cho bong bóng khi rê chuột lên căn chưa có ảnh riêng. */
   fallbackImage?: string | null;
+  /**
+   * Mô phỏng nắng: chiếu sáng theo vị trí mặt trời thật tại thời điểm này, có đổ bóng. null =
+   * ánh sáng trình bày cố định như cũ.
+   */
+  sunTime?: Date | null;
+  /**
+   * Cảnh này có dùng mô phỏng nắng. Bật thì dựng bằng hệ đèn v3 (setLights) ngay từ đầu với
+   * ánh sáng trung tính: chuyển từ đèn cũ sang đèn v3 giữa chừng buộc Mapbox dựng lại toàn bộ
+   * tile — khung bản đồ trắng vài giây. Bắt đầu sẵn bằng đèn v3 thì kéo giờ chỉ là đổi thông số.
+   */
+  sunEnabled?: boolean;
+  /** Tăng số này để bắt đầu một lượt bay quanh toà nhà (0 = chưa bay). */
+  tourSignal?: number;
+  /** Hướng mặt tiền (phương vị, độ) — lượt bay dừng lại nhìn thẳng vào mặt tiền. */
+  facadeAzimuth?: number | null;
+  onTourEnd?: () => void;
   onFatalError?: () => void;
+}
+
+/**
+ * Hai nguồn sáng của Mapbox GL v3 theo vị trí mặt trời: nắng (có hướng, đổ bóng) + ánh sáng
+ * môi trường. Mặt trời thấp thì nắng vàng và yếu đi; lặn rồi thì chỉ còn ánh sáng xanh nhạt.
+ */
+/** Ánh sáng trung tính (không mô phỏng giờ) — gần với ánh sáng trình bày cũ, không đổ bóng. */
+const NEUTRAL_LIGHTS: mapboxgl.LightsSpecification[] = [
+  { id: "kgs-ambient", type: "ambient", properties: { color: "#ffffff", intensity: 0.62 } },
+  {
+    id: "kgs-sun",
+    type: "directional",
+    properties: { direction: [210, 50], color: "#ffffff", intensity: 0.45, "cast-shadows": false },
+  },
+];
+
+function sunLights(time: Date, at: LngLat): mapboxgl.LightsSpecification[] {
+  const p = sunPosition(time, at[1], at[0]);
+  const up = p.altitude > 0;
+  const strength = Math.max(0, Math.min(1, p.altitude / 25));
+  return [
+    {
+      id: "kgs-ambient",
+      type: "ambient",
+      // Bóng đổ chỉ lấy đi phần nắng trực tiếp, còn ánh sáng môi trường thì vẫn còn. Môi trường
+      // quá sáng thì bóng nhạt không đọc được; quá tối thì chiều muộn cả cảnh sẫm lại. 0,5 là
+      // điểm cân bằng khi thử ở TP.HCM từ 7:00 đến 17:30.
+      properties: {
+        color: up ? "#ffffff" : "#a5b4d4",
+        intensity: up ? 0.5 + 0.05 * strength : 0.4,
+      },
+    },
+    {
+      id: "kgs-sun",
+      type: "directional",
+      properties: {
+        // [phương vị từ hướng Bắc, góc từ đỉnh đầu]. Kẹp ở 86°: sát chân trời thì bóng dài vô
+        // tận, phủ kín khung hình mà không nói thêm được gì.
+        direction: [p.azimuth, Math.min(86, 90 - Math.max(p.altitude, 0))],
+        color: p.altitude < 12 ? "#ffcf99" : "#fff8ee",
+        intensity: up ? 0.6 + 0.15 * strength : 0,
+        "cast-shadows": up,
+        "shadow-intensity": 1,
+      },
+    },
+  ];
 }
 
 /** Vòng ngoài lớn nhất của một hình học toà nhà lấy từ tile. */
@@ -110,6 +173,11 @@ export default function BuildingScene({
   cooperative = false,
   showcase = false,
   fallbackImage = null,
+  sunTime = null,
+  sunEnabled = false,
+  tourSignal = 0,
+  facadeAzimuth = null,
+  onTourEnd,
   onFatalError,
 }: BuildingSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,6 +190,7 @@ export default function BuildingScene({
     onFatalError?: () => void;
     pickMode: PickMode;
     stopSpin?: () => void;
+    onTourEnd?: () => void;
     units?: BuildingUnit[];
     fallbackImage?: string | null;
   }>({ onSelect, onPickBuilding, onAddVertex, onFatalError, pickMode });
@@ -134,7 +203,10 @@ export default function BuildingScene({
     pickMode,
     units: building?.units,
     fallbackImage,
+    onTourEnd,
   };
+  /** Góc nhìn lúc mở — lượt bay kết thúc ở đúng độ gần này. */
+  const homeView = useRef<{ zoom: number; pitch: number } | null>(null);
 
   const ring = useMemo(() => (building ? openRing(building.footprint) : []), [building]);
   const hasModel = ring.length >= 3;
@@ -244,8 +316,15 @@ export default function BuildingScene({
           });
         }
         // Ánh sáng chếch từ phía tây nam: các mặt khối sáng tối khác nhau, đọc ra được chiều sâu.
-        m.setLight({ anchor: "map", position: [1.3, 210, 35], intensity: 0.42, color: "#ffffff" });
+        if (!sunEnabled)
+          m.setLight({
+            anchor: "map",
+            position: [1.3, 210, 35],
+            intensity: 0.42,
+            color: "#ffffff",
+          });
       }
+      if (sunEnabled) m.setLights(NEUTRAL_LIGHTS);
 
       // Trình bày: bóng đổ góc khuất (chân tường, khe giữa các khối) và bo mép khối — khối
       // hết trông như hộp nhựa. Hai thuộc tính này có từ Mapbox GL v3.
@@ -409,6 +488,7 @@ export default function BuildingScene({
       cb.current.stopSpin = stop;
     }
 
+    homeView.current = { zoom: m.getZoom(), pitch: m.getPitch() };
     const ro = new ResizeObserver(() => m.resize());
     ro.observe(containerRef.current);
     setMap(m);
@@ -425,6 +505,121 @@ export default function BuildingScene({
   useEffect(() => {
     if (selectedFloor != null || selectedUnitId != null) cb.current.stopSpin?.();
   }, [selectedFloor, selectedUnitId]);
+
+  // ---------- Nắng & bóng ----------
+  const sunKey = sunTime ? Math.round(sunTime.valueOf() / 60_000) : 0;
+  const lit = useRef(false);
+  useEffect(() => {
+    if (!map || !loaded) return;
+    const at = hasModel ? centroid(ring) : (highlight ?? center);
+    // Khối trong suốt không đổ bóng — lúc mô phỏng nắng thì nhà xung quanh phải đặc, để thấy
+    // được nhà bên cạnh che nắng của căn này hay không.
+    const present = showcase && hasModel;
+    map.setPaintProperty(CTX, "fill-extrusion-opacity", sunTime ? 1 : present ? 0.38 : 0.7);
+    map.setPaintProperty(CTX_HL, "fill-extrusion-opacity", sunTime ? 1 : 0.85);
+    if (sunTime) {
+      map.setLights(sunLights(sunTime, at));
+      lit.current = true;
+    } else if (lit.current) {
+      // Tắt mô phỏng: về ánh sáng trung tính, vẫn trong hệ đèn v3 để không phải dựng lại tile.
+      map.setLights(sunEnabled ? NEUTRAL_LIGHTS : null);
+      lit.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, loaded, sunKey]);
+
+  // ---------- Bay quanh toà nhà ----------
+  // Ba chặng như một cú máy flycam: lùi lên cao thấy cả khu → sà xuống chéo góc → lượn nửa
+  // vòng và dừng nhìn thẳng mặt tiền. Người xem chạm vào bản đồ là dừng ngay, trả lại quyền điều
+  // khiển. Bật "giảm chuyển động" thì nhảy thẳng tới góc cuối, không bay.
+  useEffect(() => {
+    if (!map || !loaded || !tourSignal) return;
+    cb.current.stopSpin?.();
+    const target = hasModel ? centroid(ring) : (highlight ?? center);
+    const home = homeView.current ?? { zoom: 17.2, pitch: 58 };
+    // Hướng nhìn của camera ngược với hướng mặt tiền: mặt tiền quay về Tây thì máy đứng phía
+    // Tây nhìn sang Đông. Chưa biết hướng thì giữ hướng nhìn hiện tại.
+    const endBearing = facadeAzimuth != null ? (facadeAzimuth + 180) % 360 : map.getBearing();
+    const done = () => cb.current.onTourEnd?.();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      map.jumpTo({ center: target, zoom: home.zoom, pitch: 60, bearing: endBearing });
+      done();
+      return;
+    }
+
+    let cancelled = false;
+    let raf = 0;
+    const cancel = () => {
+      if (cancelled) return;
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      map.stop();
+      done();
+    };
+    const canvas = map.getCanvasContainer();
+    const events = ["mousedown", "touchstart", "wheel"] as const;
+    events.forEach((ev) => canvas.addEventListener(ev, cancel, { passive: true }));
+
+    const fly = (opts: mapboxgl.CameraOptions & { duration: number; curve?: number }) =>
+      new Promise<void>((resolve) => {
+        if (cancelled) return resolve();
+        map.once("moveend", () => resolve());
+        map.flyTo({ ...opts, essential: true });
+      });
+    const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+
+    void (async () => {
+      await fly({
+        center: target,
+        zoom: 14.6,
+        pitch: 25,
+        bearing: endBearing - 140,
+        duration: 2000,
+      });
+      await fly({
+        center: target,
+        zoom: home.zoom - 0.7,
+        pitch: 62,
+        bearing: endBearing - 110,
+        duration: 2600,
+        curve: 1.1,
+      });
+      if (cancelled) return;
+      // Lượn: xoay 110° về hướng mặt tiền và tiến lại gần dần trong 6 giây.
+      const from = { bearing: endBearing - 110, zoom: home.zoom - 0.7 };
+      const start = performance.now();
+      await new Promise<void>((resolve) => {
+        const step = (now: number) => {
+          if (cancelled) return resolve();
+          const t = Math.min(1, (now - start) / 6000);
+          const k = ease(t);
+          map.jumpTo({
+            center: target,
+            bearing: from.bearing + 110 * k,
+            zoom: from.zoom + 0.7 * k,
+            pitch: 62 - 4 * k,
+          });
+          if (t < 1) raf = requestAnimationFrame(step);
+          else resolve();
+        };
+        raf = requestAnimationFrame(step);
+      });
+      if (!cancelled) {
+        cancelled = true;
+        done();
+      }
+    })();
+
+    return () => {
+      events.forEach((ev) => canvas.removeEventListener(ev, cancel));
+      if (!cancelled) {
+        cancelled = true;
+        cancelAnimationFrame(raf);
+        map.stop();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, loaded, tourSignal]);
 
   // ---------- Khối căn ----------
   const cells = useMemo(

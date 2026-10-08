@@ -309,6 +309,7 @@ function PublicListingDetailPage() {
                     slug={p.slug}
                     lat={p.latitude!}
                     lng={p.longitude!}
+                    houseDirection={p.houseDirection}
                     autoOpen={autoOpen3D}
                   />
                 </section>

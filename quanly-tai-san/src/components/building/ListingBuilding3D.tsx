@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { unitLabel } from "@/lib/buildingGeometry";
 import { useQuery } from "@tanstack/react-query";
-import { Box, Building2, Map as MapIcon } from "lucide-react";
+import { Box, Building2, Map as MapIcon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -16,6 +16,15 @@ import { CELL_COLORS } from "@/lib/buildingGeometry";
 import { BuildingFacade } from "./BuildingFacade";
 import { BuildingExplorer } from "./BuildingExplorer";
 import { BuildingSceneClient } from "./BuildingSceneClient";
+import { SunTourBar } from "./SunTourBar";
+import {
+  DEFAULT_SUN,
+  describeFacadeSun,
+  directionAzimuth,
+  facadeSun,
+  sunTimeOf,
+  type SunState,
+} from "@/lib/sun";
 
 /**
  * "Xem 3D" ở trang chi tiết tin.
@@ -25,6 +34,9 @@ import { BuildingSceneClient } from "./BuildingSceneClient";
  *     ở đâu" mà chưa cần mở gì. Bấm vào mở trình khám phá Toà nhà → Tầng → Căn.
  *   • Chưa có → khối nhà 3D của Mapbox quanh vị trí, toà nhà tại vị trí tin tô nổi bật.
  *
+ * Trong hộp thoại: mô phỏng nắng & bóng đổ theo giờ, phân tích nắng rọi mặt tiền theo hướng nhà,
+ * và lượt bay quanh toà nhà (xem SunTourBar).
+ *
  * Bản đồ 3D chỉ dựng khi người dùng bấm mở — mỗi lần mở bản đồ GL là một lượt tính phí của
  * Mapbox, không đáng tốn cho mọi lượt xem trang. Hình mặt đứng thì vẽ từ dữ liệu, miễn phí.
  */
@@ -32,15 +44,17 @@ export function ListingBuilding3D({
   slug,
   lat,
   lng,
+  houseDirection = null,
   autoOpen = false,
 }: {
   slug: string;
   lat: number;
   lng: number;
+  /** Hướng nhà của tài sản ("Tây", "Đông Nam"...) — cho phần nắng rọi mặt tiền. */
+  houseDirection?: string | null;
   /** Mở sẵn hộp thoại khi trang mở (đi tới từ bản đồ tìm kiếm) — chỉ khi có mô hình. */
   autoOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const q = useQuery({
     queryKey: ["listing-building", slug],
     queryFn: () => buildingModelApi.forListing(slug),
@@ -51,6 +65,48 @@ export function ListingBuilding3D({
   const focus = model?.units.find((u) => u.id === model.focusUnitId);
   const vacant = model?.units.filter((u) => u.status === 1).length ?? 0;
   const listed = model?.units.filter((u) => u.listing).length ?? 0;
+  const [open, setOpen] = useState(false);
+  const [sun, setSun] = useState<SunState>(DEFAULT_SUN);
+  const [tourSignal, setTourSignal] = useState(0);
+  const [touring, setTouring] = useState(false);
+  const facadeAzimuth = directionAzimuth(houseDirection);
+  // Câu tóm tắt nắng hôm nay — tính tại chỗ, không tốn lượt gọi nào, nên hiện ngay trên thẻ.
+  const todaySun = useMemo(
+    () =>
+      facadeAzimuth != null
+        ? describeFacadeSun(facadeSun(facadeAzimuth, new Date(), lat, lng))
+        : null,
+    [facadeAzimuth, lat, lng],
+  );
+  const changeOpen = (v: boolean) => {
+    setOpen(v);
+    if (!v) {
+      setSun(DEFAULT_SUN);
+      setTouring(false);
+    }
+  };
+  const scene = {
+    sunTime: sunTimeOf(sun),
+    sunEnabled: true,
+    tourSignal,
+    facadeAzimuth,
+    onTourEnd: () => setTouring(false),
+  };
+  const bar = (
+    <SunTourBar
+      sun={sun}
+      onSunChange={setSun}
+      lat={model?.latitude ?? lat}
+      lng={model?.longitude ?? lng}
+      houseDirection={houseDirection}
+      facadeAzimuth={facadeAzimuth}
+      touring={touring}
+      onTour={() => {
+        setTouring(true);
+        setTourSignal((n) => n + 1);
+      }}
+    />
+  );
 
   useEffect(() => {
     if (autoOpen && model) setOpen(true);
@@ -94,6 +150,8 @@ export function ListingBuilding3D({
               {listed > 0 && <Chip>{listed} đang đăng tin</Chip>}
             </div>
 
+            {todaySun && <SunLine direction={houseDirection!} text={todaySun} />}
+
             {focus && (
               <p className="text-sm text-muted-foreground">
                 Tin này là{" "}
@@ -119,8 +177,9 @@ export function ListingBuilding3D({
           <div className="min-w-0 flex-1">
             <p className="font-medium">Xem khu vực ở dạng 3D</p>
             <p className="text-sm text-muted-foreground">
-              Toà nhà cao bao nhiêu, sát nhà nào, mặt tiền hướng ra đâu.
+              Toà nhà cao bao nhiêu, sát nhà nào, bóng nắng đổ ra sao theo từng giờ.
             </p>
+            {todaySun && <SunLine direction={houseDirection!} text={todaySun} />}
           </div>
           <Button variant="outline" onClick={() => setOpen(true)} disabled={q.isLoading}>
             <Box className="mr-1.5 h-4 w-4" />
@@ -129,14 +188,14 @@ export function ListingBuilding3D({
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={changeOpen}>
         <DialogContent className="max-h-[96vh] w-[96vw] max-w-6xl gap-3 overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{model ? model.assetName : "Vị trí ở dạng 3D"}</DialogTitle>
             <DialogDescription>
               {model
-                ? "Chọn tầng ở thanh bên trái mô hình, bấm vào một căn để xem tình trạng và tin đăng."
-                : "Khối nhà 3D từ dữ liệu bản đồ Mapbox; toà nhà tại vị trí tin được tô màu xanh (nếu bản đồ có dữ liệu toà nhà đó)."}
+                ? "Chọn tầng ở thanh bên trái mô hình, bấm vào một căn để xem tình trạng và tin đăng. Bật Nắng & bóng đổ để xem nắng theo giờ."
+                : "Khối nhà 3D từ dữ liệu bản đồ Mapbox; toà nhà tại vị trí tin được tô màu xanh (nếu bản đồ có dữ liệu toà nhà đó). Bật Nắng & bóng đổ để xem nắng theo giờ."}
             </DialogDescription>
           </DialogHeader>
           {open &&
@@ -144,19 +203,34 @@ export function ListingBuilding3D({
               <BuildingExplorer
                 model={model}
                 currentSlug={slug}
-                height="clamp(340px, 62vh, 620px)"
+                height="clamp(320px, 56vh, 600px)"
+                scene={scene}
               />
             ) : (
               <BuildingSceneClient
                 building={null}
                 center={[lng, lat]}
                 highlight={[lng, lat]}
-                height="clamp(340px, 62vh, 620px)"
+                height="clamp(320px, 56vh, 600px)"
+                {...scene}
               />
             ))}
+          {open && bar}
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+function SunLine({ direction, text }: { direction: string; text: string }) {
+  return (
+    <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+      <Sun className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+      <span>
+        Hướng {direction} — nắng rọi mặt tiền hôm nay:{" "}
+        <span className="text-foreground">{text}</span>
+      </span>
+    </p>
   );
 }
 
