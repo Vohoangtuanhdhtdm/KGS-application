@@ -6,6 +6,7 @@ import type { MapEngine } from "@/lib/mapEngine";
 import type { LngLat } from "@/lib/mapboxNav";
 import type { PropertyMapPoint } from "./propertyMapShared";
 import { useMapEngine } from "./useMapEngine";
+import type { PublicListingFilters } from "@/lib/api/listings";
 
 const PropertyMap = lazy(() => import("./PropertyMap"));
 const GlPropertyMap = lazy(() => import("./GlPropertyMap"));
@@ -19,6 +20,8 @@ type Props = ComponentProps<typeof PropertyMap> & {
   onEngine?: (engine: MapEngine) => void;
   /** Loại tin đang tìm — cho khối toà nhà 3D (chỉ bản GL). */
   listingType?: 1 | 2 | null;
+  /** Bộ lọc đang tìm — cho lớp giá/m² (chỉ bản GL). */
+  priceFilters?: PublicListingFilters | null;
 };
 
 export function PropertyMapClient({
@@ -27,6 +30,7 @@ export function PropertyMapClient({
   popupExtra,
   onEngine,
   listingType,
+  priceFilters,
   ...props
 }: Props) {
   const { engine, fallBack } = useMapEngine();
@@ -44,6 +48,7 @@ export function PropertyMapClient({
           searchCenterLabel={searchCenterLabel}
           popupExtra={popupExtra}
           listingType={listingType}
+          priceFilters={priceFilters}
           onFatalError={fallBack}
         />
       ) : (

@@ -1296,6 +1296,7 @@ function PublicListingsPage() {
           }
           onEngine={setMapEngine}
           listingType={type}
+          priceFilters={filters}
           onMapReady={(map) => {
             mapRef.current = map;
           }}

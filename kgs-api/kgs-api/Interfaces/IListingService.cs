@@ -1,3 +1,4 @@
+using kgs_api.Domain.Rules;
 ﻿using kgs_api.Dtos;
 using static kgs_api.Common.Common;
 using static kgs_api.Domain.Enums;
@@ -63,6 +64,12 @@ namespace kgs_api.Interfaces
 
         /// <summary>Các khu vực đang có tin hiển thị, kèm số tin, để gợi ý ô tìm khu vực.</summary>
         Task<IReadOnlyList<ListingAreaDto>> GetAreasAsync(ListingType? type, CancellationToken ct = default);
+
+        /// <summary>Lớp "giá/m²" trên bản đồ tìm nhà: tin khớp bộ lọc gom theo ô lưới trong khung
+        /// nhìn. Xem PriceGrid.</summary>
+        Task<PriceGridResult> GetPriceGridAsync(
+            PublicListingSearchQuery query, double west, double south, double east, double north,
+            double zoom, CancellationToken ct = default);
 
         /// <summary>Lịch sử kiểm duyệt tin của chính chủ tin (không lộ danh tính người duyệt).</summary>
         Task<IReadOnlyList<ModerationEventDto>> GetModerationHistoryAsync(Guid listingId, CancellationToken ct = default);

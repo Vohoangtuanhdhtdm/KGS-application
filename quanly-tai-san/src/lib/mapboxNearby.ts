@@ -235,3 +235,55 @@ export function buildNearby(sources: Candidate[][], coveredMeters: number): Near
 export function walkMinutes(distance: number): number {
   return Math.max(1, Math.round((distance * 1.3) / 80));
 }
+
+// ---------------- Vùng đi bộ (Isochrone) ----------------
+
+/** Điểm có nằm trong đa giác không (vòng ngoài [lng, lat]) — tia ngang, đủ đúng ở cỡ vài km. */
+export function insideRing(lng: number, lat: number, ring: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+export interface WalkReach {
+  minutes: number;
+  /** Các điểm của từng nhóm nằm TRONG vùng đi bộ, gần nhất trước. */
+  groups: Record<NearbyGroupKey, NearbyPlace[]>;
+  /** Số nhóm có ít nhất một điểm trong vùng. */
+  reached: number;
+  /**
+   * Vùng đi bộ rộng hơn phạm vi đã quét tiện ích: nhóm chưa thấy có thể nằm ở phần rìa chưa
+   * quét — chỉ nói "chưa thấy", không khẳng định "không có".
+   */
+  partial: boolean;
+}
+
+/**
+ * "Đi bộ X phút tới được những gì": lọc tiện ích theo vùng đi bộ THẬT (men theo đường sá), thay
+ * cho ước tính đường chim bay × 1,3. Hai điểm cùng cách nhà 500 m có thể một cái 6 phút, một cái
+ * 15 phút vì phải vòng qua kênh hay đường cao tốc — đó là điều vùng đi bộ trả lời được.
+ */
+export function walkReach(
+  data: NearbyResult,
+  ring: [number, number][],
+  boundingRadiusMeters: number,
+  minutes: number,
+): WalkReach {
+  const groups = Object.fromEntries(
+    NEARBY_GROUPS.map((g) => [
+      g.key,
+      data.groups[g.key].filter((p) => insideRing(p.lng, p.lat, ring)),
+    ]),
+  ) as unknown as Record<NearbyGroupKey, NearbyPlace[]>;
+  return {
+    minutes,
+    groups,
+    reached: NEARBY_GROUPS.filter((g) => groups[g.key].length > 0).length,
+    // boundingRadiusMeters đã cộng 50 m lề (xem fetchIsochrone).
+    partial: boundingRadiusMeters - 50 > data.coveredMeters,
+  };
+}

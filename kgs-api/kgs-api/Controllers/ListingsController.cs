@@ -2,6 +2,7 @@
 using kgs_api.Extensions;
 using Microsoft.AspNetCore.RateLimiting;
 using kgs_api.Dtos;
+using kgs_api.Domain.Rules;
 using kgs_api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -54,6 +55,18 @@ namespace kgs_api.Controllers
         public async Task<ActionResult<IReadOnlyList<ListingAreaDto>>> Areas(
             [FromQuery] ListingType? type, CancellationToken ct)
             => Ok(await _listings.GetAreasAsync(type, ct));
+
+        /// <summary>Lớp "giá/m²" của bản đồ tìm nhà: tin khớp bộ lọc gom theo ô lưới trong khung
+        /// nhìn (west/south/east/north, độ) ở mức zoom hiện tại. Bắt buộc chọn Bán hoặc Thuê.</summary>
+        [HttpGet("price-grid")]
+        [AllowAnonymous]
+        public async Task<ActionResult<PriceGridResult>> GetPriceGrid(
+            [FromQuery] PublicListingSearchQuery query,
+            [FromQuery] double west, [FromQuery] double south,
+            [FromQuery] double east, [FromQuery] double north,
+            [FromQuery] double zoom,
+            CancellationToken ct)
+            => Ok(await _listings.GetPriceGridAsync(query, west, south, east, north, zoom, ct));
 
         [HttpGet("{slug}")]
         [AllowAnonymous]

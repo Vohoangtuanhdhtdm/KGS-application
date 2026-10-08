@@ -33,6 +33,16 @@ import { MiniGroupCard } from "./MiniGroupCard";
 import { MapBuildingCard } from "@/components/building/MapBuildingCard";
 import { MAX_VIEW_SPAN_DEG, mapBuildingsApi, type MapBuilding } from "@/lib/api/buildingModel";
 import { centroid, openRing } from "@/lib/buildingGeometry";
+import { listingsApi, type PriceGridResult, type PublicListingFilters } from "@/lib/api/listings";
+import {
+  PRICE_CELLS,
+  PRICE_FILL,
+  PRICE_LABEL,
+  PRICE_LINE,
+  PRICE_POINTS,
+  priceGeoJson,
+} from "./priceLayer";
+import { PriceLegend } from "./PriceLegend";
 
 interface Props {
   points: PropertyMapPoint[];
@@ -57,7 +67,11 @@ interface Props {
   onFatalError?: () => void;
   /** Loại tin đang tìm — khối toà nhà 3D chỉ hiện toà nhà có tin loại này. */
   listingType?: 1 | 2 | null;
+  /** Bộ lọc đang tìm — lớp giá/m² gom đúng những tin khớp bộ lọc này. Không có thì ẩn nút. */
+  priceFilters?: PublicListingFilters | null;
 }
+
+const PRICE_LAYERS = [PRICE_FILL, PRICE_LINE, PRICE_LABEL] as const;
 
 const RADIUS_SOURCE = "kgs-search-radius";
 /** Khối nhà 3D nền của Mapbox — chỉ bật ở chế độ 3D. */
@@ -162,6 +176,7 @@ export default function GlPropertyMap({
   onShowSearchAreaButtonChange,
   onFatalError,
   listingType = null,
+  priceFilters = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -209,6 +224,17 @@ export default function GlPropertyMap({
   const [buildingHost, setBuildingHost] = useState<HTMLElement | null>(null);
   const [popupBuilding, setPopupBuilding] = useState<MapBuilding | null>(null);
 
+  // ---- Lớp giá/m² ----
+  const [priceOn, setPriceOn] = useState(false);
+  const [grid, setGrid] = useState<PriceGridResult | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState(false);
+  const priceOnRef = useRef(priceOn);
+  priceOnRef.current = priceOn;
+  const priceFiltersRef = useRef(priceFilters);
+  priceFiltersRef.current = priceFilters;
+  const loadPriceRef = useRef<() => void>(() => {});
+
   // ---------------- Dựng bản đồ (một lần) ----------------
   useEffect(() => {
     if (!containerRef.current) return;
@@ -252,6 +278,47 @@ export default function GlPropertyMap({
         type: "line",
         source: RADIUS_SOURCE,
         paint: { "line-color": "#1f2f6b", "line-width": 1 },
+      });
+
+      // Lớp giá/m²: ô lưới tô theo trung vị giá/m², nhãn đặt ở trọng tâm các tin trong ô. Nằm
+      // dưới khối toà nhà và dưới viên giá (marker HTML luôn nổi trên canvas).
+      map.addSource(PRICE_CELLS, { type: "geojson", data: EMPTY_FC });
+      map.addSource(PRICE_POINTS, { type: "geojson", data: EMPTY_FC });
+      map.addLayer({
+        id: PRICE_FILL,
+        type: "fill",
+        source: PRICE_CELLS,
+        layout: { visibility: "none" },
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-opacity": ["case", ["get", "reliable"], 0.4, 0.18],
+        },
+      });
+      map.addLayer({
+        id: PRICE_LINE,
+        type: "line",
+        source: PRICE_CELLS,
+        layout: { visibility: "none" },
+        paint: { "line-color": ["get", "color"], "line-width": 1, "line-opacity": 0.8 },
+      });
+      map.addLayer({
+        id: PRICE_LABEL,
+        type: "symbol",
+        source: PRICE_POINTS,
+        layout: {
+          visibility: "none",
+          "text-field": ["get", "label"],
+          "text-font": ["DIN Pro Bold", "Arial Unicode MS Bold"],
+          "text-size": 11.5,
+          "text-line-height": 1.15,
+          // Ô nhiều tin được ưu tiên giữ nhãn khi hai nhãn chạm nhau.
+          "symbol-sort-key": ["-", ["get", "count"]],
+        },
+        paint: {
+          "text-color": "#0f172a",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 1.8,
+        },
       });
 
       // Khối nhà nền 3D (chỉ hiện khi bật 3D) và toà nhà có mô hình của KGS (luôn hiện khi
@@ -304,6 +371,21 @@ export default function GlPropertyMap({
     // Bấm vào khối toà nhà → cửa sổ toà nhà. Bấm chỗ khác của bản đồ (không phải viên giá)
     // → đổi tâm tìm kiếm.
     map.on("click", (e) => {
+      // Lớp giá đang bật: bấm vào một ô → phóng tới ô đó, không đổi tâm tìm kiếm.
+      if (priceOnRef.current && map.getLayer(PRICE_FILL)) {
+        const cell = map.queryRenderedFeatures(e.point, { layers: [PRICE_FILL] })[0];
+        if (cell?.properties) {
+          const p = cell.properties as { west: number; south: number; east: number; north: number };
+          map.fitBounds(
+            [
+              [p.west, p.south],
+              [p.east, p.north],
+            ],
+            { padding: 60, maxZoom: 16, duration: 600 },
+          );
+          return;
+        }
+      }
       const hit = map.getLayer(MODEL_BUILDINGS)
         ? map.queryRenderedFeatures(e.point, { layers: [MODEL_BUILDINGS] })[0]
         : undefined;
@@ -317,6 +399,46 @@ export default function GlPropertyMap({
     });
     map.on("mouseenter", MODEL_BUILDINGS, () => (map.getCanvas().style.cursor = "pointer"));
     map.on("mouseleave", MODEL_BUILDINGS, () => (map.getCanvas().style.cursor = ""));
+    map.on("mouseenter", PRICE_FILL, () => (map.getCanvas().style.cursor = "zoom-in"));
+    map.on("mouseleave", PRICE_FILL, () => (map.getCanvas().style.cursor = ""));
+
+    // Lớp giá: tải lại lưới sau mỗi lần dừng kéo/phóng. Huỷ lượt cũ nếu lượt mới tới.
+    let priceCtrl: AbortController | null = null;
+    loadPriceRef.current = () => {
+      const f = priceFiltersRef.current;
+      const bounds = map.getBounds();
+      if (!priceOnRef.current || !f?.type || !bounds || !map.getSource(PRICE_CELLS)) return;
+      priceCtrl?.abort();
+      const ctrl = new AbortController();
+      priceCtrl = ctrl;
+      setPriceLoading(true);
+      setPriceError(false);
+      const clampLng = (v: number) => Math.max(-180, Math.min(180, v));
+      const clampLat = (v: number) => Math.max(-85, Math.min(85, v));
+      listingsApi
+        .priceGrid(
+          f,
+          {
+            west: +clampLng(bounds.getWest()).toFixed(5),
+            south: +clampLat(bounds.getSouth()).toFixed(5),
+            east: +clampLng(bounds.getEast()).toFixed(5),
+            north: +clampLat(bounds.getNorth()).toFixed(5),
+          },
+          map.getZoom(),
+          ctrl.signal,
+        )
+        .then((g) => {
+          if (ctrl.signal.aborted) return;
+          setGrid(g);
+          setPriceLoading(false);
+        })
+        .catch(() => {
+          if (ctrl.signal.aborted) return;
+          setPriceError(true);
+          setPriceLoading(false);
+        });
+    };
+    map.on("moveend", () => loadPriceRef.current());
 
     // Tải toà nhà trong khung nhìn sau mỗi lần dừng kéo/phóng. Huỷ lượt cũ nếu lượt mới tới.
     let ctrl: AbortController | null = null;
@@ -400,6 +522,7 @@ export default function GlPropertyMap({
       popup.remove();
       bPopup.remove();
       ctrl?.abort();
+      priceCtrl?.abort();
       map.remove();
       mapRef.current = null;
     };
@@ -634,6 +757,40 @@ export default function GlPropertyMap({
     map.triggerRepaint();
   }, [ready, is3D, buildings]);
 
+  // ---------------- Lớp giá/m² ----------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    for (const id of PRICE_LAYERS)
+      map.setLayoutProperty(id, "visibility", priceOn ? "visible" : "none");
+    if (!priceOn) {
+      setGrid(null);
+      setPriceError(false);
+      return;
+    }
+    // Viên giá ẩn khi lớp giá bật (xem lớp kgs-price-mode) — thẻ đang mở của một viên giá
+    // không còn chỗ neo nên đóng luôn.
+    popupRef.current?.remove();
+    // Lớp giá để nhìn TOÀN CẢNH: đang phóng sát vài dãy nhà thì lùi ra mức quận.
+    if (map.getZoom() > 13.5) map.easeTo({ zoom: 12.5, duration: 600 });
+    else loadPriceRef.current();
+  }, [ready, priceOn]);
+
+  // Đổi bộ lọc (loại tin, khoảng giá, loại hình...) → tính lại lưới cho đúng tập tin mới.
+  const priceFiltersKey = JSON.stringify(priceFilters ?? null);
+  useEffect(() => {
+    if (ready && priceOn) loadPriceRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceFiltersKey]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const fc = grid ? priceGeoJson(grid) : { cells: EMPTY_FC, points: EMPTY_FC };
+    (map.getSource(PRICE_CELLS) as mapboxgl.GeoJSONSource | undefined)?.setData(fc.cells);
+    (map.getSource(PRICE_POINTS) as mapboxgl.GeoJSONSource | undefined)?.setData(fc.points);
+  }, [ready, grid]);
+
   // ---------------- Chấm GPS ----------------
   const dotRef = useRef<mapboxgl.Marker | null>(null);
   useEffect(() => {
@@ -651,7 +808,7 @@ export default function GlPropertyMap({
 
   return (
     <div
-      className={className}
+      className={[className, priceOn ? "kgs-price-mode" : ""].filter(Boolean).join(" ")}
       style={{
         height: "100%",
         width: "100%",
@@ -681,6 +838,49 @@ export default function GlPropertyMap({
           </span>
         )}
       </button>
+      {priceFilters && (
+        <button
+          type="button"
+          onClick={() => setPriceOn((v) => !v)}
+          aria-pressed={priceOn}
+          title={
+            priceOn
+              ? "Tắt lớp giá, xem lại từng tin"
+              : "Lớp giá/m²: gom tin theo khu, tô màu theo giá trung vị mỗi m²"
+          }
+          className={`absolute right-2 top-[152px] z-10 rounded-md md:top-[42px] border px-2.5 py-1.5 text-xs font-semibold shadow-sm ${
+            priceOn
+              ? "border-primary bg-primary text-primary-foreground"
+              : "bg-card hover:bg-accent"
+          }`}
+        >
+          Giá/m²
+        </button>
+      )}
+      {priceOn && (
+        // Màn rộng: góc dưới phải — góc trên đã có nút điều khiển, góc dưới trái có nút "tìm theo
+        // thời gian đi làm". Điện thoại: khung danh sách kéo lên che đáy bản đồ, nên dùng bản
+        // gọn ở góc trên trái, ngay dưới hàng bộ lọc.
+        <>
+          <div className="absolute bottom-7 right-2 z-10 hidden md:block">
+            <PriceLegend
+              grid={grid}
+              listingType={listingType}
+              loading={priceLoading}
+              error={priceError}
+            />
+          </div>
+          <div className="absolute left-2 top-[160px] z-10 md:hidden">
+            <PriceLegend
+              compact
+              grid={grid}
+              listingType={listingType}
+              loading={priceLoading}
+              error={priceError}
+            />
+          </div>
+        </>
+      )}
       {/* Thẻ xem nhanh render bằng React qua portal vào khung popup của GL — nhờ vậy nó vẫn
           nằm trong cây component và dùng được Link của router. */}
       {popupHost &&

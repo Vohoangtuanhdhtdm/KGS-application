@@ -9,6 +9,7 @@ import type { SimpleMapProps } from "./simpleMapTypes";
 import { GeocodeBox } from "./GeocodeBox";
 
 const ROUTE_SOURCE = "kgs-route";
+const AREA_SOURCE = "kgs-area";
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 interface Props extends SimpleMapProps {
@@ -39,6 +40,7 @@ export default function GlSimpleMap({
   pickerMarker,
   geocodeSearch,
   route,
+  areaPolygon,
   fitPoints,
   onFirstIdle,
   className,
@@ -77,6 +79,21 @@ export default function GlSimpleMap({
     });
     m.on("click", (e) => cb.current.onPick?.(e.lngLat.lat, e.lngLat.lng));
     m.on("load", () => {
+      // Vùng đi lại nằm dưới cùng: nền để đọc ghim và đường đi phía trên.
+      m.addSource(AREA_SOURCE, { type: "geojson", data: EMPTY });
+      m.addLayer({
+        id: `${AREA_SOURCE}-fill`,
+        type: "fill",
+        source: AREA_SOURCE,
+        paint: { "fill-color": "#0d9488", "fill-opacity": 0.12 },
+      });
+      m.addLayer({
+        id: `${AREA_SOURCE}-line`,
+        type: "line",
+        source: AREA_SOURCE,
+        layout: { "line-join": "round" },
+        paint: { "line-color": "#0d9488", "line-width": 2, "line-dasharray": [2, 1.5] },
+      });
       m.addSource(ROUTE_SOURCE, { type: "geojson", data: EMPTY });
       // Viền trắng dưới + nét màu trên: đường đi đọc rõ trên cả nền đường sá rối mắt.
       m.addLayer({
@@ -160,6 +177,20 @@ export default function GlSimpleMap({
     route.coordinates.forEach((c) => b.extend(c as [number, number]));
     map.fitBounds(b, { padding: 48, maxZoom: 16, duration: 600 });
   }, [map, loaded, routeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const areaKey = areaPolygon ? `${areaPolygon.length}:${areaPolygon[0]?.join(",")}` : "";
+  useEffect(() => {
+    if (!map || !loaded) return;
+    (map.getSource(AREA_SOURCE) as mapboxgl.GeoJSONSource).setData(
+      areaPolygon && areaPolygon.length > 2
+        ? {
+            type: "Feature",
+            properties: {},
+            geometry: { type: "Polygon", coordinates: [areaPolygon] },
+          }
+        : EMPTY,
+    );
+  }, [map, loaded, areaKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fitKey = fitPoints?.map((p) => `${p.lat},${p.lng}`).join("|") ?? "";
   useEffect(() => {
