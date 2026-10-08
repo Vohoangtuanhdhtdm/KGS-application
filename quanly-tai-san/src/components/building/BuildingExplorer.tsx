@@ -14,6 +14,7 @@ import {
   type CellKind,
 } from "@/lib/buildingGeometry";
 import { BuildingSceneClient } from "./BuildingSceneClient";
+import type { BuildingSceneProps } from "./BuildingScene";
 import { FloorPlan } from "./FloorPlan";
 import { UnitPhotos } from "./UnitPhotos";
 
@@ -33,6 +34,7 @@ export function BuildingExplorer({
   currentSlug,
   height = 460,
   editorPreview = false,
+  scene,
 }: {
   model: BuildingModel;
   /** Tin đang xem — căn của nó ghi "bạn đang xem tin này" thay vì liên kết. */
@@ -40,6 +42,11 @@ export function BuildingExplorer({
   height?: number | string;
   /** Xem trước trong xưởng dựng: không dẫn sang trang tin. */
   editorPreview?: boolean;
+  /** Mô phỏng nắng và lượt bay quanh toà nhà — chuyển thẳng xuống cảnh 3D. */
+  scene?: Pick<
+    BuildingSceneProps,
+    "sunTime" | "sunEnabled" | "tourSignal" | "facadeAzimuth" | "onTourEnd"
+  >;
 }) {
   const { map: byFloor, unplaced } = useMemo(() => unitsByFloor(model), [model]);
   const focus = model.units.find((u) => u.id === model.focusUnitId) ?? null;
@@ -90,6 +97,7 @@ export function BuildingExplorer({
           height="100%"
           showcase
           fallbackImage={model.buildingImages?.[0] ?? null}
+          {...scene}
         />
 
         {/* Mặt bằng phủ lên trên — cảnh 3D vẫn dựng bên dưới để chuyển lại không phải tải
