@@ -397,6 +397,38 @@ export function formatListingPrice(
   return formatCurrency(price);
 }
 
+/** Một ô của lớp giá/m² trên bản đồ tìm nhà (xem PriceGrid ở backend). */
+export interface PriceGridCell {
+  key: string;
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+  /** Trọng tâm các tin trong ô — chỗ đặt nhãn. */
+  lat: number;
+  lng: number;
+  count: number;
+  pricedCount: number;
+  medianPricePerM2: number | null;
+  minPrice: number;
+}
+
+export interface PriceGridResult {
+  cells: PriceGridCell[];
+  /** Bốn mốc chia năm mức màu, tính trên mọi tin khớp bộ lọc (không riêng khung nhìn). */
+  breaks: number[];
+  totalInView: number;
+  totalMatched: number;
+  minReliableCount: number;
+}
+
+export interface MapBox {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}
+
 // ---- API ----
 export const listingsApi = {
   // Công khai — không cần đăng nhập
@@ -405,10 +437,28 @@ export const listingsApi = {
       `/listings/search${toQuery({ ...f, page: f.page ?? 1, pageSize: f.pageSize ?? 12 })}`,
       { skipAuth: true },
     ),
-  /** Các khu vực đang có tin, để ô tìm khu vực gợi ý. Danh sách nhỏ, tải một lần rồi lọc tại chỗ. */
+  /** Lớp giá/m²: tin khớp bộ lọc gom theo ô lưới trong khung nhìn. Bắt buộc có type. */
+  priceGrid: (f: PublicListingFilters, box: MapBox, zoom: number, signal?: AbortSignal) =>
+    api<PriceGridResult>(
+      `/listings/price-grid${toQuery({
+        ...f,
+        // Lớp giá nói về thị trường trong khung nhìn — điều kiện vị trí và phân trang không dùng.
+        latitude: undefined,
+        longitude: undefined,
+        radiusMeters: undefined,
+        within: undefined,
+        page: undefined,
+        pageSize: undefined,
+        sortBy: undefined,
+        ...box,
+        zoom: +zoom.toFixed(2),
+      })}`,
+      { skipAuth: true, signal },
+    ),
   /** Lịch sử kiểm duyệt tin của chính mình — mọi vòng, mọi lý do, không có tên người duyệt. */
   moderationHistory: (listingId: string) =>
     api<ModerationEventDto[]>(`/listings/${listingId}/moderation-history`),
+  /** Các khu vực đang có tin, để ô tìm khu vực gợi ý. Danh sách nhỏ, tải một lần rồi lọc tại chỗ. */
   areas: (type?: ListingTypeCode) =>
     api<ListingAreaDto[]>(`/listings/areas${toQuery({ type })}`, { skipAuth: true }),
   detail: (slug: string) => api<PublicListingDetailDto>(`/listings/${slug}`, { skipAuth: true }),

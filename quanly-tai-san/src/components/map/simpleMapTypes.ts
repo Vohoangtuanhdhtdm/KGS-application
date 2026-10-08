@@ -30,6 +30,11 @@ export interface SimpleMapProps {
    * buộc kết quả Directions hiển thị trên bản đồ Mapbox. Có đường thì khung nhìn ôm trọn nó.
    */
   route?: GeoJSON.LineString | null;
+  /**
+   * Vùng "đi tới được trong X phút" (Mapbox Isochrone), vòng ngoài [lng, lat] — chỉ bản GL, cùng
+   * lý do với route. Tô nhạt dưới ghim và đường đi.
+   */
+  areaPolygon?: [number, number][] | null;
   /** Căn khung ôm trọn các điểm này mỗi khi danh sách đổi (chỉ bản GL). */
   fitPoints?: { lat: number; lng: number }[] | null;
   /** Gọi MỘT lần khi bản đồ GL đã tải xong tile lần đầu — để đọc dữ liệu có sẵn trong tile. */

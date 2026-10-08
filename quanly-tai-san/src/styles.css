@@ -400,6 +400,11 @@
   color: var(--pill-c);
 }
 /* Chừa chỗ cho mũi nhọn: phần tử marker của GL neo ở đáy (anchor: bottom). */
+/* Lớp giá/m² đang bật: ô lưới thay chỗ viên giá — hai thứ chồng lên nhau thì không đọc được cái nào. */
+.kgs-price-mode .kgs-pill-host {
+  display: none;
+}
+
 .kgs-pill-host {
   display: flex;
   padding-bottom: 6px;

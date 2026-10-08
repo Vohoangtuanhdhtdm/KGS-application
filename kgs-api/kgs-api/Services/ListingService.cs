@@ -854,6 +854,44 @@ namespace kgs_api.Services
             t.MinLeaseMonths, t.AvailableFrom, t.MaxOccupants,
             t.PetsAllowed, t.CurfewFree, t.SharedWithOwner, t.CookingAllowed);
 
+        /// <summary>Trần số tin đọc ra cho lớp giá. Thừa sức với quy mô đồ án; vượt mức này thì
+        /// nên chuyển sang gom ngay trong PostgreSQL (ST_SnapToGrid) thay vì nâng trần.</summary>
+        private const int MaxPriceGridRows = 50_000;
+
+        public async Task<PriceGridResult> GetPriceGridAsync(
+            PublicListingSearchQuery query, double west, double south, double east, double north,
+            double zoom, CancellationToken ct = default)
+        {
+            // Giá bán (đồng/m²) và giá thuê (đồng/m²/tháng) lệch nhau hàng trăm lần — trộn chung
+            // một thang màu thì mọi ô có tin thuê đều xanh lè.
+            if (query.Type is null)
+                throw new ValidationFailedException("Chọn Bán hoặc Thuê để xem giá/m² — hai loại giá không so chung được.");
+            if (!(west < east && south < north) || west < -180 || east > 180 || south < -90 || north > 90
+                || double.IsNaN(zoom) || zoom < 0 || zoom > 24)
+                throw new ValidationFailedException("Khung nhìn bản đồ không hợp lệ.");
+
+            // Lớp giá nói về THỊ TRƯỜNG trong khung nhìn, nên bỏ các điều kiện vị trí (bán kính,
+            // vùng đi lại); mọi bộ lọc khác giữ nguyên để con số khớp với danh sách đang xem.
+            var market = query with { Latitude = null, Longitude = null, RadiusMeters = null, Within = null };
+            var rows = await ListingSearchFilter.Apply(_listings.Query().AsNoTracking(), market, null)
+                .Where(l => l.Asset.Location != null)
+                // Cột vị trí là geography — PostGIS không có ST_X/ST_Y cho kiểu này, nên đọc
+                // nguyên điểm ra rồi tách toạ độ phía ứng dụng.
+                .Select(l => new
+                {
+                    l.Asset.Location,
+                    l.Price,
+                    Area = l.AssetUnit != null ? l.AssetUnit.Area : l.Asset.Area
+                })
+                .Take(MaxPriceGridRows)
+                .ToListAsync(ct);
+
+            return PriceGrid.Build(
+                // Y=lat, X=lng — dễ đảo nhầm
+                rows.Select(r => new PriceGridPoint(r.Location!.Y, r.Location.X, r.Price, r.Area)).ToList(),
+                west, south, east, north, zoom);
+        }
+
         /// <summary>Bỏ khoá lạ, khử trùng lặp, giữ thứ tự ổn định. Khoá không nằm trong
         /// AmenityKeys.All bị loại im lặng thay vì ném lỗi — client cũ gửi khoá lạ thì tin
         /// vẫn đăng được, chỉ là tiện nghi đó không được ghi nhận.</summary>

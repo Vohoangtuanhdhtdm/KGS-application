@@ -8,6 +8,7 @@ import { useGeolocationOnDemand } from "@/hooks/useGeolocationOnDemand";
 import type { MapEngine } from "@/lib/mapEngine";
 import {
   TRAVEL_PROFILES,
+  fetchIsochrone,
   fetchRoute,
   formatDistance,
   formatDuration,
@@ -19,6 +20,7 @@ import {
   collectFromMap,
   fetchTilequery,
   walkMinutes,
+  walkReach,
   type NearbyGroupKey,
 } from "@/lib/mapboxNearby";
 import { NearbyAmenities } from "./NearbyAmenities";
@@ -28,6 +30,8 @@ const NEARBY_ON_MAP = 8;
 
 const PLACE_COLOR = "#16a34a";
 const LABELS = ["Chỗ làm", "Trường học", "Nhà người thân"] as const;
+/** Mặc định 10 phút: ~800 m, nằm gọn trong phạm vi quét tiện ích (1 km). */
+const DEFAULT_WALK_MINUTES = 10;
 
 /**
  * Bản đồ vị trí ở trang chi tiết tin, kèm "đi tới chỗ bạn hay đến mất bao lâu".
@@ -93,6 +97,25 @@ export function ListingLocationMap({
         : null,
     [fromMap, tqDone, tqQ.data],
   );
+  // Vùng đi bộ X phút quanh nhà (Isochrone) — một lượt gọi mỗi tin × mỗi mức phút, nhớ trong
+  // phiên. Đổi mức phút là thao tác của người dùng; tắt thì không gọi gì.
+  const [walkMinutesSel, setWalkMinutesSel] = useState<number | null>(DEFAULT_WALK_MINUTES);
+  const walkQ = useQuery({
+    queryKey: ["isochrone", "walking", lat.toFixed(5), lng.toFixed(5), walkMinutesSel],
+    queryFn: ({ signal }) => fetchIsochrone({ lat, lng }, "walking", walkMinutesSel!, signal),
+    enabled: gl && walkMinutesSel != null,
+    staleTime: Infinity,
+    retry: 1,
+  });
+  const walkArea = gl && walkMinutesSel != null ? (walkQ.data ?? null) : null;
+  const reach = useMemo(
+    () =>
+      nearby && walkArea && walkMinutesSel != null
+        ? walkReach(nearby, walkArea.ring, walkArea.boundingRadiusMeters, walkMinutesSel)
+        : null,
+    [nearby, walkArea, walkMinutesSel],
+  );
+
   const [nearbyGroup, setNearbyGroup] = useState<NearbyGroupKey | null>(null);
   const groupMeta = NEARBY_GROUPS.find((g) => g.key === nearbyGroup);
   const groupPlaces =
@@ -121,7 +144,14 @@ export function ListingLocationMap({
         height={300}
         markers={markers}
         route={route?.line ?? null}
-        fitPoints={groupPlaces.length ? [{ lat, lng }, ...groupPlaces] : null}
+        areaPolygon={walkArea?.ring ?? null}
+        fitPoints={
+          groupPlaces.length
+            ? [{ lat, lng }, ...groupPlaces]
+            : walkArea
+              ? walkArea.ring.map(([x, y]) => ({ lat: y, lng: x }))
+              : null
+        }
         onEngine={setEngine}
         onFirstIdle={(m) => setFromMap(collectFromMap(m, { lat, lng }))}
         onPick={
@@ -267,7 +297,18 @@ export function ListingLocationMap({
         </div>
       )}
 
-      {gl && <NearbyAmenities data={nearby} selected={nearbyGroup} onSelect={setNearbyGroup} />}
+      {gl && (
+        <NearbyAmenities
+          data={nearby}
+          selected={nearbyGroup}
+          onSelect={setNearbyGroup}
+          walkMinutes={walkMinutesSel}
+          onWalkMinutesChange={setWalkMinutesSel}
+          walkLoading={walkQ.isFetching}
+          walkError={walkQ.isError}
+          reach={reach}
+        />
+      )}
     </div>
   );
 }
