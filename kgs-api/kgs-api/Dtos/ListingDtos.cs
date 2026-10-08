@@ -193,6 +193,13 @@ namespace kgs_api.Dtos
         /// và tâm vẫn dùng để sắp "gần nhất". Không bao giờ được lưu (xem TravelArea).</summary>
         [MaxLength(8000)] string? Within = null,
 
+        // ---- Đơn vị hành chính sau sắp xếp 2025 ----
+        /// <summary>Mã tỉnh/thành mới (34 tỉnh) — "Thành phố Hồ Chí Minh" mới gồm cả Bình Dương cũ
+        /// và Bà Rịa - Vũng Tàu cũ.</summary>
+        [MaxLength(10)] string? NewProvinceCode = null,
+        /// <summary>Mã phường/xã mới.</summary>
+        [MaxLength(10)] string? NewWardCode = null,
+
         // ---- Đặc điểm bất động sản — phủ MỌI loại hình, cả bán lẫn thuê ----
         // Trước đây bộ lọc chỉ có các điều kiện của thuê phòng (tổng chi phí, nội quy...);
         // người mua không lọc được loại hình, diện tích, pháp lý hay hướng — dù dữ liệu đã
@@ -282,6 +289,13 @@ namespace kgs_api.Dtos
         public int OwnerInquiriesReceived { get; init; }
         public int OwnerInquiriesAnswered { get; init; }
         public double? OwnerMedianResponseHours { get; init; }
+
+        /// <summary>Địa chỉ theo đơn vị hành chính sau sắp xếp 2025 — suy ra từ địa chỉ cũ.</summary>
+        public string? NewProvince { get; init; }
+        public string? NewWard { get; init; }
+        public string? NewWardCode { get; init; }
+        /// <summary>Phường cũ bị chia cho nhiều phường mới: phường mới chỉ là ước đoán.</summary>
+        public bool NewAddressApprox { get; init; }
     }
 
     /// <summary>Hồ sơ công khai của người đăng — để người tìm nhà quyết định có liên hệ hay không.
@@ -325,7 +339,12 @@ namespace kgs_api.Dtos
         int Round,
         DateTime CreatedAt);
 
-    public sealed record ListingAreaDto(string City, string District, int Count);
+    /// <summary>Một khu vực đang có tin. Hai dạng: khu vực cũ (City + District) hoặc phường/xã mới
+    /// sau sắp xếp 2025 (NewWardCode có giá trị, District rỗng).</summary>
+    public sealed record ListingAreaDto(
+        string City, string District, int Count,
+        string? NewProvinceCode = null, string? NewProvince = null,
+        string? NewWardCode = null, string? NewWard = null);
 
     /// <summary>Hai dải tin gợi ý dưới trang chi tiết, gộp trong một lần gọi.
     ///

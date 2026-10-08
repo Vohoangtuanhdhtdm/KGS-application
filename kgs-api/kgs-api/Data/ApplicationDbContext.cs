@@ -31,6 +31,32 @@ namespace kgs_api.Data
         public DbSet<ListingModerationEvent> ListingModerationEvents => Set<ListingModerationEvent>();
         public DbSet<ListingView> ListingViews => Set<ListingView>();
 
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            SyncNewAddresses();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            SyncNewAddresses();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        /// <summary>Địa chỉ mới (sau sắp xếp 2025) luôn đi theo địa chỉ cũ: mọi tài sản vừa thêm hoặc
+        /// vừa sửa địa chỉ đều được tính lại ở đây — một chỗ duy nhất, thay vì nhắc từng service
+        /// (đăng tin, toà nhà, tài sản, seed...) tự nhớ gọi.</summary>
+        private void SyncNewAddresses()
+        {
+            foreach (var e in ChangeTracker.Entries<Asset>())
+            {
+                var addr = e.Reference(a => a.Address).TargetEntry;
+                if (e.State is EntityState.Added or EntityState.Modified
+                    || addr?.State is EntityState.Added or EntityState.Modified)
+                    e.Entity.Address?.SyncNewUnits(e.Entity.Location);
+            }
+        }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

@@ -34,6 +34,10 @@ namespace kgs_api.Domain.Rules
             var district = AdministrativeNames.CanonicalDistrict(city, query.District);
             if (!string.IsNullOrWhiteSpace(city)) q = q.Where(l => l.Asset.Address.City == city);
             if (!string.IsNullOrWhiteSpace(district)) q = q.Where(l => l.Asset.Address.District == district);
+            if (!string.IsNullOrWhiteSpace(query.NewProvinceCode))
+                q = q.Where(l => l.Asset.Address.NewProvinceCode == query.NewProvinceCode);
+            if (!string.IsNullOrWhiteSpace(query.NewWardCode))
+                q = q.Where(l => l.Asset.Address.NewWardCode == query.NewWardCode);
             if (query.PriceMin is not null) q = q.Where(l => l.Price >= query.PriceMin);
             if (query.PriceMax is not null) q = q.Where(l => l.Price <= query.PriceMax);
             if (query.BedroomsMin is not null) q = q.Where(l => l.Asset.Bedrooms >= query.BedroomsMin);

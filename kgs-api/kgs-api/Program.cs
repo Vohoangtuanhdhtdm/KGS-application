@@ -130,6 +130,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     await DbInitializer.SeedRolesAndAdminAsync(app.Services, builder.Configuration, logger);
+    await DbInitializer.BackfillNewAddressesAsync(app.Services, logger);
 
     var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     recurringJobs.AddOrUpdate<RefreshTokenCleanupJob>(

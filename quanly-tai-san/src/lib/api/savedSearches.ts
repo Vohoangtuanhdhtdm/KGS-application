@@ -19,6 +19,8 @@ export interface SavedSearchCriteria {
   latitude?: number | null;
   longitude?: number | null;
   radiusMeters?: number | null;
+  newProvinceCode?: string | null;
+  newWardCode?: string | null;
   totalCostMax?: number | null;
   petsAllowed?: boolean | null;
   curfewFree?: boolean | null;
@@ -66,6 +68,8 @@ export function toCriteria(f: PublicListingFilters): SavedSearchCriteria {
     latitude: val(f.latitude),
     longitude: val(f.longitude),
     radiusMeters: val(f.radiusMeters),
+    newProvinceCode: f.newProvinceCode || null,
+    newWardCode: f.newWardCode || null,
     totalCostMax: val(f.totalCostMax),
     petsAllowed: val(f.petsAllowed),
     curfewFree: val(f.curfewFree),

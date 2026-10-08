@@ -337,6 +337,15 @@ namespace kgs_api.Services
                 OwnerInquiriesReceived = stats.Received,
                 OwnerInquiriesAnswered = stats.Answered,
                 OwnerMedianResponseHours = stats.MedianHours,
+                NewProvince = asset.Address.NewProvince,
+                NewWard = asset.Address.NewWard,
+                NewWardCode = asset.Address.NewWardCode,
+                // Ước đoán = phường cũ bị chia VÀ toạ độ không xác nhận được phường đã chọn.
+                NewAddressApprox = asset.Address.NewWardCode is not null
+                    && AdministrativeUnits2025.CandidateWardCodes(
+                        asset.Address.City, asset.Address.District, asset.Address.Ward).Count > 1
+                    && (asset.Location is null
+                        || WardBoundaries.Find(asset.Location.X, asset.Location.Y) != asset.Address.NewWardCode),
             };
         }
 
@@ -901,19 +910,34 @@ namespace kgs_api.Services
             // Gộp ngay trong cơ sở dữ liệu. Danh sách này nhỏ (số quận có tin, không phải số
             // tin) nên trả về trọn gói và để phía giao diện tự lọc khi người dùng gõ — tra
             // cứu tại chỗ luôn nhanh hơn một vòng mạng cho mỗi ký tự.
-            var rows = await _listings.Query().AsNoTracking()
+            var open = _listings.Query().AsNoTracking()
                 .Where(l => l.Status == ListingStatus.Approved)
                 // Lọc theo loại tin ngay tại đây: trang tìm kiếm luôn đang xem một loại, nên
                 // con số hiện cạnh mỗi khu vực phải là số tin người dùng SẼ thấy khi bấm vào.
                 // Đếm gộp cả thuê lẫn bán thì gợi ý ghi "11 tin" rồi mở ra chỉ có 4.
-                .Where(l => type == null || l.Type == type)
+                .Where(l => type == null || l.Type == type);
+            var rows = await open
                 .GroupBy(l => new { l.Asset.Address.City, l.Asset.Address.District })
-                .Select(g => new ListingAreaDto(g.Key.City, g.Key.District, g.Count()))
+                .Select(g => new ListingAreaDto(g.Key.City, g.Key.District, g.Count(), null, null, null, null))
+                .ToListAsync(ct);
+
+            // Phường/xã mới (sau sắp xếp 2025) — người dùng gõ "An Hội Tây" hay "Phường Sài Gòn"
+            // cũng phải ra gợi ý, không chỉ tên quận cũ.
+            var wards = await open
+                .Where(l => l.Asset.Address.NewWardCode != null)
+                .GroupBy(l => new
+                {
+                    l.Asset.Address.NewProvinceCode, l.Asset.Address.NewProvince,
+                    l.Asset.Address.NewWardCode, l.Asset.Address.NewWard
+                })
+                .Select(g => new ListingAreaDto(g.Key.NewProvince!, "", g.Count(),
+                    g.Key.NewProvinceCode, g.Key.NewProvince, g.Key.NewWardCode, g.Key.NewWard))
                 .ToListAsync(ct);
 
             return rows
                 .OrderByDescending(r => r.Count)
                 .ThenBy(r => r.District, StringComparer.CurrentCulture)
+                .Concat(wards.OrderByDescending(r => r.Count).ThenBy(r => r.NewWard, StringComparer.CurrentCulture))
                 .ToList();
         }
 

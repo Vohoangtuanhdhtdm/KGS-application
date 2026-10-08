@@ -7,6 +7,7 @@ import type { LngLat } from "@/lib/mapboxNav";
 import type { PropertyMapPoint } from "./propertyMapShared";
 import { useMapEngine } from "./useMapEngine";
 import type { PublicListingFilters } from "@/lib/api/listings";
+import type { WardBoundary } from "@/lib/api/adminUnits";
 
 const PropertyMap = lazy(() => import("./PropertyMap"));
 const GlPropertyMap = lazy(() => import("./GlPropertyMap"));
@@ -22,6 +23,8 @@ type Props = ComponentProps<typeof PropertyMap> & {
   listingType?: 1 | 2 | null;
   /** Bộ lọc đang tìm — cho lớp giá/m² (chỉ bản GL). */
   priceFilters?: PublicListingFilters | null;
+  /** Ranh giới phường đang lọc (chỉ bản GL). */
+  areaBoundary?: WardBoundary | null;
 };
 
 export function PropertyMapClient({
@@ -31,6 +34,7 @@ export function PropertyMapClient({
   onEngine,
   listingType,
   priceFilters,
+  areaBoundary,
   ...props
 }: Props) {
   const { engine, fallBack } = useMapEngine();
@@ -49,6 +53,7 @@ export function PropertyMapClient({
           popupExtra={popupExtra}
           listingType={listingType}
           priceFilters={priceFilters}
+          areaBoundary={areaBoundary}
           onFatalError={fallBack}
         />
       ) : (
