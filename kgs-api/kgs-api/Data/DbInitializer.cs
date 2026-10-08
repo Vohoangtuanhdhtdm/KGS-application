@@ -1,6 +1,7 @@
 ﻿using kgs_api.Data;
 using kgs_api.Domain.Entity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace kgs_api.Data
 {
@@ -60,6 +61,22 @@ namespace kgs_api.Data
                 logger.LogError("Không tạo được Admin: {Errors}",
                     string.Join(", ", result.Errors.Select(e => e.Description)));
             }
+        }
+
+        /// <summary>Tính lại địa chỉ mới (sau sắp xếp 2025) cho mọi tài sản — để dữ liệu cũ có cột
+        /// mới, và để những phường cũ bị chia được phân định lại khi có thêm ranh giới phường.
+        /// Chỉ ghi những dòng thực sự đổi. Quét toàn bảng là ổn ở quy mô đồ án (vài trăm tài sản);
+        /// dữ liệu lớn thì chuyển thành việc chạy một lần sau mỗi lần cập nhật danh mục.</summary>
+        public static async Task BackfillNewAddressesAsync(IServiceProvider services, ILogger logger)
+        {
+            using var scope = services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var assets = await db.Assets.ToListAsync();
+            foreach (var a in assets) a.Address.SyncNewUnits(a.Location);
+            var changed = db.ChangeTracker.Entries().Count(e => e.State == EntityState.Modified);
+            if (changed == 0) return;
+            await db.SaveChangesAsync();
+            logger.LogInformation("Đã cập nhật địa chỉ mới (2025) cho {Count} tài sản.", changed);
         }
     }
 }

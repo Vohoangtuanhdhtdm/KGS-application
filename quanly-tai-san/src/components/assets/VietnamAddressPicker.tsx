@@ -1,5 +1,8 @@
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { getProvinces, getDistricts, getWards } from "vietnam-provinces";
+import { adminUnitsApi } from "@/lib/api/adminUnits";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -12,6 +15,10 @@ import {
 /**
  * 3 dropdown liên động Tỉnh/Quận/Phường dùng dữ liệu JSON tĩnh (vietnam-provinces).
  * Lưu giá trị dạng TÊN (không phải code) để khớp shape address hiện có của backend.
+ *
+ * Đây là địa chỉ THEO ĐƠN VỊ CŨ (trước 01/07/2025) — mô hình định giá và chỉ số giá học trên
+ * đơn vị cũ. Chọn xong phường thì hiện luôn địa chỉ mới tương ứng (máy chủ tự suy ra và lưu
+ * song song), để chủ nhà thấy tin của mình sẽ hiện ra sao.
  */
 export function VietnamAddressPicker({
   city,
@@ -111,6 +118,58 @@ export function VietnamAddressPicker({
           </SelectContent>
         </Select>
       </div>
+      <NewAddressPreview city={city} district={district} ward={ward} />
     </div>
+  );
+}
+
+/** "Địa chỉ mới: Phường An Hội Tây, Thành phố Hồ Chí Minh" — theo sắp xếp đơn vị hành chính 2025. */
+function NewAddressPreview({
+  city,
+  district,
+  ward,
+}: {
+  city: string;
+  district: string;
+  ward: string;
+}) {
+  const ready = !!(city && district && ward);
+  const q = useQuery({
+    queryKey: ["admin-units-resolve", city, district, ward],
+    queryFn: () => adminUnitsApi.resolve(city, district, ward),
+    enabled: ready,
+    staleTime: Infinity,
+    retry: 1,
+  });
+  if (!ready) {
+    return (
+      <p className="text-xs text-muted-foreground md:col-span-3">
+        Chọn theo địa chỉ cũ (trước 07/2025) — hệ thống tự đổi sang địa chỉ mới sau sáp nhập.
+      </p>
+    );
+  }
+  const a = q.data?.address;
+  return (
+    <p className="flex flex-wrap items-center gap-1.5 rounded-md border border-dashed px-3 py-2 text-xs md:col-span-3">
+      <span className="text-muted-foreground">Địa chỉ mới (từ 01/07/2025)</span>
+      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+      {q.isLoading ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : a ? (
+        <>
+          <span className="font-medium">
+            {a.ward}, {a.province}
+          </span>
+          {q.data!.candidates.length > 1 && (
+            <span className="text-muted-foreground">
+              (phường cũ được chia cho {q.data!.candidates.map((c) => c.name).join(", ")} — ghim vị
+              trí trên bản đồ để hệ thống xác định đúng phường)
+            </span>
+          )}
+        </>
+      ) : (
+        <span className="text-muted-foreground">chưa tra được trong bảng chuyển đổi</span>
+      )}
+    </p>
   );
 }

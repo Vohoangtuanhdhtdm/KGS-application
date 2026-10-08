@@ -43,6 +43,7 @@ import {
   priceGeoJson,
 } from "./priceLayer";
 import { PriceLegend } from "./PriceLegend";
+import type { WardBoundary } from "@/lib/api/adminUnits";
 
 interface Props {
   points: PropertyMapPoint[];
@@ -69,6 +70,32 @@ interface Props {
   listingType?: 1 | 2 | null;
   /** Bộ lọc đang tìm — lớp giá/m² gom đúng những tin khớp bộ lọc này. Không có thì ẩn nút. */
   priceFilters?: PublicListingFilters | null;
+  /** Đang lọc theo một phường mới: khoanh viền phường, làm mờ bên ngoài. */
+  areaBoundary?: WardBoundary | null;
+}
+
+const BOUNDARY_SOURCE = "kgs-ward-boundary";
+const BOUNDARY_MASK = "kgs-ward-mask";
+
+/** Cả thế giới trừ đi phường — tô mờ phần này để mắt dồn vào bên trong ranh giới. */
+function maskOf(b: WardBoundary): GeoJSON.Feature<GeoJSON.Polygon> {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [-180, -85],
+          [180, -85],
+          [180, 85],
+          [-180, 85],
+          [-180, -85],
+        ],
+        ...b.geometry.coordinates.map((poly) => poly[0]),
+      ],
+    },
+  };
 }
 
 const PRICE_LAYERS = [PRICE_FILL, PRICE_LINE, PRICE_LABEL] as const;
@@ -177,6 +204,7 @@ export default function GlPropertyMap({
   onFatalError,
   listingType = null,
   priceFilters = null,
+  areaBoundary = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -278,6 +306,28 @@ export default function GlPropertyMap({
         type: "line",
         source: RADIUS_SOURCE,
         paint: { "line-color": "#1f2f6b", "line-width": 1 },
+      });
+
+      // Ranh giới phường đang lọc: phần ngoài phường tô mờ, viền nét đứt. Dữ liệu ranh giới là
+      // của OpenStreetMap (ODbL) — ghi công qua thuộc tính attribution của nguồn.
+      map.addSource(BOUNDARY_SOURCE, {
+        type: "geojson",
+        data: EMPTY_FC,
+        attribution: "Ranh giới phường © OpenStreetMap contributors",
+      });
+      map.addSource(BOUNDARY_MASK, { type: "geojson", data: EMPTY_FC });
+      map.addLayer({
+        id: BOUNDARY_MASK,
+        type: "fill",
+        source: BOUNDARY_MASK,
+        paint: { "fill-color": "#0f172a", "fill-opacity": 0.22 },
+      });
+      map.addLayer({
+        id: `${BOUNDARY_SOURCE}-line`,
+        type: "line",
+        source: BOUNDARY_SOURCE,
+        layout: { "line-join": "round" },
+        paint: { "line-color": "#1f2f6b", "line-width": 2.5, "line-dasharray": [2, 1] },
       });
 
       // Lớp giá/m²: ô lưới tô theo trung vị giá/m², nhãn đặt ở trọng tâm các tin trong ô. Nằm
@@ -790,6 +840,28 @@ export default function GlPropertyMap({
     (map.getSource(PRICE_CELLS) as mapboxgl.GeoJSONSource | undefined)?.setData(fc.cells);
     (map.getSource(PRICE_POINTS) as mapboxgl.GeoJSONSource | undefined)?.setData(fc.points);
   }, [ready, grid]);
+
+  // ---------------- Ranh giới phường ----------------
+  const boundaryCode = areaBoundary?.properties.code ?? "";
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    (map.getSource(BOUNDARY_SOURCE) as mapboxgl.GeoJSONSource | undefined)?.setData(
+      areaBoundary ?? EMPTY_FC,
+    );
+    (map.getSource(BOUNDARY_MASK) as mapboxgl.GeoJSONSource | undefined)?.setData(
+      areaBoundary ? maskOf(areaBoundary) : EMPTY_FC,
+    );
+    if (!areaBoundary) return;
+    // Căn khung theo phường — chạy SAU lần căn theo các tin (effect ở trên), nên khung cuối
+    // cùng là cả phường chứ không chỉ cụm tin bên trong.
+    const b = new mapboxgl.LngLatBounds();
+    for (const poly of areaBoundary.geometry.coordinates)
+      for (const [lng, lat] of poly[0]) b.extend([lng, lat]);
+    const t = setTimeout(() => map.fitBounds(b, { padding: 40, maxZoom: 16, duration: 600 }), 550);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, boundaryCode]);
 
   // ---------------- Chấm GPS ----------------
   const dotRef = useRef<mapboxgl.Marker | null>(null);

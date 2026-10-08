@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { listingsApi } from "@/lib/api/listings";
+import { listingsApi, type ListingAreaDto } from "@/lib/api/listings";
 import type { ListingTypeCode } from "@/constants/enums";
 
 /**
@@ -29,12 +29,19 @@ import type { ListingTypeCode } from "@/constants/enums";
  * chỉ chứa khu vực CÓ tin, nên không bao giờ gợi ý người dùng vào một chỗ trống, và hiện
  * được luôn số tin của từng khu vực. (Tên thì hai nguồn nay đã giống nhau: máy chủ quy mọi
  * cách viết về tên chính thức của danh mục khi lưu và khi lọc — xem AdministrativeNames.)
+ *
+ * Từ 01/07/2025 cả nước bỏ cấp quận, còn 34 tỉnh/thành. Ô này nhận cả HAI cách gọi: quận cũ
+ * ("Gò Vấp" — người mua bán vẫn quen gọi) và phường/xã mới ("An Hội Tây"), cộng tỉnh/thành sau
+ * sáp nhập ("Thành phố Hồ Chí Minh (mới)" gồm cả Bình Dương, Bà Rịa - Vũng Tàu cũ).
  */
 
 export interface AreaPick {
   city: string;
   /** Rỗng khi người dùng chọn cả tỉnh/thành. */
   district: string;
+  /** Chọn theo đơn vị hành chính mới (sau 2025) — city/district khi đó rỗng. */
+  newProvinceCode?: string;
+  newWardCode?: string;
 }
 
 /** Bỏ dấu tiếng Việt để "quan binh thanh" khớp được "Quận Bình Thạnh". */
@@ -56,15 +63,38 @@ interface Muc {
   phu: string;
   city: string;
   district: string;
+  newProvinceCode?: string;
+  newWardCode?: string;
   soTin: number;
   /** Các từ đã bỏ dấu; khớp khi MỌI từ người dùng gõ đều xuất hiện. */
   tu: string[];
 }
 
 /** Dựng bảng tra từ danh sách khu vực có tin: từng quận, cộng thêm mục gộp cả tỉnh/thành. */
-function dungBangTra(khuVuc: { city: string; district: string; count: number }[]): Muc[] {
+function dungBangTra(tatCa: ListingAreaDto[]): Muc[] {
   const ds: Muc[] = [];
   const theoTinh = new Map<string, number>();
+  const khuVuc = tatCa.filter((k) => !k.newWardCode);
+  const phuongMoi = tatCa.filter((k) => k.newWardCode);
+
+  // Phường/xã mới, và tỉnh/thành mới khi nó KHÁC tỉnh cũ cùng tên (tức là đã gộp thêm tỉnh khác).
+  const theoTinhMoi = new Map<string, { ten: string; soTin: number }>();
+  for (const k of phuongMoi) {
+    const t = theoTinhMoi.get(k.newProvinceCode!) ?? { ten: k.newProvince ?? "", soTin: 0 };
+    t.soTin += k.count;
+    theoTinhMoi.set(k.newProvinceCode!, t);
+    ds.push({
+      key: `w:${k.newWardCode}`,
+      nhan: k.newWard ?? "",
+      phu: `${k.newProvince} · phường/xã mới`,
+      city: "",
+      district: "",
+      newProvinceCode: k.newProvinceCode ?? undefined,
+      newWardCode: k.newWardCode ?? undefined,
+      soTin: k.count,
+      tu: boDau(`${k.newWard} ${k.newProvince}`).split(/\s+/).filter(Boolean),
+    });
+  }
 
   for (const k of khuVuc) {
     theoTinh.set(k.city, (theoTinh.get(k.city) ?? 0) + k.count);
@@ -76,6 +106,20 @@ function dungBangTra(khuVuc: { city: string; district: string; count: number }[]
       district: k.district,
       soTin: k.count,
       tu: boDau(`${k.district} ${k.city}`).split(/\s+/).filter(Boolean),
+    });
+  }
+
+  for (const [code, t] of theoTinhMoi) {
+    if (theoTinh.get(t.ten) === t.soTin) continue; // tỉnh không sáp nhập — đã có mục tỉnh cũ
+    ds.push({
+      key: `np:${code}`,
+      nhan: `${t.ten} (mới)`,
+      phu: "Tỉnh/thành sau sáp nhập 2025",
+      city: "",
+      district: "",
+      newProvinceCode: code,
+      soTin: t.soTin,
+      tu: boDau(`${t.ten} moi`).split(/\s+/).filter(Boolean),
     });
   }
 
@@ -101,6 +145,8 @@ const SO_GOI_Y = 8;
 export function AreaSearchBox({
   city,
   district,
+  newProvinceCode,
+  newWardCode,
   type,
   onPick,
   onClear,
@@ -108,6 +154,8 @@ export function AreaSearchBox({
 }: {
   city: string;
   district: string;
+  newProvinceCode?: string;
+  newWardCode?: string;
   /** Loại tin đang xem — số tin cạnh mỗi gợi ý phải đếm đúng loại đó. */
   type: ListingTypeCode;
   onPick: (v: AreaPick) => void;
@@ -122,13 +170,14 @@ export function AreaSearchBox({
     staleTime: 10 * 60_000,
     retry: 1,
   });
-  const bang = useMemo(
-    () => dungBangTra(khuVucQuery.data ?? []),
-    [khuVucQuery.data],
-  );
+  const bang = useMemo(() => dungBangTra(khuVucQuery.data ?? []), [khuVucQuery.data]);
 
   /** Nhãn của khu vực đang chọn — cũng là thứ hiện trong ô khi người dùng không gõ. */
-  const nhanDangChon = district || city;
+  const nhanDangChon = newWardCode
+    ? (bang.find((m) => m.newWardCode === newWardCode)?.nhan ?? "Phường/xã mới")
+    : newProvinceCode
+      ? (bang.find((m) => m.key === `np:${newProvinceCode}`)?.nhan ?? "Tỉnh/thành mới")
+      : district || city;
 
   const [q, setQ] = useState("");
   const [dangGo, setDangGo] = useState(false);
@@ -140,7 +189,7 @@ export function AreaSearchBox({
   // phải theo — nếu không, ô hiện một đằng mà bộ lọc chạy một nẻo.
   useEffect(() => {
     if (!dangGo) setQ("");
-  }, [city, district, dangGo]);
+  }, [city, district, newProvinceCode, newWardCode, dangGo]);
 
   const goiY = useMemo(() => {
     const tuGo = boDau(q).split(/\s+/).filter(Boolean);
@@ -153,8 +202,7 @@ export function AreaSearchBox({
   }, [q, bang]);
 
   // Gõ đủ dài mà không ra gì thì phải NÓI, thay vì để người dùng nhìn một ô im lìm.
-  const khongKhop =
-    dangGo && !khuVucQuery.isLoading && boDau(q).length >= 2 && goiY.length === 0;
+  const khongKhop = dangGo && !khuVucQuery.isLoading && boDau(q).length >= 2 && goiY.length === 0;
 
   useEffect(() => {
     setViTri(0);
@@ -173,7 +221,12 @@ export function AreaSearchBox({
   }, []);
 
   const chon = (m: Muc) => {
-    onPick({ city: m.city, district: m.district });
+    onPick({
+      city: m.city,
+      district: m.district,
+      newProvinceCode: m.newProvinceCode,
+      newWardCode: m.newWardCode,
+    });
     setQ("");
     setDangGo(false);
     setMoGoiY(false);
@@ -206,8 +259,8 @@ export function AreaSearchBox({
         aria-expanded={moGoiY && (goiY.length > 0 || khongKhop)}
         aria-controls="goi-y-khu-vuc"
         aria-autocomplete="list"
-        aria-label="Tìm theo tỉnh/thành hoặc quận/huyện"
-        placeholder="Tỉnh/thành hoặc quận/huyện"
+        aria-label="Tìm theo tỉnh/thành, quận cũ hoặc phường mới"
+        placeholder="Tỉnh/thành, quận hoặc phường"
         className="pl-9 pr-8 h-9"
         value={dangGo ? q : nhanDangChon}
         onChange={(e) => {

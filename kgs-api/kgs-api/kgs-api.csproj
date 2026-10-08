@@ -32,6 +32,8 @@
   <ItemGroup>
     <!-- Danh mục hành chính (sinh từ gói npm vietnam-provinces) — dạng chuẩn của tên tỉnh/quận. -->
     <EmbeddedResource Include="Data\vn-admin-units.json" />
+    <EmbeddedResource Include="Data\vn-admin-2025.json" />
+    <EmbeddedResource Include="Data\vn-ward-boundaries.geojson" />
   </ItemGroup>
 
 </Project>

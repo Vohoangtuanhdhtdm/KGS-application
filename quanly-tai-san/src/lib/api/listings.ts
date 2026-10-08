@@ -132,6 +132,12 @@ export interface PublicListingDetailDto {
   ownerInquiriesReceived?: number;
   ownerInquiriesAnswered?: number;
   ownerMedianResponseHours?: number | null;
+  /** Địa chỉ sau sắp xếp 2025, suy ra từ địa chỉ cũ. */
+  newProvince?: string | null;
+  newWard?: string | null;
+  newWardCode?: string | null;
+  /** Phường cũ bị chia cho nhiều phường mới — phường mới chỉ là ước đoán. */
+  newAddressApprox?: boolean;
 }
 
 /** Hai dải gợi ý dưới trang chi tiết. */
@@ -293,9 +299,15 @@ export interface ModerationEventDto {
 
 export interface ListingAreaDto {
   city: string;
+  /** Rỗng ở dòng phường/xã mới. */
   district: string;
   /** Số tin đang hiển thị ở khu vực này. */
   count: number;
+  /** Dòng phường/xã mới (sau sắp xếp 2025) — có mã phường. */
+  newProvinceCode?: string | null;
+  newProvince?: string | null;
+  newWardCode?: string | null;
+  newWard?: string | null;
 }
 
 export interface PublicListingFilters {
@@ -311,6 +323,9 @@ export interface PublicListingFilters {
   radiusMeters?: number | "";
   /** Vùng đi lại (Isochrone) "lng,lat;lng,lat;..." — gửi kèm vòng tròn bao ngoài ở trên. */
   within?: string;
+  /** Đơn vị hành chính sau sắp xếp 2025: mã tỉnh mới / mã phường mới. */
+  newProvinceCode?: string;
+  newWardCode?: string;
   // Đặc điểm bất động sản — mọi loại hình, cả bán lẫn thuê
   propertyTypes?: number[];
   areaMin?: number | "";

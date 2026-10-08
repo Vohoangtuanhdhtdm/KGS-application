@@ -66,6 +66,7 @@ import { DemandSearchSheet, type DemandSearchResult } from "@/components/public/
 import { useGeolocationOnDemand, type LatLng } from "@/hooks/useGeolocationOnDemand";
 import { useViewportKind } from "@/hooks/useViewportKind";
 import { AreaSearchBox } from "@/components/public/AreaSearchBox";
+import { adminUnitsApi } from "@/lib/api/adminUnits";
 import { useCompareList } from "@/hooks/useCompareList";
 import { formatCurrency } from "@/lib/format";
 import { CurrencyInput } from "@/components/CurrencyInput";
@@ -121,6 +122,10 @@ export interface ListingsSearchParams {
   /** Mã loại hình (AssetDomainType). */
   loai?: number;
   has3D?: boolean;
+  /** Mã phường/xã mới (sau sắp xếp 2025) — từ liên kết "Tin khác ở Phường X" của trang tin. */
+  phuong?: string;
+  /** Mã tỉnh/thành mới. */
+  tinh?: string;
 }
 
 const numParam = (v: unknown): number | undefined => {
@@ -129,6 +134,13 @@ const numParam = (v: unknown): number | undefined => {
 };
 const strParam = (v: unknown): string | undefined =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, 200) : undefined;
+/** Mã đơn vị hành chính: router tự đọc "26740" thành số, nên nhận cả số lẫn chuỗi — và chỉ giữ
+ *  chữ số. Mã có số 0 đứng đầu ("01", "00166") thì router để nguyên là chuỗi. */
+const codeParam = (v: unknown): string | undefined => {
+  const s = typeof v === "number" ? String(v) : typeof v === "string" ? v : "";
+  const d = s.replace(/\D/g, "").slice(0, 10);
+  return d || undefined;
+};
 
 export const Route = createFileRoute("/tin-dang/")({
   validateSearch: (s: Record<string, unknown>): ListingsSearchParams => {
@@ -144,6 +156,8 @@ export const Route = createFileRoute("/tin-dang/")({
       loai: numParam(s.loai),
       has3D:
         s.has3D === true || s.has3D === "1" || s.has3D === 1 || s.has3D === "true" || undefined,
+      phuong: codeParam(s.phuong),
+      tinh: codeParam(s.tinh),
     };
   },
   head: () => ({ meta: [{ title: "Tin đăng bất động sản — KGS" }] }),
@@ -165,6 +179,8 @@ function PublicListingsPage() {
   const [type, setType] = useState<ListingTypeCode>(1);
   const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
+  // Khu vực theo đơn vị hành chính mới (sau 2025) — loại trừ với city/district ở trên.
+  const [newArea, setNewArea] = useState<{ provinceCode?: string; wardCode?: string } | null>(null);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [bedroomsMin, setBedroomsMin] = useState<number | null>(null);
@@ -396,6 +412,7 @@ function PublicListingsPage() {
     if (result.location?.kind === "district") {
       setCity(result.location.city);
       setDistrict(result.location.district);
+      setNewArea(null);
     } else if (result.location?.kind === "myLocation") {
       triggerLocationSearch(result.location.radiusKm);
     }
@@ -419,6 +436,8 @@ function PublicListingsPage() {
         ? radiusMeters
         : "",
     within: travelArea ? encodeRing(travelArea.ring) : "",
+    newProvinceCode: newArea?.provinceCode,
+    newWardCode: newArea?.wardCode,
     ...toSearchParams(prop),
     ...rentTermsToSearchParams(rentTerms),
     prefer: prefer.length ? prefer.join(";") : undefined,
@@ -641,6 +660,31 @@ function PublicListingsPage() {
   // gi), day la thu da chon va go duoc tung cai. Khong co hang nay, nguoi dung cuon
   // xuong mot doan roi khong con biet vi sao ket qua it — ho chi thay "khong tim thay
   // tin nao" va bo di, trong khi thu phai go chi la mot bo loc gia dat tu luc truoc.
+  // Tên khu vực mới cho chip — cùng khoá truy vấn với ô tìm khu vực nên không gọi thêm lần nào.
+  const areasQ = useQuery({
+    queryKey: ["listing-areas", type],
+    queryFn: () => listingsApi.areas(type),
+    staleTime: 10 * 60_000,
+    enabled: !!newArea,
+  });
+  const newAreaRow = newArea
+    ? areasQ.data?.find((a) =>
+        newArea.wardCode
+          ? a.newWardCode === newArea.wardCode
+          : a.newProvinceCode === newArea.provinceCode,
+      )
+    : undefined;
+  // Ranh giới phường đang lọc — để bản đồ khoanh vùng. Dữ liệu tĩnh nên giữ cả phiên.
+  const boundaryQ = useQuery({
+    queryKey: ["ward-boundary", newArea?.wardCode],
+    queryFn: ({ signal }) => adminUnitsApi.boundary(newArea!.wardCode!, signal),
+    enabled: !!newArea?.wardCode,
+    staleTime: Infinity,
+  });
+  const newAreaLabel = newArea?.wardCode
+    ? (newAreaRow?.newWard ?? "Phường/xã mới")
+    : `${newAreaRow?.newProvince ?? "Tỉnh/thành"} (mới)`;
+
   const appliedFilters: { key: string; label: string; clear: () => void }[] = [];
   if (keyword.trim())
     appliedFilters.push({
@@ -659,6 +703,12 @@ function PublicListingsPage() {
     });
   if (city.trim())
     appliedFilters.push({ key: "city", label: city.trim(), clear: () => setCity("") });
+  if (newArea)
+    appliedFilters.push({
+      key: "new-area",
+      label: newAreaLabel,
+      clear: () => setNewArea(null),
+    });
   if (priceMin != null || priceMax != null)
     appliedFilters.push({
       key: "price",
@@ -710,6 +760,11 @@ function PublicListingsPage() {
     setType((c.type ?? 1) as ListingTypeCode);
     setCity(c.city ?? "");
     setDistrict(c.district ?? "");
+    setNewArea(
+      c.newProvinceCode || c.newWardCode
+        ? { provinceCode: c.newProvinceCode ?? undefined, wardCode: c.newWardCode ?? undefined }
+        : null,
+    );
     setPriceMin(c.priceMin ?? null);
     setPriceMax(c.priceMax ?? null);
     setBedroomsMin(c.bedroomsMin ?? null);
@@ -816,6 +871,7 @@ function PublicListingsPage() {
     if (c.type === 1 || c.type === 2) setType(c.type as ListingTypeCode);
     setCity(c.city ?? "");
     setDistrict(c.district ?? "");
+    setNewArea(null);
     setPriceMin(c.priceMin ?? null);
     setPriceMax(c.priceMax ?? null);
     setBedroomsMin(c.bedroomsMin ?? null);
@@ -840,6 +896,7 @@ function PublicListingsPage() {
     if (u.type) setType(u.type);
     if (u.city) setCity(u.city);
     if (u.district) setDistrict(u.district);
+    if (u.phuong || u.tinh) setNewArea({ wardCode: u.phuong, provinceCode: u.tinh });
     if (u.priceMin != null) setPriceMin(u.priceMin);
     if (u.priceMax != null) setPriceMax(u.priceMax);
     if (u.keyword) {
@@ -1117,14 +1174,22 @@ function PublicListingsPage() {
       className={className}
       city={city}
       district={district}
+      newProvinceCode={newArea?.provinceCode}
+      newWardCode={newArea?.wardCode}
       type={type}
-      onPick={({ city: c, district: d }) => {
+      onPick={({ city: c, district: d, newProvinceCode, newWardCode }) => {
         setCity(c);
         setDistrict(d);
+        setNewArea(
+          newProvinceCode || newWardCode
+            ? { provinceCode: newProvinceCode, wardCode: newWardCode }
+            : null,
+        );
       }}
       onClear={() => {
         setCity("");
         setDistrict("");
+        setNewArea(null);
       }}
     />
   );
@@ -1297,6 +1362,7 @@ function PublicListingsPage() {
           onEngine={setMapEngine}
           listingType={type}
           priceFilters={filters}
+          areaBoundary={boundaryQ.data ?? null}
           onMapReady={(map) => {
             mapRef.current = map;
           }}

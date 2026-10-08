@@ -176,6 +176,10 @@ function PublicListingDetailPage() {
 
   const p = query.data;
   const address = [p.addressDetail, p.ward, p.district, p.city].filter(Boolean).join(", ");
+  // Địa chỉ sau sắp xếp 2025 (bỏ cấp quận): "123 Nguyễn Văn Linh, Phường Tân Hưng, TP.HCM".
+  const newAddress = p.newWard
+    ? [p.addressDetail, p.newWard, p.newProvince].filter(Boolean).join(", ")
+    : null;
 
   const copyPhone = async () => {
     if (!p.ownerPhone) return;
@@ -256,11 +260,25 @@ function PublicListingDetailPage() {
               <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  {address || "—"}
+                  {newAddress ?? (address || "—")}
                   {hasMap && (
                     <a href="#vi-tri" className="ml-2 font-medium text-primary hover:underline">
                       Xem bản đồ
                     </a>
+                  )}
+                  {newAddress && (
+                    <span className="mt-0.5 block text-xs">
+                      {p.newAddressApprox ? "Phường mới ước đoán · " : ""}Địa chỉ cũ: {address}
+                      {p.newWardCode && (
+                        <Link
+                          to="/tin-dang"
+                          search={{ phuong: p.newWardCode, type: p.type }}
+                          className="ml-2 font-medium text-primary hover:underline"
+                        >
+                          Tin khác ở {p.newWard}
+                        </Link>
+                      )}
+                    </span>
                   )}
                 </span>
               </p>
