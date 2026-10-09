@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { assetsApi } from "@/lib/api/assets";
 import { contractsApi } from "@/lib/api/contracts";
@@ -202,7 +202,15 @@ function AssetMapDashboard() {
           title={activeSheet.title}
           onClose={() => navigate({ to: "/quan-ly/ban-do", search: {} })}
         >
-          <activeSheet.Component embedded />
+          <Suspense
+            fallback={
+              <div className="flex justify-center py-10 text-sm text-muted-foreground">
+                Đang tải…
+              </div>
+            }
+          >
+            <activeSheet.Component embedded />
+          </Suspense>
         </FeatureSheet>
       )}
 

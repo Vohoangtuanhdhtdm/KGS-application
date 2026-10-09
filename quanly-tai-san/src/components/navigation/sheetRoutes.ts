@@ -1,8 +1,19 @@
-import type { ComponentType } from "react";
-import { ContractListPage } from "@/routes/quan-ly.hop-dong.index";
-import { CashflowPage } from "@/routes/quan-ly.thu-chi.index";
-import { RemindersPage } from "@/routes/quan-ly.nhac-lich.index";
-import { ContactsPage } from "@/routes/quan-ly.doi-tac.index";
+import { lazy, type ComponentType } from "react";
+
+// Nạp lười: chỉ khi người dùng mở sheet nào thì mới tải trang đó (thu chi kéo theo cả thư viện
+// biểu đồ). Nơi hiển thị (FeatureSheet) bọc Suspense.
+const ContractListPage = lazy(() =>
+  import("@/components/management/ContractListPage").then((m) => ({ default: m.ContractListPage })),
+);
+const CashflowPage = lazy(() =>
+  import("@/components/management/CashflowPage").then((m) => ({ default: m.CashflowPage })),
+);
+const RemindersPage = lazy(() =>
+  import("@/components/management/RemindersPage").then((m) => ({ default: m.RemindersPage })),
+);
+const ContactsPage = lazy(() =>
+  import("@/components/management/ContactsPage").then((m) => ({ default: m.ContactsPage })),
+);
 
 /**
  * Các tính năng QUẢN LÝ TÀI SẢN mở dạng sheet đè lên bản đồ.

@@ -36,4 +36,7 @@
     <EmbeddedResource Include="Data\vn-ward-boundaries.geojson" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="kgs-api.Tests" />
+  </ItemGroup>
 </Project>
