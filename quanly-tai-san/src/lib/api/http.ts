@@ -53,3 +53,12 @@ export async function apiForm<T = unknown>(
 }
 
 export { api };
+
+/** Một trang kết quả có phân trang — khớp PagedResult<T> của backend. */
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}

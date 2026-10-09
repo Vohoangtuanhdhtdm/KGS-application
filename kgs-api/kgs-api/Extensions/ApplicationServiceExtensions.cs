@@ -121,13 +121,7 @@ namespace kgs_api.Extensions
 
             services.AddScoped<IAssetService, AssetService>();
             services.AddScoped<IAssetMediaService, AssetMediaService>();
-            services.AddScoped<IAssetDocumentService, AssetDocumentService>();
             services.AddScoped<IAssetUnitService, AssetUnitService>();
-            services.AddScoped<IContactPartyService, ContactPartyService>();
-            services.AddScoped<ILeaseContractService, LeaseContractService>();
-            services.AddScoped<ICashFlowService, CashFlowService>();
-            services.AddScoped<IReportService, ReportService>();
-            services.AddScoped<IReminderService, ReminderService>();
             services.AddScoped<IMarketplaceEngagementService, MarketplaceEngagementService>();
             // Mỗi thông báo: một bản trong ứng dụng (chuông) + một email — xem CompositeNotificationSender.
             services.AddScoped<EmailNotificationSender>();
@@ -217,9 +211,7 @@ namespace kgs_api.Extensions
             services.AddHangfireServer();
 
             // Đăng ký các background job
-            services.AddScoped<ReminderProcessingJob>();
             services.AddScoped<FileCleanupJob>();
-            services.AddScoped<ContractExpiryJob>();
             services.AddScoped<ListingExpiryJob>();
             services.AddScoped<SavedSearchAlertJob>();
 

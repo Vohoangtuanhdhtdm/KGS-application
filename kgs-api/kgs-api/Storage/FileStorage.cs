@@ -9,7 +9,7 @@ namespace kgs_api.Storage
     //
     // Khác biệt so với IPhotoService:
     //  - Trả về StoredFile (Url + PublicId + metadata) để nhúng thẳng
-    //    vào owned type (AssetMedia.File, AssetDocument.File, ...),
+    //    vào owned type (AssetMedia.File, ListingImage.File, ...),
     //    thay vì trả nguyên ImageUploadResult của Cloudinary.
     //  - Có UploadDocumentAsync (resource_type=raw) cho PDF/giấy tờ —
     //    IPhotoService cũ chỉ upload ảnh.
@@ -26,7 +26,7 @@ namespace kgs_api.Storage
         Task<StoredFile> UploadDocumentAsync(IFormFile file, string folder = "documents", CancellationToken ct = default);
 
         /// <summary>Ghi PublicId vào hàng đợi xoá. KHÔNG SaveChanges — caller tự save cùng transaction
-        /// với thao tác xoá bản ghi DB (Asset/AssetMedia/AssetDocument/CashFlowEntry...).</summary>
+        /// với thao tác xoá bản ghi DB (Asset/AssetMedia/ListingImage...).</summary>
         void ScheduleDeletion(StoredFile? file);
     }
 }

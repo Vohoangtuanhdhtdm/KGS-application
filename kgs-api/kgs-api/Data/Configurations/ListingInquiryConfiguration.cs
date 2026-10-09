@@ -18,12 +18,6 @@ namespace kgs_api.Data.Configurations
              .HasForeignKey(x => x.FromUserId)
              .OnDelete(DeleteBehavior.Cascade);
 
-            // Restrict: đã chuyển thành khách thuê rồi thì không cho xoá đối tác
-            // mà vẫn giữ yêu cầu trỏ vào khoảng không.
-            b.HasOne(x => x.ConvertedContactParty).WithMany()
-             .HasForeignKey(x => x.ConvertedContactPartyId)
-             .OnDelete(DeleteBehavior.Restrict);
-
             // Hai truy vấn nóng: hộp thư của chủ nhà, và "yêu cầu tôi đã gửi".
             b.HasIndex(x => new { x.ToUserId, x.CreatedAt });
             b.HasIndex(x => new { x.FromUserId, x.CreatedAt });

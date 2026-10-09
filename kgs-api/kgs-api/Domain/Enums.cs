@@ -96,82 +96,19 @@
 
         public enum AssetStatus { InUse = 1, RentedOut = 2, ForSale = 3, Vacant = 4, Sold = 5, LeaseEnded = 6 }
 
-
         public enum UnitStatus { Vacant = 1, Occupied = 2, UnderMaintenance = 3 }
-
-        public enum ContractDirection { LeaseOut = 1, LeaseIn = 2 }        // Cho thuê / Đi thuê
-
-        public enum ContractStatus { Draft = 1, Active = 2, Expired = 3, Terminated = 4, Renewed = 5 }
 
         public enum PaymentCycle { Monthly = 1, Quarterly = 2, SemiAnnually = 3, Annually = 4 }
 
-        public enum TaxResponsibility { Landlord = 1, Tenant = 2 }         // ai chịu trách nhiệm đóng thuế
-
-        public enum DocumentType
-        {
-            LandTitle = 1,            // Sổ đỏ / sổ hồng
-            PurchaseContract = 2,     // HĐ mua bán
-            LeaseContract = 3,        // HĐ thuê / cho thuê
-            LeaseAppendix = 4,        // Phụ lục gia hạn
-            AuthorizationContract = 5,// HĐ uỷ quyền
-            ElectricityContract = 6,  // HĐ điện
-            WaterContract = 7,        // HĐ nước
-            TaxDocument = 8,          // Hồ sơ thuế
-            Invoice = 9,              // Hoá đơn
-            Other = 99
-        }
-
-
-        public enum CashFlowDirection { Income = 1, Expense = 2 }
-
-        public enum CashFlowCategory
-        {
-            // Thu
-            RentIncome = 1,               // tiền cho thuê
-            DepositReceived = 2,
-            SaleProceeds = 3,
-            // Chi
-            RentExpense = 10,             // tiền thuê trả chủ nhà
-            DepositPaid = 11,
-            MaintenanceCost = 12,         // sửa chữa / cải tạo
-            ElectricityBill = 13,
-            WaterBill = 14,
-            InternetBill = 15,
-            ManagementFee = 16,
-            // Thuế (giữ trong cùng sổ cái để báo cáo tổng thuế theo năm)
-            RegistrationTax = 20,         // thuế trước bạ
-            NonAgriculturalLandTax = 21,  // thuế phi nông nghiệp
-            BusinessLicenseTax = 22,      // thuế môn bài (~1tr/năm)
-            PersonalIncomeTax = 23,       // TNCN 5% giá cho thuê
-            ValueAddedTax = 24,           // GTGT 5% giá cho thuê
-            OtherTax = 29,
-            Other = 99
-        }
-
-        public enum ReminderType
-        {
-            RentCollection = 1,   // nhắc thu tiền (LeaseOut)
-            RentPayment = 2,      // nhắc đóng tiền cho chủ nhà (LeaseIn)
-            Maintenance = 3,
-            ContractExpiry = 4,   // hết hạn HĐ, cần tái ký / phụ lục
-            TaxDue = 5,
-            UtilityPayment = 6    // điện, nước khi cho thuê theo tầng/phòng
-        }
-
-        public enum RecurrenceCycle { None = 0, Monthly = 1, Quarterly = 2, SemiAnnually = 3, Annually = 4}
-
-        public enum ContactType { Tenant = 1, Landlord = 2, Broker = 3, Vendor = 4, Other = 99 }
-
         // Vòng đời một yêu cầu xem nhà gửi từ marketplace.
-        // Converted = đã sinh ContactParty, sẵn sàng ký hợp đồng — đây là trạng thái
-        // duy nhất chứng minh hệ thống kết nối thành công chủ nhà với người thuê.
+        // Converted (4) thuộc luồng "chuyển thành khách thuê" đã gỡ cùng khu quản lý tài sản;
+        // giữ chỗ để các số trạng thái đã lưu không đổi nghĩa.
         public enum InquiryStatus { New = 1, Contacted = 2, Viewed = 3, Converted = 4, Closed = 5 }
 
         // Lời mời xem nhà chủ tin gửi tới một nhu cầu ẩn danh (ghép đôi hai chiều).
         // Hết hạn KHÔNG phải một trạng thái lưu trong DB: lời mời Pending quá hạn được coi là
         // hết hạn lúc đọc — không cần job dọn dẹp chỉ để đổi một cột.
         public enum InvitationStatus { Pending = 1, Accepted = 2, Declined = 3 }
-
 
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)

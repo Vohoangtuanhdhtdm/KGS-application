@@ -34,7 +34,7 @@ namespace kgs_api.Infrastructure.Persistence.Interceptors
             if (context is null) return;
 
             // UserIdOrNull chu KHONG phai UserId: interceptor nay cung chay trong cac job nen
-            // Hangfire (ReminderProcessingJob, ContractExpiryJob) - noi khong co HttpContext.
+            // Hangfire (ListingExpiryJob, SavedSearchAlertJob...) - noi khong co HttpContext.
             // Dung UserId se nem UnauthorizedAccessException va giet job.
             var userId = _currentUser.UserIdOrNull;
             var now = DateTime.UtcNow;

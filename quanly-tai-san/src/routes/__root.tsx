@@ -11,7 +11,6 @@ import {
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { StoreProvider } from "@/lib/store";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailNotConfirmedBanner } from "@/components/auth/EmailNotConfirmedBanner";
@@ -150,18 +149,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <StoreProvider>
-          <AppShell />
-          <RealtimeSync />
-          <Toaster position="top-right" richColors />
-        </StoreProvider>
+        <AppShell />
+        <RealtimeSync />
+        <Toaster position="top-right" richColors />
       </AuthProvider>
     </QueryClientProvider>
   );
 }
-
-/** Route mà bản đồ phải chiếm trọn viewport — rail thu gọn, không header, không banner. */
-const MAP_PATH = "/quan-ly/ban-do";
 
 /**
  * Chọn KHUNG giao diện theo không gian làm việc của trang (xem lib/workspace.ts).
@@ -178,7 +172,6 @@ function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const ws = useCurrentWorkspace();
   const { isAdmin } = useAuth();
-  const isMapPage = pathname === MAP_PATH || pathname === MAP_PATH + "/";
 
   // Gắn không gian lên <html> để styles.css đổi --primary cho CẢ trang — kể cả menu thả và
   // hộp thoại được portal ra ngoài cây component (xem ghi chú ở styles.css).
@@ -224,9 +217,9 @@ function AppShell() {
     <div className="flex min-h-screen w-full flex-col bg-background">
       {/* Màn bản đồ chiếm trọn viewport: không header, không banner. */}
       {/* Admin lạc vào không gian Chủ nhà: khung Tìm nhà + màn giải thích, không dựng trang. */}
-      {!isMapPage && (ws === "owner" && !isAdmin ? <OwnerHeader /> : <PublicHeader />)}
-      {!isMapPage && <EmailNotConfirmedBanner />}
-      <main className={isMapPage ? "h-screen min-w-0" : "min-w-0 flex-1 pb-28"}>
+      {ws === "owner" && !isAdmin ? <OwnerHeader /> : <PublicHeader />}
+      <EmailNotConfirmedBanner />
+      <main className="min-w-0 flex-1 pb-28">
         <ProtectedRoute>
           {ws === "owner" && isAdmin ? <AdminOwnerBlocked /> : <Outlet />}
         </ProtectedRoute>

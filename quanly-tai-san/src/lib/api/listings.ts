@@ -1,5 +1,5 @@
 import { api, apiForm, toQuery } from "./http";
-import type { PagedResult } from "./assets";
+import type { PagedResult } from "./http";
 import type {
   ListingTypeCode,
   PaymentCycleCode,

@@ -14,7 +14,6 @@ namespace kgs_api.Services
         private readonly IRepository<Listing> _listings;
         private readonly IRepository<SavedListing> _saved;
         private readonly IRepository<ListingInquiry> _inquiries;
-        private readonly IRepository<ContactParty> _contacts;
         private readonly IRepository<ApplicationUser> _users;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
@@ -23,7 +22,6 @@ namespace kgs_api.Services
             IRepository<Listing> listings,
             IRepository<SavedListing> saved,
             IRepository<ListingInquiry> inquiries,
-            IRepository<ContactParty> contacts,
             IRepository<ApplicationUser> users,
             IUnitOfWork uow,
             ICurrentUserService currentUser,
@@ -31,7 +29,7 @@ namespace kgs_api.Services
             ILogger<MarketplaceEngagementService> logger)
         {
             _listings = listings; _saved = saved; _inquiries = inquiries;
-            _contacts = contacts; _users = users; _uow = uow; _currentUser = currentUser;
+            _users = users; _uow = uow; _currentUser = currentUser;
             _notifier = notifier; _logger = logger;
         }
 
@@ -201,11 +199,10 @@ namespace kgs_api.Services
         {
             var inquiry = await GetReceivedInquiryAsync(inquiryId, ct);
 
-            // Converted chỉ được đặt bởi luồng ConvertInquiryAsync — nó phải sinh ContactParty
-            // cùng lúc, nếu cho đặt tay thì trạng thái sẽ nói dối về việc đã kết nối xong.
+            // Converted thuộc luồng "chuyển thành khách thuê" của khu quản lý tài sản cũ — đã gỡ
+            // cùng khu đó. Giá trị còn trong enum để không đổi nghĩa các số đã lưu.
             if (request.Status == InquiryStatus.Converted)
-                throw new ValidationFailedException(
-                    "Dùng chức năng Chuyển thành khách thuê để chuyển sang trạng thái này.");
+                throw new ValidationFailedException("Trạng thái này không còn được dùng.");
 
             inquiry.Status = request.Status;
             await _uow.SaveChangesAsync(ct);
@@ -246,56 +243,6 @@ namespace kgs_api.Services
                 .FirstAsync(ct);
         }
 
-        // ==================== CẦU NỐI: YÊU CẦU → ĐỐI TÁC → HỢP ĐỒNG ====================
-
-        public async Task<ConvertInquiryResultDto> ConvertInquiryAsync(Guid inquiryId, CancellationToken ct = default)
-        {
-            var userId = _currentUser.UserId;
-            var inquiry = await GetReceivedInquiryAsync(inquiryId, ct);
-
-            if (inquiry.ConvertedContactPartyId is not null)
-                throw new ConflictException("Yêu cầu này đã được chuyển thành khách thuê rồi.");
-
-            var sender = await _users.Query().AsNoTracking()
-                .Where(u => u.Id == inquiry.FromUserId)
-                .Select(u => new { u.Name, u.PhoneNumber, u.Email })
-                .FirstOrDefaultAsync(ct)
-                ?? throw new NotFoundException("Không tìm thấy người gửi yêu cầu.");
-
-            // Nếu chủ nhà đã có sẵn đối tác trùng số điện thoại thì dùng lại, tránh
-            // sinh bản ghi trùng mỗi lần cùng một người hỏi thuê nhiều tin khác nhau.
-            ContactParty? contact = null;
-            if (!string.IsNullOrWhiteSpace(sender.PhoneNumber))
-            {
-                contact = await _contacts.Query()
-                    .FirstOrDefaultAsync(c => c.UserId == userId && c.Phone == sender.PhoneNumber, ct);
-            }
-
-            if (contact is null)
-            {
-                contact = new ContactParty
-                {
-                    UserId = userId,
-                    Type = ContactType.Tenant,
-                    FullName = string.IsNullOrWhiteSpace(sender.Name) ? "Khách thuê" : sender.Name,
-                    Phone = sender.PhoneNumber,
-                    Email = sender.Email,
-                    Notes = $"Tạo tự động từ yêu cầu xem nhà ngày {DateTime.UtcNow:dd/MM/yyyy}."
-                };
-                await _contacts.AddAsync(contact, ct);
-            }
-
-            // Gán qua navigation chứ không qua khoá ngoại: ContactParty mới chưa có Id
-            // trong CSDL cho tới khi SaveChanges chạy, EF tự nối khoá sau khi insert.
-            inquiry.ConvertedContactParty = contact;
-            inquiry.Status = InquiryStatus.Converted;
-
-            // Một SaveChanges: đối tác + trạng thái yêu cầu nằm trong cùng transaction.
-            await _uow.SaveChangesAsync(ct);
-
-            return new ConvertInquiryResultDto(inquiry.Id, contact.Id, contact.FullName);
-        }
-
         // ==================== Helpers ====================
 
         private async Task<ListingInquiry> GetReceivedInquiryAsync(Guid inquiryId, CancellationToken ct)
@@ -313,6 +260,6 @@ namespace kgs_api.Services
             q.Select(i => new ReceivedInquiryDto(
                 i.Id, i.ListingId, i.Listing.Slug!, i.Listing.Title,
                 i.FromUser.Name, i.FromUser.PhoneNumber, i.FromUser.Email,
-                i.Message, i.PreferredViewingAt, i.Status, i.ConvertedContactPartyId, i.CreatedAt));
+                i.Message, i.PreferredViewingAt, i.Status, i.CreatedAt));
     }
 }

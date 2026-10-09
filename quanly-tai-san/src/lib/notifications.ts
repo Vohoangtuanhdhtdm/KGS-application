@@ -20,7 +20,6 @@ export function notificationIcon(n: Pick<NotificationItem, "linkPath" | "title">
   if (p.startsWith("/tin-cua-toi"))
     return n.title.includes("gỡ") || n.title.includes("từ chối") ? ShieldAlert : FileText;
   if (p.startsWith("/tin-dang")) return Search;
-  if (p.startsWith("/quan-ly")) return CalendarClock;
   return Bell;
 }
 

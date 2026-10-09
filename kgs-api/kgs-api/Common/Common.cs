@@ -69,33 +69,6 @@ namespace kgs_api.Common
             public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
         }
 
-        /// <summary>Phân trang keyset — dùng cho bảng lớn tăng vô hạn (CashFlowEntries).
-        /// NextCursor = null nghĩa là đã hết dữ liệu.</summary>
-        public sealed record KeysetPage<T>(IReadOnlyList<T> Items, string? NextCursor);
-
-        /// <summary>Cursor 2 thành phần (OccurredAt, Id) — encode base64 để client truyền lại nguyên vẹn.</summary>
-        public static class CashFlowCursor
-        {
-            public static string Encode(DateTime occurredAt, Guid id)
-                => Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{occurredAt:O}|{id}"));
-
-            public static (DateTime OccurredAt, Guid Id)? Decode(string? cursor)
-            {
-                if (string.IsNullOrWhiteSpace(cursor)) return null;
-                try
-                {
-                    var parts = System.Text.Encoding.UTF8
-                        .GetString(Convert.FromBase64String(cursor)).Split('|');
-                    return (DateTime.Parse(parts[0], null, System.Globalization.DateTimeStyles.RoundtripKind),
-                            Guid.Parse(parts[1]));
-                }
-                catch
-                {
-                    throw new ValidationFailedException("Cursor phân trang không hợp lệ.");
-                }
-            }
-        }
-
         // ============================================================
         // MIDDLEWARE — DomainException → ProblemDetails
         // ============================================================

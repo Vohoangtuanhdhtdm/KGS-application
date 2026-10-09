@@ -54,9 +54,6 @@ namespace kgs_api.Domain.Entity
         // Navigations
         public ICollection<AssetUnit> Units { get; set; } = new List<AssetUnit>();
         public ICollection<AssetMedia> Media { get; set; } = new List<AssetMedia>();
-        public ICollection<AssetDocument> Documents { get; set; } = new List<AssetDocument>();
-        public ICollection<LeaseContract> Contracts { get; set; } = new List<LeaseContract>();
-        public ICollection<CashFlowEntry> CashFlows { get; set; } = new List<CashFlowEntry>();
 
         // Tin đăng công khai của tài sản này. Quan hệ đã ĐẢO CHIỀU so với
         // Asset.LinkedPropertyId cũ: nay Listing trỏ về Asset, và một tài sản có thể

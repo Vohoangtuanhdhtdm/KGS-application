@@ -17,13 +17,11 @@ namespace kgs_api.Controllers
     {
         private readonly IAssetService _assets;
         private readonly IAssetMediaService _media;
-        private readonly IAssetDocumentService _documents;
         private readonly IAssetUnitService _units;
 
-        public AssetsController(IAssetService assets, IAssetMediaService media,
-            IAssetDocumentService documents, IAssetUnitService units)
+        public AssetsController(IAssetService assets, IAssetMediaService media, IAssetUnitService units)
         {
-            _assets = assets; _media = media; _documents = documents; _units = units;
+            _assets = assets; _media = media; _units = units;
         }
 
         // -------------------- A1. CRUD --------------------
@@ -104,26 +102,6 @@ namespace kgs_api.Controllers
         public async Task<IActionResult> SetThumbnailFromMedia(Guid assetId, Guid mediaId, CancellationToken ct)
         {
             await _media.SetThumbnailFromMediaAsync(assetId, mediaId, ct);
-            return NoContent();
-        }
-
-        // -------------------- A5. DOCUMENTS (giấy tờ) --------------------
-
-        [HttpPost("{assetId:guid}/documents")]
-        [RequestSizeLimit(30_000_000)]
-        public async Task<ActionResult<AssetDocumentDto>> UploadDocument(
-            Guid assetId, [FromForm] AssetDocumentUploadRequest request, CancellationToken ct)
-            => Ok(await _documents.UploadAsync(assetId, request, ct));
-
-        [HttpGet("{assetId:guid}/documents")]
-        public async Task<ActionResult<IReadOnlyList<AssetDocumentDto>>> GetDocuments(
-            Guid assetId, [FromQuery] DocumentType? type, CancellationToken ct)
-            => Ok(await _documents.GetByAssetAsync(assetId, type, ct));
-
-        [HttpDelete("{assetId:guid}/documents/{documentId:guid}")]
-        public async Task<IActionResult> DeleteDocument(Guid assetId, Guid documentId, CancellationToken ct)
-        {
-            await _documents.DeleteAsync(assetId, documentId, ct);
             return NoContent();
         }
 

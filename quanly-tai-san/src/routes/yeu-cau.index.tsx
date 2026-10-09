@@ -15,8 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarClock, Inbox, Mail, Phone, Send, UserPlus } from "lucide-react";
-import { ENABLE_ASSET_MANAGEMENT } from "@/lib/features";
+import { CalendarClock, Inbox, Mail, Phone, Send } from "lucide-react";
 import { InvitationsList } from "@/components/matchmaking/InvitationsList";
 
 export const Route = createFileRoute("/yeu-cau/")({
@@ -94,23 +93,6 @@ function ReceivedList() {
     onError: (e) => toast.error(getErrorMessage(e, "Không cập nhật được trạng thái")),
   });
 
-  const convert = useMutation({
-    mutationFn: (id: string) => inquiriesApi.convert(id),
-    onSuccess: (res) => {
-      invalidate();
-      qc.invalidateQueries({ queryKey: ["contacts"] });
-      toast.success(`Đã tạo đối tác "${res.contactFullName}"`, {
-        description: "Mở màn hình tạo hợp đồng với đối tác này?",
-        action: {
-          label: "Tạo hợp đồng",
-          onClick: () =>
-            navigate({ to: "/quan-ly/hop-dong/moi", search: { counterpartyId: res.contactPartyId } }),
-        },
-      });
-    },
-    onError: (e) => toast.error(getErrorMessage(e, "Không chuyển được thành khách thuê")),
-  });
-
   const rows = query.data ?? [];
 
   if (query.isLoading) {
@@ -151,9 +133,8 @@ function ReceivedList() {
         <InquiryCard
           key={q.id}
           inquiry={q}
-          busy={setStatus.isPending || convert.isPending}
+          busy={setStatus.isPending}
           onStatus={(status) => setStatus.mutate({ id: q.id, status })}
-          onConvert={() => convert.mutate(q.id)}
         />
       ))}
     </div>
@@ -164,14 +145,13 @@ function InquiryCard({
   inquiry: q,
   busy,
   onStatus,
-  onConvert,
 }: {
   inquiry: ReceivedInquiryDto;
   busy: boolean;
   onStatus: (status: InquiryStatusCode) => void;
-  onConvert: () => void;
 }) {
-  const converted = q.convertedContactPartyId !== null;
+  // 4 = "đã chuyển thành khách thuê" của khu quản lý tài sản cũ (đã gỡ) — coi như đã xong.
+  const done = q.status === 4 || q.status === 5;
 
   return (
     <Card>
@@ -181,7 +161,10 @@ function InquiryCard({
             <p className="font-medium">{q.fromUserName}</p>
             <p className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap mt-0.5">
               {q.fromUserPhone && (
-                <a href={`tel:${q.fromUserPhone}`} className="inline-flex items-center gap-1 hover:underline">
+                <a
+                  href={`tel:${q.fromUserPhone}`}
+                  className="inline-flex items-center gap-1 hover:underline"
+                >
                   <Phone className="h-3 w-3" />
                   {q.fromUserPhone}
                 </a>
@@ -224,7 +207,7 @@ function InquiryCard({
         )}
 
         <div className="flex items-center gap-2 flex-wrap pt-1">
-          {!converted && q.status !== 5 && (
+          {!done && (
             <>
               {q.status === 1 && (
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => onStatus(2)}>
@@ -236,33 +219,10 @@ function InquiryCard({
                   Đã dẫn xem nhà
                 </Button>
               )}
-              <Button size="sm" disabled={busy} onClick={onConvert}>
-                <UserPlus className="h-4 w-4 mr-1.5" />
-                Chuyển thành khách thuê
-              </Button>
               <Button size="sm" variant="ghost" disabled={busy} onClick={() => onStatus(5)}>
                 Đóng
               </Button>
             </>
-          )}
-          {/* Lối vào khu quản lý tài sản (Giai đoạn 4). Khu đó đang bị ẩn khỏi giao diện ở
-              Giai đoạn 1, nên lối vào này cũng phải ẩn theo — nếu không, người dùng bấm
-              vào và rơi thẳng vào một sản phẩm khác mà mọi lối ra đều đã bị gỡ. */}
-          {converted && ENABLE_ASSET_MANAGEMENT && (
-            <Link
-              to="/quan-ly/hop-dong/moi"
-              search={{ counterpartyId: q.convertedContactPartyId! }}
-              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-            >
-              <UserPlus className="h-4 w-4" />
-              Tạo hợp đồng với khách này
-            </Link>
-          )}
-          {converted && !ENABLE_ASSET_MANAGEMENT && (
-            <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-              <UserPlus className="h-4 w-4" />
-              Đã chuyển thành khách thuê
-            </span>
           )}
         </div>
 

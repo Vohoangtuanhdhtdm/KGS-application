@@ -64,57 +64,8 @@ export const TYPE_FIELDS: Record<
   99: { rooms: true, floors: true, frontage: true, direction: true, legal: true, furniture: true },
 };
 
-export const OWNERSHIP_TYPE = { 1: "Sở hữu", 2: "Đi thuê" } as const;
-export type OwnershipTypeCode = keyof typeof OWNERSHIP_TYPE;
-
-export const ASSET_STATUS = {
-  1: "Đang sử dụng",
-  2: "Đang cho thuê",
-  3: "Đang rao bán",
-  4: "Trống",
-  5: "Đã bán",
-  6: "Hết hạn thuê",
-} as const;
-export type AssetStatusCode = keyof typeof ASSET_STATUS;
-
-// Class Tailwind cho badge trạng thái tài sản
-export const ASSET_STATUS_CLASS: Record<AssetStatusCode, string> = {
-  1: "bg-info/15 text-info border-info/30",
-  2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning border-warning/40",
-  4: "bg-muted text-muted-foreground border-border",
-  5: "bg-secondary text-secondary-foreground border-border",
-  6: "bg-destructive/15 text-destructive border-destructive/30",
-};
-
 export const UNIT_STATUS = { 1: "Trống", 2: "Đang cho thuê", 3: "Đang sửa chữa" } as const;
 export type UnitStatusCode = keyof typeof UNIT_STATUS;
-
-export const UNIT_STATUS_CLASS: Record<UnitStatusCode, string> = {
-  1: "bg-muted text-muted-foreground border-border",
-  2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning border-warning/40",
-};
-
-export const CONTRACT_DIRECTION = { 1: "Cho thuê", 2: "Đi thuê" } as const;
-export type ContractDirectionCode = keyof typeof CONTRACT_DIRECTION;
-
-export const CONTRACT_STATUS = {
-  1: "Nháp",
-  2: "Đang hiệu lực",
-  3: "Hết hạn",
-  4: "Đã chấm dứt",
-  5: "Đã gia hạn",
-} as const;
-export type ContractStatusCode = keyof typeof CONTRACT_STATUS;
-
-export const CONTRACT_STATUS_CLASS: Record<ContractStatusCode, string> = {
-  1: "bg-muted text-muted-foreground border-border",
-  2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning border-warning/40",
-  4: "bg-destructive/15 text-destructive border-destructive/30",
-  5: "bg-info/15 text-info border-info/30",
-};
 
 export const PAYMENT_CYCLE = {
   1: "Hàng tháng",
@@ -123,100 +74,6 @@ export const PAYMENT_CYCLE = {
   4: "Hàng năm",
 } as const;
 export type PaymentCycleCode = keyof typeof PAYMENT_CYCLE;
-
-export const TAX_RESPONSIBILITY = { 1: "Chủ nhà", 2: "Người thuê" } as const;
-export type TaxResponsibilityCode = keyof typeof TAX_RESPONSIBILITY;
-
-export const CONTACT_TYPE = {
-  1: "Người thuê",
-  2: "Chủ nhà",
-  3: "Môi giới",
-  4: "Nhà thầu",
-  99: "Khác",
-} as const;
-export type ContactTypeCode = keyof typeof CONTACT_TYPE;
-
-export const CONTACT_TYPE_CLASS: Record<ContactTypeCode, string> = {
-  1: "bg-info/15 text-info border-info/30",
-  2: "bg-success/15 text-success border-success/30",
-  3: "bg-warning/20 text-warning border-warning/40",
-  4: "bg-secondary text-secondary-foreground border-border",
-  99: "bg-muted text-muted-foreground border-border",
-};
-
-export const CASH_FLOW_DIRECTION = { 1: "Thu", 2: "Chi" } as const;
-export type CashFlowDirectionCode = keyof typeof CASH_FLOW_DIRECTION;
-
-export const CASH_FLOW_CATEGORY = {
-  1: "Tiền thuê thu vào",
-  2: "Tiền cọc nhận",
-  3: "Tiền bán",
-  10: "Tiền thuê trả chủ nhà",
-  11: "Tiền cọc trả",
-  12: "Chi phí sửa chữa",
-  13: "Hoá đơn điện",
-  14: "Hoá đơn nước",
-  15: "Hoá đơn internet",
-  16: "Phí quản lý",
-  20: "Thuế trước bạ",
-  21: "Thuế phi nông nghiệp",
-  22: "Thuế môn bài",
-  23: "Thuế TNCN",
-  24: "Thuế GTGT",
-  29: "Thuế khác",
-  99: "Khác",
-} as const;
-export type CashFlowCategoryCode = keyof typeof CASH_FLOW_CATEGORY;
-
-// Lọc dropdown Loại theo Chiều đã chọn — "Khác" (99) chỉ hợp lệ với chiều Chi
-export const INCOME_CATEGORIES: CashFlowCategoryCode[] = [1, 2, 3];
-export const EXPENSE_CATEGORIES: CashFlowCategoryCode[] = [
-  10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 29, 99,
-];
-
-// ---- Nhóm D: Vận hành ----
-
-export const REMINDER_TYPE = {
-  1: "Thu tiền thuê",
-  2: "Đóng tiền thuê",
-  3: "Bảo dưỡng",
-  4: "Hết hạn hợp đồng",
-  5: "Đóng thuế",
-  6: "Thanh toán hoá đơn",
-} as const;
-export type ReminderTypeCode = keyof typeof REMINDER_TYPE;
-
-export const REMINDER_TYPE_CLASS: Record<ReminderTypeCode, string> = {
-  1: "bg-success/15 text-success border-success/30",
-  2: "bg-destructive/15 text-destructive border-destructive/30",
-  3: "bg-info/15 text-info border-info/30",
-  4: "bg-warning/20 text-warning border-warning/40",
-  5: "bg-primary/10 text-primary border-primary/30",
-  6: "bg-secondary text-secondary-foreground border-border",
-};
-
-export const RECURRENCE_CYCLE = {
-  0: "Không lặp",
-  1: "Hàng tháng",
-  2: "Hàng quý",
-  3: "Nửa năm",
-  4: "Hàng năm",
-} as const;
-export type RecurrenceCycleCode = keyof typeof RECURRENCE_CYCLE;
-
-export const DOCUMENT_TYPE = {
-  1: "Sổ đỏ/sổ hồng",
-  2: "HĐ mua bán",
-  3: "HĐ thuê",
-  4: "Phụ lục HĐ",
-  5: "HĐ uỷ quyền",
-  6: "HĐ điện",
-  7: "HĐ nước",
-  8: "Hồ sơ thuế",
-  9: "Hoá đơn",
-  99: "Khác",
-} as const;
-export type DocumentTypeCode = keyof typeof DOCUMENT_TYPE;
 
 // ---- Marketplace: tin đăng công khai ----
 
