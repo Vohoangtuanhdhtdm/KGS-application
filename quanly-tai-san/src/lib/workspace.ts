@@ -59,14 +59,7 @@ export const WORKSPACES: Record<Workspace, WorkspaceMeta> = {
 };
 
 /** Tiền tố đường dẫn thuộc không gian Chủ nhà. */
-const OWNER_PREFIXES = [
-  "/dang-tin",
-  "/tin-cua-toi",
-  "/thong-ke-tin",
-  "/toa-nha",
-  "/quan-ly",
-  "/yeu-cau",
-];
+const OWNER_PREFIXES = ["/dang-tin", "/tin-cua-toi", "/thong-ke-tin", "/toa-nha", "/yeu-cau"];
 
 function matches(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(prefix + "/");

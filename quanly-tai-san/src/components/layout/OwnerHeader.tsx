@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { BarChart3, Box, Building, Building2, FileText, Inbox, Plus, Search } from "lucide-react";
-import { ENABLE_ASSET_MANAGEMENT } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -25,9 +24,6 @@ const NAV = [
   { to: "/thong-ke-tin", label: "Hiệu quả tin", icon: BarChart3 },
   // Toà nhà / khu trọ nhiều căn: dựng mô hình 3D và đăng tin theo từng căn.
   { to: "/toa-nha", label: "Toà nhà", icon: Box },
-  ...(ENABLE_ASSET_MANAGEMENT
-    ? [{ to: "/quan-ly", label: "Quản lý tài sản", icon: Building2 }]
-    : []),
 ];
 
 export function OwnerHeader() {

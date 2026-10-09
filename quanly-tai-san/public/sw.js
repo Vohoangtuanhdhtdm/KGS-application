@@ -1,4 +1,4 @@
-/* Service Worker xử lý Web Push cho Quản Lý Tài Sản */
+/* Service Worker xử lý Web Push cho KGS */
 
 self.addEventListener("push", (event) => {
   let data = { title: "Thông báo", body: "" };

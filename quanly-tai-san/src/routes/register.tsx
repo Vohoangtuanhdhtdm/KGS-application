@@ -87,7 +87,7 @@ function RegisterPage() {
             <CardTitle>Tạo tài khoản</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
-            Đăng ký để bắt đầu quản lý tài sản của bạn.
+            Đăng ký để lưu tin, gửi yêu cầu xem nhà hoặc đăng tin của bạn.
           </p>
         </CardHeader>
         <CardContent>

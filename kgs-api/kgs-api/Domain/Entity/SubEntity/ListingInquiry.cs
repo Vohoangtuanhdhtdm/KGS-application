@@ -6,12 +6,8 @@ namespace kgs_api.Domain.Entity.SubEntity
 {
     /// <summary>Yêu cầu xem nhà / liên hệ gửi từ một tin đăng công khai.
     ///
-    /// Đây là đường dữ liệu DUY NHẤT nối marketplace với nghiệp vụ quản lý hợp đồng.
-    /// Trước khi có bảng này, khách tìm được nhà rồi gọi điện — giao dịch rời khỏi hệ
-    /// thống, và chủ nhà phải gõ lại tên với số điện thoại thành ContactParty bằng tay.
-    ///
-    /// Trường ConvertedContactPartyId biến thao tác đó thành một nút bấm, đồng thời là
-    /// bằng chứng đầu tiên cho thấy hệ thống thực sự "kết nối" được ai với ai.</summary>
+    /// Trước khi có bảng này, khách tìm được nhà rồi gọi điện — mối liên hệ rời khỏi hệ
+    /// thống và không ai đo được nền tảng đã kết nối được ai với ai.</summary>
     public class ListingInquiry : BaseAuditableEntity
     {
         public Guid ListingId { get; set; }
@@ -28,9 +24,5 @@ namespace kgs_api.Domain.Entity.SubEntity
         public DateTime? PreferredViewingAt { get; set; }
         public InquiryStatus Status { get; set; } = InquiryStatus.New;
 
-        /// <summary>Null cho tới khi chủ nhà bấm "Chuyển thành khách thuê".
-        /// Có giá trị = đã sinh ContactParty, sẵn sàng ký hợp đồng.</summary>
-        public Guid? ConvertedContactPartyId { get; set; }
-        public ContactParty? ConvertedContactParty { get; set; }
     }
 }

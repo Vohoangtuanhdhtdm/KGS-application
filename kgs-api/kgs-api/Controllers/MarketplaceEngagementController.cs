@@ -68,13 +68,6 @@ namespace kgs_api.Controllers
         public async Task<ActionResult<ReceivedInquiryDto>> UpdateStatus(
             Guid inquiryId, [FromBody] UpdateInquiryStatusRequest request, CancellationToken ct)
             => Ok(await _engagement.UpdateInquiryStatusAsync(inquiryId, request, ct));
-
-        /// <summary>Cầu nối marketplace → nghiệp vụ: sinh ContactParty từ hồ sơ người gửi.
-        /// Client dùng contactPartyId trả về để mở màn hình tạo hợp đồng đã điền sẵn đối tác.</summary>
-        [HttpPost("{inquiryId:guid}/convert")]
-        [Authorize(Policy = AppPolicies.Owner)]
-        public async Task<ActionResult<ConvertInquiryResultDto>> Convert(Guid inquiryId, CancellationToken ct)
-            => Ok(await _engagement.ConvertInquiryAsync(inquiryId, ct));
     }
 
     // ============================================================

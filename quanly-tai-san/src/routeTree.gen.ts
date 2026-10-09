@@ -32,23 +32,11 @@ import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as DaLuuIndexRouteImport } from './routes/da-luu.index'
 import { Route as NguoiDangIdRouteImport } from './routes/nguoi-dang.$id'
-import { Route as QuanLyIndexRouteImport } from './routes/quan-ly.index'
 import { Route as TinDangIndexRouteImport } from './routes/tin-dang.index'
 import { Route as TinDangSlugRouteImport } from './routes/tin-dang.$slug'
 import { Route as ToaNhaIndexRouteImport } from './routes/toa-nha.index'
 import { Route as ToaNhaIdRouteImport } from './routes/toa-nha.$id'
 import { Route as YeuCauIndexRouteImport } from './routes/yeu-cau.index'
-import { Route as QuanLyBanDoIndexRouteImport } from './routes/quan-ly.ban-do.index'
-import { Route as QuanLyDoiTacIndexRouteImport } from './routes/quan-ly.doi-tac.index'
-import { Route as QuanLyHopDongIndexRouteImport } from './routes/quan-ly.hop-dong.index'
-import { Route as QuanLyHopDongIdRouteImport } from './routes/quan-ly.hop-dong.$id'
-import { Route as QuanLyHopDongMoiRouteImport } from './routes/quan-ly.hop-dong.moi'
-import { Route as QuanLyNhacLichIndexRouteImport } from './routes/quan-ly.nhac-lich.index'
-import { Route as QuanLyTaiSanIndexRouteImport } from './routes/quan-ly.tai-san.index'
-import { Route as QuanLyTaiSanIdRouteImport } from './routes/quan-ly.tai-san.$id'
-import { Route as QuanLyTaiSanMoiRouteImport } from './routes/quan-ly.tai-san.moi'
-import { Route as QuanLyThuChiIndexRouteImport } from './routes/quan-ly.thu-chi.index'
-import { Route as QuanLyTaiSanIdSuaRouteImport } from './routes/quan-ly.tai-san.$id_.sua'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -165,11 +153,6 @@ const NguoiDangIdRoute = NguoiDangIdRouteImport.update({
   path: '/nguoi-dang/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QuanLyIndexRoute = QuanLyIndexRouteImport.update({
-  id: '/quan-ly/',
-  path: '/quan-ly/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TinDangIndexRoute = TinDangIndexRouteImport.update({
   id: '/tin-dang/',
   path: '/tin-dang/',
@@ -193,61 +176,6 @@ const ToaNhaIdRoute = ToaNhaIdRouteImport.update({
 const YeuCauIndexRoute = YeuCauIndexRouteImport.update({
   id: '/yeu-cau/',
   path: '/yeu-cau/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyBanDoIndexRoute = QuanLyBanDoIndexRouteImport.update({
-  id: '/quan-ly/ban-do/',
-  path: '/quan-ly/ban-do/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyDoiTacIndexRoute = QuanLyDoiTacIndexRouteImport.update({
-  id: '/quan-ly/doi-tac/',
-  path: '/quan-ly/doi-tac/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyHopDongIndexRoute = QuanLyHopDongIndexRouteImport.update({
-  id: '/quan-ly/hop-dong/',
-  path: '/quan-ly/hop-dong/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyHopDongIdRoute = QuanLyHopDongIdRouteImport.update({
-  id: '/quan-ly/hop-dong/$id',
-  path: '/quan-ly/hop-dong/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyHopDongMoiRoute = QuanLyHopDongMoiRouteImport.update({
-  id: '/quan-ly/hop-dong/moi',
-  path: '/quan-ly/hop-dong/moi',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyNhacLichIndexRoute = QuanLyNhacLichIndexRouteImport.update({
-  id: '/quan-ly/nhac-lich/',
-  path: '/quan-ly/nhac-lich/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyTaiSanIndexRoute = QuanLyTaiSanIndexRouteImport.update({
-  id: '/quan-ly/tai-san/',
-  path: '/quan-ly/tai-san/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyTaiSanIdRoute = QuanLyTaiSanIdRouteImport.update({
-  id: '/quan-ly/tai-san/$id',
-  path: '/quan-ly/tai-san/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyTaiSanMoiRoute = QuanLyTaiSanMoiRouteImport.update({
-  id: '/quan-ly/tai-san/moi',
-  path: '/quan-ly/tai-san/moi',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyThuChiIndexRoute = QuanLyThuChiIndexRouteImport.update({
-  id: '/quan-ly/thu-chi/',
-  path: '/quan-ly/thu-chi/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuanLyTaiSanIdSuaRoute = QuanLyTaiSanIdSuaRouteImport.update({
-  id: '/quan-ly/tai-san/$id_/sua',
-  path: '/quan-ly/tai-san/$id/sua',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -277,21 +205,9 @@ export interface FileRoutesByFullPath {
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/toa-nha/$id': typeof ToaNhaIdRoute
   '/da-luu/': typeof DaLuuIndexRoute
-  '/quan-ly/': typeof QuanLyIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
   '/toa-nha/': typeof ToaNhaIndexRoute
   '/yeu-cau/': typeof YeuCauIndexRoute
-  '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
-  '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
-  '/quan-ly/tai-san/$id': typeof QuanLyTaiSanIdRoute
-  '/quan-ly/tai-san/moi': typeof QuanLyTaiSanMoiRoute
-  '/quan-ly/ban-do/': typeof QuanLyBanDoIndexRoute
-  '/quan-ly/doi-tac/': typeof QuanLyDoiTacIndexRoute
-  '/quan-ly/hop-dong/': typeof QuanLyHopDongIndexRoute
-  '/quan-ly/nhac-lich/': typeof QuanLyNhacLichIndexRoute
-  '/quan-ly/tai-san/': typeof QuanLyTaiSanIndexRoute
-  '/quan-ly/thu-chi/': typeof QuanLyThuChiIndexRoute
-  '/quan-ly/tai-san/$id/sua': typeof QuanLyTaiSanIdSuaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -319,21 +235,9 @@ export interface FileRoutesByTo {
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/toa-nha/$id': typeof ToaNhaIdRoute
   '/da-luu': typeof DaLuuIndexRoute
-  '/quan-ly': typeof QuanLyIndexRoute
   '/tin-dang': typeof TinDangIndexRoute
   '/toa-nha': typeof ToaNhaIndexRoute
   '/yeu-cau': typeof YeuCauIndexRoute
-  '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
-  '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
-  '/quan-ly/tai-san/$id': typeof QuanLyTaiSanIdRoute
-  '/quan-ly/tai-san/moi': typeof QuanLyTaiSanMoiRoute
-  '/quan-ly/ban-do': typeof QuanLyBanDoIndexRoute
-  '/quan-ly/doi-tac': typeof QuanLyDoiTacIndexRoute
-  '/quan-ly/hop-dong': typeof QuanLyHopDongIndexRoute
-  '/quan-ly/nhac-lich': typeof QuanLyNhacLichIndexRoute
-  '/quan-ly/tai-san': typeof QuanLyTaiSanIndexRoute
-  '/quan-ly/thu-chi': typeof QuanLyThuChiIndexRoute
-  '/quan-ly/tai-san/$id/sua': typeof QuanLyTaiSanIdSuaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -362,21 +266,9 @@ export interface FileRoutesById {
   '/tin-dang/$slug': typeof TinDangSlugRoute
   '/toa-nha/$id': typeof ToaNhaIdRoute
   '/da-luu/': typeof DaLuuIndexRoute
-  '/quan-ly/': typeof QuanLyIndexRoute
   '/tin-dang/': typeof TinDangIndexRoute
   '/toa-nha/': typeof ToaNhaIndexRoute
   '/yeu-cau/': typeof YeuCauIndexRoute
-  '/quan-ly/hop-dong/$id': typeof QuanLyHopDongIdRoute
-  '/quan-ly/hop-dong/moi': typeof QuanLyHopDongMoiRoute
-  '/quan-ly/tai-san/$id': typeof QuanLyTaiSanIdRoute
-  '/quan-ly/tai-san/moi': typeof QuanLyTaiSanMoiRoute
-  '/quan-ly/ban-do/': typeof QuanLyBanDoIndexRoute
-  '/quan-ly/doi-tac/': typeof QuanLyDoiTacIndexRoute
-  '/quan-ly/hop-dong/': typeof QuanLyHopDongIndexRoute
-  '/quan-ly/nhac-lich/': typeof QuanLyNhacLichIndexRoute
-  '/quan-ly/tai-san/': typeof QuanLyTaiSanIndexRoute
-  '/quan-ly/thu-chi/': typeof QuanLyThuChiIndexRoute
-  '/quan-ly/tai-san/$id_/sua': typeof QuanLyTaiSanIdSuaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -406,21 +298,9 @@ export interface FileRouteTypes {
     | '/tin-dang/$slug'
     | '/toa-nha/$id'
     | '/da-luu/'
-    | '/quan-ly/'
     | '/tin-dang/'
     | '/toa-nha/'
     | '/yeu-cau/'
-    | '/quan-ly/hop-dong/$id'
-    | '/quan-ly/hop-dong/moi'
-    | '/quan-ly/tai-san/$id'
-    | '/quan-ly/tai-san/moi'
-    | '/quan-ly/ban-do/'
-    | '/quan-ly/doi-tac/'
-    | '/quan-ly/hop-dong/'
-    | '/quan-ly/nhac-lich/'
-    | '/quan-ly/tai-san/'
-    | '/quan-ly/thu-chi/'
-    | '/quan-ly/tai-san/$id/sua'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -448,21 +328,9 @@ export interface FileRouteTypes {
     | '/tin-dang/$slug'
     | '/toa-nha/$id'
     | '/da-luu'
-    | '/quan-ly'
     | '/tin-dang'
     | '/toa-nha'
     | '/yeu-cau'
-    | '/quan-ly/hop-dong/$id'
-    | '/quan-ly/hop-dong/moi'
-    | '/quan-ly/tai-san/$id'
-    | '/quan-ly/tai-san/moi'
-    | '/quan-ly/ban-do'
-    | '/quan-ly/doi-tac'
-    | '/quan-ly/hop-dong'
-    | '/quan-ly/nhac-lich'
-    | '/quan-ly/tai-san'
-    | '/quan-ly/thu-chi'
-    | '/quan-ly/tai-san/$id/sua'
   id:
     | '__root__'
     | '/'
@@ -490,21 +358,9 @@ export interface FileRouteTypes {
     | '/tin-dang/$slug'
     | '/toa-nha/$id'
     | '/da-luu/'
-    | '/quan-ly/'
     | '/tin-dang/'
     | '/toa-nha/'
     | '/yeu-cau/'
-    | '/quan-ly/hop-dong/$id'
-    | '/quan-ly/hop-dong/moi'
-    | '/quan-ly/tai-san/$id'
-    | '/quan-ly/tai-san/moi'
-    | '/quan-ly/ban-do/'
-    | '/quan-ly/doi-tac/'
-    | '/quan-ly/hop-dong/'
-    | '/quan-ly/nhac-lich/'
-    | '/quan-ly/tai-san/'
-    | '/quan-ly/thu-chi/'
-    | '/quan-ly/tai-san/$id_/sua'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -533,21 +389,9 @@ export interface RootRouteChildren {
   TinDangSlugRoute: typeof TinDangSlugRoute
   ToaNhaIdRoute: typeof ToaNhaIdRoute
   DaLuuIndexRoute: typeof DaLuuIndexRoute
-  QuanLyIndexRoute: typeof QuanLyIndexRoute
   TinDangIndexRoute: typeof TinDangIndexRoute
   ToaNhaIndexRoute: typeof ToaNhaIndexRoute
   YeuCauIndexRoute: typeof YeuCauIndexRoute
-  QuanLyHopDongIdRoute: typeof QuanLyHopDongIdRoute
-  QuanLyHopDongMoiRoute: typeof QuanLyHopDongMoiRoute
-  QuanLyTaiSanIdRoute: typeof QuanLyTaiSanIdRoute
-  QuanLyTaiSanMoiRoute: typeof QuanLyTaiSanMoiRoute
-  QuanLyBanDoIndexRoute: typeof QuanLyBanDoIndexRoute
-  QuanLyDoiTacIndexRoute: typeof QuanLyDoiTacIndexRoute
-  QuanLyHopDongIndexRoute: typeof QuanLyHopDongIndexRoute
-  QuanLyNhacLichIndexRoute: typeof QuanLyNhacLichIndexRoute
-  QuanLyTaiSanIndexRoute: typeof QuanLyTaiSanIndexRoute
-  QuanLyThuChiIndexRoute: typeof QuanLyThuChiIndexRoute
-  QuanLyTaiSanIdSuaRoute: typeof QuanLyTaiSanIdSuaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -713,13 +557,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NguoiDangIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quan-ly/': {
-      id: '/quan-ly/'
-      path: '/quan-ly'
-      fullPath: '/quan-ly/'
-      preLoaderRoute: typeof QuanLyIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/tin-dang/': {
       id: '/tin-dang/'
       path: '/tin-dang'
@@ -755,83 +592,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof YeuCauIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/quan-ly/ban-do/': {
-      id: '/quan-ly/ban-do/'
-      path: '/quan-ly/ban-do'
-      fullPath: '/quan-ly/ban-do/'
-      preLoaderRoute: typeof QuanLyBanDoIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/doi-tac/': {
-      id: '/quan-ly/doi-tac/'
-      path: '/quan-ly/doi-tac'
-      fullPath: '/quan-ly/doi-tac/'
-      preLoaderRoute: typeof QuanLyDoiTacIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/hop-dong/': {
-      id: '/quan-ly/hop-dong/'
-      path: '/quan-ly/hop-dong'
-      fullPath: '/quan-ly/hop-dong/'
-      preLoaderRoute: typeof QuanLyHopDongIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/hop-dong/$id': {
-      id: '/quan-ly/hop-dong/$id'
-      path: '/quan-ly/hop-dong/$id'
-      fullPath: '/quan-ly/hop-dong/$id'
-      preLoaderRoute: typeof QuanLyHopDongIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/hop-dong/moi': {
-      id: '/quan-ly/hop-dong/moi'
-      path: '/quan-ly/hop-dong/moi'
-      fullPath: '/quan-ly/hop-dong/moi'
-      preLoaderRoute: typeof QuanLyHopDongMoiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/nhac-lich/': {
-      id: '/quan-ly/nhac-lich/'
-      path: '/quan-ly/nhac-lich'
-      fullPath: '/quan-ly/nhac-lich/'
-      preLoaderRoute: typeof QuanLyNhacLichIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/tai-san/': {
-      id: '/quan-ly/tai-san/'
-      path: '/quan-ly/tai-san'
-      fullPath: '/quan-ly/tai-san/'
-      preLoaderRoute: typeof QuanLyTaiSanIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/tai-san/$id': {
-      id: '/quan-ly/tai-san/$id'
-      path: '/quan-ly/tai-san/$id'
-      fullPath: '/quan-ly/tai-san/$id'
-      preLoaderRoute: typeof QuanLyTaiSanIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/tai-san/moi': {
-      id: '/quan-ly/tai-san/moi'
-      path: '/quan-ly/tai-san/moi'
-      fullPath: '/quan-ly/tai-san/moi'
-      preLoaderRoute: typeof QuanLyTaiSanMoiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/thu-chi/': {
-      id: '/quan-ly/thu-chi/'
-      path: '/quan-ly/thu-chi'
-      fullPath: '/quan-ly/thu-chi/'
-      preLoaderRoute: typeof QuanLyThuChiIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quan-ly/tai-san/$id_/sua': {
-      id: '/quan-ly/tai-san/$id_/sua'
-      path: '/quan-ly/tai-san/$id/sua'
-      fullPath: '/quan-ly/tai-san/$id/sua'
-      preLoaderRoute: typeof QuanLyTaiSanIdSuaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -861,21 +621,9 @@ const rootRouteChildren: RootRouteChildren = {
   TinDangSlugRoute: TinDangSlugRoute,
   ToaNhaIdRoute: ToaNhaIdRoute,
   DaLuuIndexRoute: DaLuuIndexRoute,
-  QuanLyIndexRoute: QuanLyIndexRoute,
   TinDangIndexRoute: TinDangIndexRoute,
   ToaNhaIndexRoute: ToaNhaIndexRoute,
   YeuCauIndexRoute: YeuCauIndexRoute,
-  QuanLyHopDongIdRoute: QuanLyHopDongIdRoute,
-  QuanLyHopDongMoiRoute: QuanLyHopDongMoiRoute,
-  QuanLyTaiSanIdRoute: QuanLyTaiSanIdRoute,
-  QuanLyTaiSanMoiRoute: QuanLyTaiSanMoiRoute,
-  QuanLyBanDoIndexRoute: QuanLyBanDoIndexRoute,
-  QuanLyDoiTacIndexRoute: QuanLyDoiTacIndexRoute,
-  QuanLyHopDongIndexRoute: QuanLyHopDongIndexRoute,
-  QuanLyNhacLichIndexRoute: QuanLyNhacLichIndexRoute,
-  QuanLyTaiSanIndexRoute: QuanLyTaiSanIndexRoute,
-  QuanLyThuChiIndexRoute: QuanLyThuChiIndexRoute,
-  QuanLyTaiSanIdSuaRoute: QuanLyTaiSanIdSuaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

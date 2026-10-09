@@ -18,8 +18,5 @@ namespace kgs_api.Interfaces
         Task<IReadOnlyList<SentInquiryDto>> GetSentInquiriesAsync(CancellationToken ct = default);
         Task<IReadOnlyList<ReceivedInquiryDto>> GetReceivedInquiriesAsync(InquiryStatus? status, CancellationToken ct = default);
         Task<ReceivedInquiryDto> UpdateInquiryStatusAsync(Guid inquiryId, UpdateInquiryStatusRequest request, CancellationToken ct = default);
-
-        /// <summary>Cầu nối: sinh ContactParty từ hồ sơ người gửi yêu cầu.</summary>
-        Task<ConvertInquiryResultDto> ConvertInquiryAsync(Guid inquiryId, CancellationToken ct = default);
     }
 }

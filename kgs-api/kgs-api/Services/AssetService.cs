@@ -97,21 +97,12 @@ namespace kgs_api.Services
         {
             var asset = await _assets.Query()
                 .Include(a => a.Media)
-                .Include(a => a.Documents)
                 .FirstOrDefaultAsync(a => a.Id == assetId && a.UserId == _currentUser.UserId, ct)
                 ?? throw new NotFoundException("Không tìm thấy tài sản.");
-
-            var hasActiveContract = await _assets.Query()
-                .Where(a => a.Id == assetId)
-                .SelectMany(a => a.Contracts)
-                .AnyAsync(c => c.Status == ContractStatus.Active, ct);
-            if (hasActiveContract)
-                throw new ConflictException("Tài sản còn hợp đồng đang hiệu lực — hãy chấm dứt hợp đồng trước khi xoá.");
 
             // Đẩy toàn bộ file Cloudinary vào outbox — cùng transaction với DELETE
             _files.ScheduleDeletion(asset.Thumbnail);
             foreach (var m in asset.Media) _files.ScheduleDeletion(m.File);
-            foreach (var d in asset.Documents) _files.ScheduleDeletion(d.File);
 
             _assets.Remove(asset); // các bảng con Cascade theo FK
             await _uow.SaveChangesAsync(ct);
@@ -140,7 +131,6 @@ namespace kgs_api.Services
                     a.Thumbnail,
                     ListingCount = a.Listings.Count(l => l.Status == ListingStatus.Pending || l.Status == ListingStatus.Approved),
                     UnitCount = a.Units.Count,
-                    ActiveContractCount = a.Contracts.Count(c => c.Status == ContractStatus.Active),
                     a.CreatedAt,
                     a.UpdatedAt,
                     a.Floors,
@@ -163,7 +153,7 @@ namespace kgs_api.Services
                 raw.Area, raw.CurrentValue, raw.AcquisitionDate, raw.Notes,
                 raw.Thumbnail is null ? null
                     : new StoredFileDto(raw.Thumbnail.Url, raw.Thumbnail.FileName, raw.Thumbnail.ContentType, raw.Thumbnail.SizeBytes),
-                raw.ListingCount, raw.UnitCount, raw.ActiveContractCount, raw.CreatedAt, raw.UpdatedAt, raw.Floors, raw.Bedrooms, raw.Bathrooms,
+                raw.ListingCount, raw.UnitCount, raw.CreatedAt, raw.UpdatedAt, raw.Floors, raw.Bedrooms, raw.Bathrooms,
                 raw.HouseDirection, raw.LegalStatus, raw.FurnitureState, raw.Frontage);
         }
 

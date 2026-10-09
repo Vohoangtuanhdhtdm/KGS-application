@@ -65,14 +65,7 @@ export interface ReceivedInquiryDto {
   message: string | null;
   preferredViewingAt: string | null;
   status: InquiryStatusCode;
-  convertedContactPartyId: string | null;
   createdAt: string;
-}
-
-export interface ConvertInquiryResultDto {
-  inquiryId: string;
-  contactPartyId: string;
-  contactFullName: string;
 }
 
 export const savedListingsApi = {
@@ -89,6 +82,4 @@ export const inquiriesApi = {
     api<ReceivedInquiryDto[]>(`/inquiries/received${toQuery({ status })}`),
   updateStatus: (id: string, status: InquiryStatusCode) =>
     api<ReceivedInquiryDto>(`/inquiries/${id}/status`, { method: "PUT", body: { status } }),
-  convert: (id: string) =>
-    api<ConvertInquiryResultDto>(`/inquiries/${id}/convert`, { method: "POST" }),
 };

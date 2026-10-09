@@ -135,15 +135,13 @@ using (var scope = app.Services.CreateScope())
     var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     recurringJobs.AddOrUpdate<RefreshTokenCleanupJob>(
         "refresh-token-cleanup", j => j.RunAsync(CancellationToken.None), Cron.Daily);
-    recurringJobs.AddOrUpdate<ReminderProcessingJob>(
-        "reminders", j => j.RunAsync(CancellationToken.None), "*/15 * * * *");
     recurringJobs.AddOrUpdate<FileCleanupJob>(
         "file-cleanup", j => j.RunAsync(CancellationToken.None), "*/30 * * * *");
 
-    // 00:30 UTC = 07:30 giờ Việt Nam — đóng hợp đồng hết hạn trước giờ làm việc,
-    // để danh sách phòng trống buổi sáng đã đúng.
-    recurringJobs.AddOrUpdate<ContractExpiryJob>(
-        "contract-expiry", j => j.RunAsync(CancellationToken.None), "30 0 * * *");
+    // Nhắc lịch và hợp đồng hết hạn thuộc khu quản lý tài sản đã gỡ. Hangfire lưu lịch chạy
+    // trong CSDL, nên phải xoá hẳn — không thì nó vẫn gọi tới lớp job không còn tồn tại.
+    recurringJobs.RemoveIfExists("reminders");
+    recurringJobs.RemoveIfExists("contract-expiry");
 
     // 01:00 UTC = 08:00 gio Viet Nam — dong tin qua han truoc gio nguoi dung vao xem,
     // de marketplace buoi sang khong con tin da cho thue tu lau.

@@ -28,7 +28,7 @@ import {
  * TOÀ NHÀ & KHU TRỌ — nơi chủ nhà có nhiều căn khai toà nhà một lần, dựng mô hình 3D, rồi
  * đăng tin cho từng căn.
  *
- * Trước đây mô hình 3D chỉ dựng được trong khu "Quản lý tài sản" cũ (đã ẩn khỏi điều hướng),
+ * Trước đây mô hình 3D chỉ dựng được trong khu "Quản lý tài sản" cũ (đã gỡ khỏi điều hướng),
  * và luồng đăng tin chỉ đăng nguyên căn — nên ngoài dữ liệu trình diễn, không chủ nhà nào tạo
  * được tin hiện trên mô hình 3D. Trang này là lối vào đó.
  */
