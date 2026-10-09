@@ -367,8 +367,11 @@ export default function BuildingScene({
           layout: ghost ? {} : polish.layout,
           paint: {
             // Rê chuột lên căn: căn sáng lên (feature-state, không phải dựng lại dữ liệu).
+            // Tầng phía trên tầng đang chọn: khối kính xám nhạt — đủ rõ để vẫn thấy hình cả toà
+            // nhà (trắng mờ 16% như trước thì trên nền bản đồ sáng gần như biến mất, người xem
+            // tưởng toà nhà bị mất), nhưng đủ trong để nhìn xuyên xuống tầng đang chọn.
             "fill-extrusion-color": ghost
-              ? "#ffffff"
+              ? "#94a3b8"
               : [
                   "case",
                   ["boolean", ["feature-state", "hover"], false],
@@ -377,9 +380,9 @@ export default function BuildingScene({
                 ],
             "fill-extrusion-height": ["get", "top"],
             "fill-extrusion-base": ["get", "base"],
-            "fill-extrusion-opacity": ghost ? 0.16 : 1,
+            "fill-extrusion-opacity": ghost ? 0.3 : 1,
             "fill-extrusion-vertical-gradient": false,
-            ...(ghost ? {} : polish.ao),
+            ...(ghost ? { "fill-extrusion-cast-shadows": false } : polish.ao),
           },
         });
       }
