@@ -204,11 +204,32 @@ export function BuildingExplorer({
           ))}
         </div>
 
-        <p className="pointer-events-none absolute bottom-8 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/70 px-3 py-1 text-[11px] text-background sm:block">
-          {showPlan
-            ? "Bấm vào một căn để xem ảnh và giá"
-            : "Bấm vào một căn · kéo chuột phải để xoay · cuộn để phóng to"}
-        </p>
+        {/* Đang cắt ở một tầng (bấm một căn hoặc chọn tầng): các tầng phía trên chỉ còn khối
+            kính mờ. Nút quay về cả toà nhà phải nằm ngay trên mô hình — nút lớp ở đầu thanh tầng
+            quá kín, người xem tưởng toà nhà mất hẳn mà không biết khôi phục. */}
+        {floor != null && !showPlan ? (
+          <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border bg-card/95 py-1 pl-3 pr-1 text-xs shadow-md backdrop-blur">
+            <span>
+              Đang xem <strong>tầng {floor}</strong>
+              {floor < model.floors && (
+                <span className="text-muted-foreground"> · tầng trên làm mờ</span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => pickFloor(null)}
+              className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <Layers className="h-3.5 w-3.5" /> Hiện cả toà nhà
+            </button>
+          </div>
+        ) : (
+          <p className="pointer-events-none absolute bottom-8 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/70 px-3 py-1 text-[11px] text-background sm:block">
+            {showPlan
+              ? "Bấm vào một căn để xem ảnh và giá"
+              : "Bấm vào một căn · kéo chuột phải để xoay · cuộn để phóng to"}
+          </p>
+        )}
       </div>
 
       <div className="space-y-3">
