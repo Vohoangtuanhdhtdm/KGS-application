@@ -72,6 +72,15 @@
         }
 
         /// <summary>Xử lý tin đăng khi xác nhận một báo vi phạm (xem ReportOutcomes).</summary>
+        /// <summary>Ai đăng tin, người đăng tự khai: chủ của bất động sản hay môi giới.
+        /// Người tìm nhà ở Việt Nam rất quan tâm "tin chính chủ" — khai sai thì bị báo vi phạm
+        /// (thông tin sai lệch) như mọi thông tin khác trong tin.</summary>
+        public enum PosterType
+        {
+            Owner = 1,
+            Broker = 2,
+        }
+
         /// <summary>Vì sao một tin đã đóng (xem ListingClosing). 1–3 người đăng tin tự chọn khi đóng;
         /// 4–5 hệ thống ghi. Null = tin đóng trước khi có trường này.</summary>
         public enum ListingCloseReason

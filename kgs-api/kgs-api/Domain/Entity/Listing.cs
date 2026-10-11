@@ -47,6 +47,9 @@ namespace kgs_api.Domain.Entity
 
         public ListingStatus Status { get; set; } = ListingStatus.Pending;
 
+        /// <summary>Người đăng là chính chủ hay môi giới — tự khai, hiện nhãn trên tin.</summary>
+        public PosterType PosterType { get; set; } = PosterType.Owner;
+
         /// <summary>Vì sao tin đóng và lúc nào — chỉ có giá trị khi Status = Closed (ListingClosing).</summary>
         public ListingCloseReason? CloseReason { get; set; }
         public DateTime? ClosedAt { get; set; }

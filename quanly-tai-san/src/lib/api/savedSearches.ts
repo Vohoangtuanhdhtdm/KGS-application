@@ -37,6 +37,7 @@ export interface SavedSearchCriteria {
   legalStatuses?: string[] | null;
   furnitureStates?: string[] | null;
   has3D?: boolean | null;
+  ownerOnly?: boolean | null;
 }
 
 export interface SavedSearchDto {
@@ -86,6 +87,7 @@ export function toCriteria(f: PublicListingFilters): SavedSearchCriteria {
     legalStatuses: f.legalStatuses?.length ? f.legalStatuses : null,
     furnitureStates: f.furnitureStates?.length ? f.furnitureStates : null,
     has3D: f.has3D === true ? true : null,
+    ownerOnly: f.ownerOnly === true ? true : null,
   };
 }
 

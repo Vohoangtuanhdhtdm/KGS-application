@@ -9,6 +9,7 @@ import type {
 import { PAYMENT_CYCLE } from "@/constants/enums";
 import type {
   ListingCloseReasonCode,
+  PosterTypeCode,
   ModerationActionCode,
   ModerationReasonCode,
 } from "@/constants/enums";
@@ -92,6 +93,8 @@ export interface PublicListingSummaryDto {
   imageCount?: number;
   /** Mã loại hình (AssetDomainType). */
   assetType?: number;
+  /** Chính chủ (1) hay môi giới (2). */
+  posterType?: PosterTypeCode;
 }
 
 export interface PublicListingDetailDto {
@@ -142,6 +145,7 @@ export interface PublicListingDetailDto {
   newWardCode?: string | null;
   /** Phường cũ bị chia cho nhiều phường mới — phường mới chỉ là ước đoán. */
   newAddressApprox?: boolean;
+  posterType?: PosterTypeCode;
 }
 
 /** Hai dải gợi ý dưới trang chi tiết. */
@@ -243,6 +247,7 @@ export interface CreateListingDirectInput {
   /** Đăng cho một căn trong toà nhà có sẵn (xem trang Toà nhà). */
   assetId?: string | null;
   assetUnitId?: string | null;
+  posterType?: PosterTypeCode;
 }
 
 export interface EditListingDto {
@@ -283,6 +288,7 @@ export interface EditListingDto {
   assetUnitId: string | null;
   assetName: string | null;
   unitName: string | null;
+  posterType?: PosterTypeCode;
 }
 
 /** Khop voi enum ListingSort phia backend. */
@@ -345,6 +351,8 @@ export interface PublicListingFilters {
   furnitureStates?: string[];
   /** Chỉ tin thuộc toà nhà có mô hình 3D. */
   has3D?: boolean | "";
+  /** Chỉ tin chính chủ. */
+  ownerOnly?: boolean | "";
   /** Mong muốn mềm, phân cách bằng ";" — chỉ ảnh hưởng thứ tự (sắp "Phù hợp nhất"). */
   prefer?: string;
   // Bộ lọc điều kiện thuê — cũng là các hard filter AI Agent sẽ sinh ra
@@ -397,6 +405,7 @@ export interface UpdateListingInput {
   /** Gửi đủ cả hai thì đặt/di chuyển ghim; bỏ trống thì giữ nguyên. */
   latitude?: number | null;
   longitude?: number | null;
+  posterType?: PosterTypeCode;
 }
 
 // ---- Helper hiển thị giá theo loại tin ----

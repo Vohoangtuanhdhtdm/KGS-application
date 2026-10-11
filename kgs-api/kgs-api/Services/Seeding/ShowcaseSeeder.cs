@@ -321,6 +321,8 @@ namespace kgs_api.Services.Seeding
                 Slug = status == ListingStatus.Draft ? null : SlugFor(s, p, idx, rnd),
                 PublishedAt = status is ListingStatus.Approved or ListingStatus.Closed ? now.AddDays(-(1 + (idx * 13) % 55)).AddHours(-rnd.Next(0, 20)) : null,
                 BumpedAt = idx % 17 == 4 ? now.AddDays(-rnd.Next(0, 3)) : null,
+                // Khoảng 1/4 tin do môi giới đăng — đủ để thử bộ lọc "chỉ tin chính chủ".
+                PosterType = idx % 4 == 1 ? PosterType.Broker : PosterType.Owner,
                 // Tin đã đóng có đủ các loại lý do — để thẻ "kết quả tin đã đóng" có số liệu khi trình
                 // diễn. Tin đóng là tin có idx % 20 == 19, nên chia theo idx / 20 (lần thứ mấy) chứ
                 // không theo idx % 5 — vẫn tất định giữa các lần seed.
@@ -738,6 +740,7 @@ namespace kgs_api.Services.Seeding
                 var listing = new Listing
                 {
                     Asset = asset, Type = ListingType.Rent, RentPaymentCycle = PaymentCycle.Monthly,
+                    PosterType = PosterType.Broker,
                     Title = $"Phòng trọ 25 m² full nội thất chỉ 1,5 triệu gần ĐH Bách Khoa #{k + 1}",
                     Description = "Phòng đẹp giá rẻ nhất khu vực, chuyển cọc giữ phòng trước qua tài khoản, xem phòng sau.",
                     Price = 1_500_000, Status = ListingStatus.Rejected,

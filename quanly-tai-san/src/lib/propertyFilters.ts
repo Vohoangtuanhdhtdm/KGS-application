@@ -21,6 +21,8 @@ export interface PropertyFilterState {
   furniture: string[];
   /** Chỉ tin thuộc toà nhà có mô hình 3D — xem được Toà nhà → Tầng → Căn. */
   has3D: boolean;
+  /** Chỉ tin người đăng khai là chính chủ. */
+  ownerOnly: boolean;
 }
 
 export const EMPTY_PROPERTY_FILTERS: PropertyFilterState = {
@@ -34,6 +36,7 @@ export const EMPTY_PROPERTY_FILTERS: PropertyFilterState = {
   legal: [],
   furniture: [],
   has3D: false,
+  ownerOnly: false,
 };
 
 export const DIRECTION_OPTIONS = HOUSE_DIRECTIONS as readonly string[];
@@ -95,7 +98,8 @@ export function countPropertyFilters(s: PropertyFilterState): number {
     (s.directions.length ? 1 : 0) +
     (s.legal.length ? 1 : 0) +
     (s.furniture.length ? 1 : 0) +
-    (s.has3D ? 1 : 0)
+    (s.has3D ? 1 : 0) +
+    (s.ownerOnly ? 1 : 0)
   );
 }
 
@@ -112,6 +116,7 @@ export function toSearchParams(s: PropertyFilterState) {
     legalStatuses: s.legal.length ? s.legal : undefined,
     furnitureStates: s.furniture.length ? s.furniture : undefined,
     has3D: s.has3D ? true : ("" as const),
+    ownerOnly: s.ownerOnly ? true : ("" as const),
   };
 }
 
@@ -128,6 +133,7 @@ export function fromCriteria(c: SavedSearchCriteria): PropertyFilterState {
     legal: c.legalStatuses ?? [],
     furniture: c.furnitureStates ?? [],
     has3D: c.has3D === true,
+    ownerOnly: c.ownerOnly === true,
   };
 }
 
@@ -195,5 +201,7 @@ export function propertyChips(
     });
   if (s.has3D)
     out.push({ key: "3d", label: "Có mô hình 3D", clear: () => set({ ...s, has3D: false }) });
+  if (s.ownerOnly)
+    out.push({ key: "owner", label: "Chính chủ", clear: () => set({ ...s, ownerOnly: false }) });
   return out;
 }

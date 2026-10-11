@@ -77,6 +77,10 @@ export type PaymentCycleCode = keyof typeof PAYMENT_CYCLE;
 
 // ---- Marketplace: tin đăng công khai ----
 
+/** Người đăng tự khai — khớp enum PosterType ở backend. */
+export const POSTER_TYPE = { 1: "Chính chủ", 2: "Môi giới" } as const;
+export type PosterTypeCode = keyof typeof POSTER_TYPE;
+
 /** Vì sao tin đã đóng — khớp enum ListingCloseReason ở backend. 1–3 người đăng tự chọn. */
 export const LISTING_CLOSE_REASON = {
   1: "Đã có khách qua KGS",

@@ -82,6 +82,7 @@ namespace kgs_api.Services
             listing.Title = request.Title.Trim();
             listing.Description = request.Description;
             listing.Price = request.Price;
+            if (request.PosterType is { } poster) listing.PosterType = poster;
             listing.RentPaymentCycle = listing.Type == ListingType.Rent ? request.RentPaymentCycle : null;
             listing.Terms = MapTerms(request.Terms);
             listing.Amenities = NormalizeAmenities(request.Amenities);
@@ -260,6 +261,7 @@ namespace kgs_api.Services
                 NewProvince = asset.Address.NewProvince,
                 NewWard = asset.Address.NewWard,
                 NewWardCode = asset.Address.NewWardCode,
+                PosterType = listing.PosterType,
                 // Ước đoán = phường cũ bị chia VÀ toạ độ không xác nhận được phường đã chọn.
                 NewAddressApprox = asset.Address.NewWardCode is not null
                     && AdministrativeUnits2025.CandidateWardCodes(
@@ -427,6 +429,7 @@ namespace kgs_api.Services
             {
                 Asset = asset,
                 AssetUnitId = unitId,
+                PosterType = request.PosterType,
                 Title = request.Title.Trim(),
                 Description = request.Description,
                 Price = request.Price,
@@ -619,7 +622,7 @@ namespace kgs_api.Services
                 CanEditPropertyFields: otherListings == 0 && listing.AssetUnitId == null,
                 listing.ModerationNote,
                 a.Location?.Y, a.Location?.X,   // Y=lat, X=lng
-                a.Id, listing.AssetUnitId, a.Name, listing.AssetUnit?.Name);
+                a.Id, listing.AssetUnitId, a.Name, listing.AssetUnit?.Name, listing.PosterType);
         }
 
         public async Task<OwnerListingDto> BumpAsync(Guid listingId, CancellationToken ct = default)
@@ -965,6 +968,7 @@ namespace kgs_api.Services
                     ImageUrls = l.Images.OrderBy(i => i.SortOrder).Take(5).Select(i => i.File.Url).ToList(),
                     ImageCount = l.Images.Count,
                     l.Asset.TypeProperty,
+                    l.PosterType,
                 })
                 .ToListAsync(ct);
 
@@ -978,6 +982,7 @@ namespace kgs_api.Services
                 ImageUrls = r.ImageUrls,
                 ImageCount = r.ImageCount,
                 AssetType = r.TypeProperty,
+                PosterType = r.PosterType,
             }).ToList();
         }
 

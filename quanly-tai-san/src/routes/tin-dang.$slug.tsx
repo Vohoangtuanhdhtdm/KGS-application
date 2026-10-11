@@ -243,6 +243,17 @@ function PublicListingDetailPage() {
                 <Badge>{p.type === 1 ? "Bán" : "Cho thuê"}</Badge>
                 <Badge variant="outline">{p.assetTypeLabel}</Badge>
                 {p.unitName && <Badge variant="outline">{p.unitName}</Badge>}
+                {p.posterType && (
+                  <Badge
+                    variant="outline"
+                    className={
+                      p.posterType === 1 ? "border-emerald-600/40 text-emerald-700" : undefined
+                    }
+                    title="Người đăng tự khai"
+                  >
+                    {p.posterType === 1 ? "Chính chủ" : "Môi giới đăng"}
+                  </Badge>
+                )}
                 {building && (
                   <a href="#toa-nha-3d">
                     <Badge variant="outline" className="gap-1 border-primary/40 text-primary">
