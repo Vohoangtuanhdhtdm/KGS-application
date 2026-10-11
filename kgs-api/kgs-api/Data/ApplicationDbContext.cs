@@ -16,7 +16,6 @@ namespace kgs_api.Data
         public DbSet<ListingImage> ListingImages => Set<ListingImage>();
         public DbSet<Asset> Assets => Set<Asset>();
         public DbSet<AssetUnit> AssetUnits => Set<AssetUnit>();
-        public DbSet<AssetMedia> AssetMedia => Set<AssetMedia>();
         public DbSet<SavedListing> SavedListings => Set<SavedListing>();
         public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<ListingInquiry> ListingInquiries => Set<ListingInquiry>();

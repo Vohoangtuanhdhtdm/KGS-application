@@ -8,6 +8,12 @@ using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Domain.Entity
 {
+    /// <summary>Bất động sản được đăng tin: một căn nhà, lô đất, hoặc một toà nhà / khu trọ nhiều
+    /// căn (Units). Mọi tin đăng (Listing) trỏ về đúng một bất động sản, và tin của một căn trỏ thêm
+    /// về căn đó.
+    ///
+    /// Tên lớp "Asset" là di sản của khu quản lý tài sản đã gỡ; trong nghiệp vụ và báo cáo đây là
+    /// "Bất động sản". Không đổi tên lớp/bảng vì phải đổi kèm hàng trăm chỗ và lịch sử migration.</summary>
     public class Asset : BaseAuditableEntity
     {
         [Required] public string UserId { get; set; } = string.Empty;
@@ -15,17 +21,12 @@ namespace kgs_api.Domain.Entity
 
         [Required, MaxLength(255)] public string Name { get; set; } = string.Empty;
         public AssetDomainType TypeProperty { get; set; } // bị trùng tên
-        public AssetOwnershipType OwnershipType { get; set; } = AssetOwnershipType.Owned;
-        public AssetStatus Status { get; set; } = AssetStatus.InUse;
 
         public Address Address { get; set; } = new();          // Value Object
         public double? Area { get; set; }                       // m²
         public double? Frontage { get; set; }                   // mặt tiền (m) — chuyển từ Property sang
 
-        [Column(TypeName = "decimal(18,2)")] public decimal? CurrentValue { get; set; } // giá trị hiện tại
-        public DateTime? AcquisitionDate { get; set; }          // ngày mua (Owned) / ngày bắt đầu thuê (Leasehold)
-
-        public StoredFile? Thumbnail { get; set; }              // thay ThumbnailUrl
+        /// <summary>Nhãn nội bộ — bộ seed dữ liệu trình diễn dùng để nhận ra bản ghi của mình.</summary>
         public string? Notes { get; set; }
 
         // ← THÊM TỪ ĐÂY — 6 trường mô tả chi tiết, dùng cho cả quản lý nội bộ lẫn đăng tin công khai.
@@ -53,7 +54,6 @@ namespace kgs_api.Domain.Entity
 
         // Navigations
         public ICollection<AssetUnit> Units { get; set; } = new List<AssetUnit>();
-        public ICollection<AssetMedia> Media { get; set; } = new List<AssetMedia>();
 
         // Tin đăng công khai của tài sản này. Quan hệ đã ĐẢO CHIỀU so với
         // Asset.LinkedPropertyId cũ: nay Listing trỏ về Asset, và một tài sản có thể

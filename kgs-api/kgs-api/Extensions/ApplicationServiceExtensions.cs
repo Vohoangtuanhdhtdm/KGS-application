@@ -119,8 +119,6 @@ namespace kgs_api.Extensions
             //else
             services.AddScoped<IEmailSender, SmtpEmailSender>();
 
-            services.AddScoped<IAssetService, AssetService>();
-            services.AddScoped<IAssetMediaService, AssetMediaService>();
             services.AddScoped<IAssetUnitService, AssetUnitService>();
             services.AddScoped<IMarketplaceEngagementService, MarketplaceEngagementService>();
             // Mỗi thông báo: một bản trong ứng dụng (chuông) + một email — xem CompositeNotificationSender.

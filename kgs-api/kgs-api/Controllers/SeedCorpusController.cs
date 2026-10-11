@@ -139,9 +139,6 @@ namespace kgs_api.Controllers
                     UserId = userId,
                     Name = $"Khu trọ {d.Name} — cơ sở {h + 1}",
                     TypeProperty = AssetDomainType.Room,
-                    // Phần lớn là đi thuê rồi chia phòng cho thuê lại — đúng định vị sản phẩm.
-                    OwnershipType = rnd.NextDouble() < 0.7 ? AssetOwnershipType.Leasehold : AssetOwnershipType.Owned,
-                    Status = AssetStatus.RentedOut,
                     Address = new Address
                     {
                         City = "Thành phố Hồ Chí Minh",

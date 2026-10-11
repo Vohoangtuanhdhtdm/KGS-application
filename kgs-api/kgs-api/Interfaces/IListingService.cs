@@ -9,7 +9,6 @@ namespace kgs_api.Interfaces
     /// Phía CẦU (lưu tin, yêu cầu xem nhà) nằm ở IMarketplaceEngagementService.</summary>
     public interface IListingService
     {
-        Task<OwnerListingDto> CreateAsync(Guid assetId, CreateListingRequest request, CancellationToken ct = default);
         Task<OwnerListingDto> UpdateAsync(Guid listingId, UpdateListingRequest request, CancellationToken ct = default);
 
         // ==================== Luồng đăng tin trực tiếp (Giai đoạn 1) ====================
@@ -50,7 +49,6 @@ namespace kgs_api.Interfaces
         Task CloseAsync(Guid listingId, CancellationToken ct = default);
 
         Task<IReadOnlyList<OwnerListingDto>> GetMyListingsAsync(CancellationToken ct = default);
-        Task<IReadOnlyList<OwnerListingDto>> GetByAssetAsync(Guid assetId, CancellationToken ct = default);
 
         Task<PagedResult<PublicListingSummaryDto>> SearchPublicAsync(PublicListingSearchQuery query, CancellationToken ct = default);
         Task<PublicListingDetailDto> GetPublicBySlugAsync(string slug, CancellationToken ct = default);

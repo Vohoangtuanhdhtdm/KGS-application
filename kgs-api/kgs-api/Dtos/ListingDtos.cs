@@ -3,25 +3,6 @@ using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Dtos
 {
-    /// <summary>Tạo tin đăng từ một tài sản.
-    ///
-    /// Sau khi gộp Property vào Asset, request này KHÔNG còn nhận các trường mô tả vật lý
-    /// (số tầng, phòng ngủ, hướng nhà, pháp lý, nội thất, mặt tiền). Chúng thuộc về tài sản,
-    /// sửa ở màn hình tài sản — tin đăng luôn đọc giá trị mới nhất. Trước đây chúng được
-    /// sao chép sang Property lúc đăng tin rồi đóng băng ở đó, nên sửa tài sản không làm
-    /// tin đăng đổi theo.</summary>
-    public sealed record CreateListingRequest(
-        ListingType Type,
-        /// <summary>null = đăng nguyên căn; có giá trị = đăng riêng một tầng/phòng.</summary>
-        Guid? AssetUnitId,
-        [Required, MaxLength(200)] string Title,
-        [Required] string Description,
-        [Range(0.01, (double)decimal.MaxValue)] decimal Price,
-        PaymentCycle? RentPaymentCycle,
-        List<Guid> SelectedAssetMediaIds,
-        ListingTermsDto? Terms,
-        List<string>? Amenities);
-
     /// <summary>Điều kiện thuê. Mọi trường nullable — null nghĩa là chủ tin CHƯA KHAI,
     /// khác hẳn với false (đã khai là không). Bộ lọc chỉ khớp khi khai tường minh.</summary>
     public sealed record ListingTermsDto(

@@ -36,7 +36,6 @@ namespace kgs_api.Services
         private readonly IRepository<Listing> _listings;
         private readonly IRepository<ListingImage> _images;
         private readonly IRepository<ListingModerationEvent> _moderationEvents;
-        private readonly IRepository<AssetMedia> _media;
         private readonly IFileStorageService _files;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
@@ -54,7 +53,6 @@ namespace kgs_api.Services
             IRepository<AssetUnit> units,
             IRepository<Listing> listings,
             IRepository<ListingImage> images,
-            IRepository<AssetMedia> media,
             IFileStorageService files,
             IUnitOfWork uow,
             ICurrentUserService currentUser,
@@ -64,88 +62,12 @@ namespace kgs_api.Services
             IRepository<ListingInquiry> inquiries)
         {
             _assets = assets; _units = units; _listings = listings; _images = images;
-            _media = media; _files = files;
+            _files = files;
             _uow = uow; _currentUser = currentUser; _geometryFactory = geometryFactory;
             _views = views; _moderationEvents = moderationEvents; _inquiries = inquiries;
         }
 
         // ==================== ĐĂNG TIN ====================
-
-        public async Task<OwnerListingDto> CreateAsync(Guid assetId, CreateListingRequest request, CancellationToken ct = default)
-        {
-            var userId = _currentUser.UserId;
-
-            var asset = await _assets.Query().AsNoTracking()
-                .FirstOrDefaultAsync(a => a.Id == assetId && a.UserId == userId, ct)
-                ?? throw new NotFoundException("Không tìm thấy tài sản.");
-
-            if (request.Type == ListingType.Rent && request.RentPaymentCycle is null)
-                throw new ValidationFailedException("Tin cho thuê bắt buộc phải chọn chu kỳ thanh toán.");
-
-            // Đăng tin theo phòng: phòng phải thuộc đúng tài sản này.
-            if (request.AssetUnitId is not null)
-            {
-                var unitExists = await _units.Query()
-                    .AnyAsync(u => u.Id == request.AssetUnitId && u.AssetId == assetId, ct);
-                if (!unitExists)
-                    throw new NotFoundException("Không tìm thấy tầng/phòng thuộc tài sản này.");
-            }
-
-            // Một chỗ chỉ có một tin đang sống. Kiểm ở đây để trả lỗi nghiệp vụ rõ ràng
-            // thay vì để partial unique index UX_Listings_OneLivePerSlot ném lỗi DB.
-            var hasLive = await _listings.Query().AnyAsync(l =>
-                l.AssetId == assetId
-                && l.AssetUnitId == request.AssetUnitId
-                && (l.Status == ListingStatus.Pending || l.Status == ListingStatus.Approved), ct);
-            if (hasLive)
-                throw new ConflictException(request.AssetUnitId is null
-                    ? "Tài sản này đã có tin đăng đang hiển thị — hãy sửa tin hiện có thay vì tạo mới."
-                    : "Phòng này đã có tin đăng đang hiển thị — hãy sửa tin hiện có thay vì tạo mới.");
-
-            var selectedMedia = await _media.Query().AsNoTracking()
-                .Where(m => m.AssetId == assetId && request.SelectedAssetMediaIds.Contains(m.Id))
-                .ToListAsync(ct);
-
-            if (selectedMedia.Count == 0)
-                throw new ValidationFailedException("Cần chọn ít nhất 1 ảnh để đăng tin công khai.");
-
-            var listing = new Listing
-            {
-                AssetId = assetId,
-                AssetUnitId = request.AssetUnitId,
-                Title = request.Title.Trim(),
-                Description = request.Description,
-                Price = request.Price,
-                Type = request.Type,
-                RentPaymentCycle = request.Type == ListingType.Rent ? request.RentPaymentCycle : null,
-                Status = ListingStatus.Pending,
-                Slug = await GenerateUniqueSlugAsync(request.Title, ct),
-                ViewCount = 0,
-                Terms = MapTerms(request.Terms),
-                Amenities = NormalizeAmenities(request.Amenities),
-                Images = selectedMedia.Select((m, i) => new ListingImage
-                {
-                    File = new StoredFile
-                    {
-                        Url = m.File.Url,
-                        PublicId = m.File.PublicId,
-                        FileName = m.File.FileName,
-                        ContentType = m.File.ContentType,
-                        SizeBytes = m.File.SizeBytes
-                    },
-                    SortOrder = i
-                }).ToList()
-            };
-
-            await _listings.AddAsync(listing, ct);
-
-            // MỘT SaveChanges duy nhất. Trước đây phải gọi hai lần vì Property có khoá int
-            // identity và Asset.LinkedPropertyId cần Id thật; nay quan hệ đã đảo chiều nên
-            // không còn ràng buộc đó — cũng không còn cửa sổ tạo ra tin đăng mồ côi.
-            await _uow.SaveChangesAsync(ct);
-
-            return await GetOwnedDtoAsync(listing.Id, ct);
-        }
 
         public async Task<OwnerListingDto> UpdateAsync(Guid listingId, UpdateListingRequest request, CancellationToken ct = default)
         {
@@ -194,12 +116,6 @@ namespace kgs_api.Services
         public async Task<IReadOnlyList<OwnerListingDto>> GetMyListingsAsync(CancellationToken ct = default)
             => await ProjectOwner(_listings.Query().AsNoTracking()
                     .Where(l => l.Asset.UserId == _currentUser.UserId)
-                    .OrderByDescending(l => l.CreatedAt))
-                .ToListAsync(ct);
-
-        public async Task<IReadOnlyList<OwnerListingDto>> GetByAssetAsync(Guid assetId, CancellationToken ct = default)
-            => await ProjectOwner(_listings.Query().AsNoTracking()
-                    .Where(l => l.AssetId == assetId && l.Asset.UserId == _currentUser.UserId)
                     .OrderByDescending(l => l.CreatedAt))
                 .ToListAsync(ct);
 
@@ -468,8 +384,6 @@ namespace kgs_api.Services
                             ? $"{address.Ward}, {address.District}"
                             : $"{address.Detail}, {address.District}",
                         TypeProperty = request.PropertyType,
-                        OwnershipType = AssetOwnershipType.Owned,
-                        Status = AssetStatus.InUse,
                         Address = address,
                         Location = request.Latitude is not null && request.Longitude is not null
                             ? _geometryFactory.CreatePoint(new Coordinate(request.Longitude.Value, request.Latitude.Value))

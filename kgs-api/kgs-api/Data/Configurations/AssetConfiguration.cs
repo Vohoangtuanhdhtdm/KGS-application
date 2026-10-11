@@ -30,8 +30,6 @@ namespace kgs_api.Data.Configurations
             b.HasIndex(a => a.Location).HasMethod("gist");
             b.Navigation(a => a.Address).IsRequired();
 
-            b.OwnsOne(a => a.Thumbnail);                 // Thumbnail_Url, Thumbnail_PublicId...
-
             b.HasOne(a => a.User)
              .WithMany()
              .HasForeignKey(a => a.UserId)
@@ -39,7 +37,6 @@ namespace kgs_api.Data.Configurations
 
             // Index cho các truy vấn nóng nhất
             b.HasIndex(a => a.UserId);
-            b.HasIndex(a => new { a.UserId, a.Status });
             b.HasIndex(a => new { a.UserId, a.TypeProperty });
         }
     }

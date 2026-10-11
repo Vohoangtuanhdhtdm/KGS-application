@@ -177,10 +177,8 @@ namespace kgs_api.Services.Seeding
                 var known = new[] { Tag, "[demo-3d]", "[demo-gd1]" };
                 var stray = await _db.Assets.Where(a => a.Notes == null || !known.Contains(a.Notes)).ToListAsync(ct);
                 var ids = stray.Select(a => a.Id).ToList();
-                var files = (await _db.ListingImages.Where(i => ids.Contains(i.Listing.AssetId))
-                        .Select(i => new { i.File.PublicId, i.File.Url, i.File.ContentType }).ToListAsync(ct))
-                    .Concat(await _db.AssetMedia.Where(m => ids.Contains(m.AssetId))
-                        .Select(m => new { m.File.PublicId, m.File.Url, m.File.ContentType }).ToListAsync(ct));
+                var files = await _db.ListingImages.Where(i => ids.Contains(i.Listing.AssetId))
+                        .Select(i => new { i.File.PublicId, i.File.Url, i.File.ContentType }).ToListAsync(ct);
                 foreach (var f in files.Where(f => !string.IsNullOrEmpty(f.PublicId) && f.Url.Contains("res.cloudinary.com")))
                     _db.FileDeletionQueueItems.Add(new FileDeletionQueueItem
                     {
@@ -292,8 +290,6 @@ namespace kgs_api.Services.Seeding
             {
                 Name = $"{TypeName(s.Type)} {p.Street} #{i + 1}",
                 TypeProperty = s.Type,
-                OwnershipType = AssetOwnershipType.Owned,
-                Status = isSale ? AssetStatus.ForSale : status == ListingStatus.Closed ? AssetStatus.RentedOut : AssetStatus.Vacant,
                 Address = new Address
                 {
                     City = p.City,
@@ -499,8 +495,6 @@ namespace kgs_api.Services.Seeding
             {
                 Name = b.Name,
                 TypeProperty = b.Type,
-                OwnershipType = AssetOwnershipType.Owned,
-                Status = AssetStatus.InUse,
                 Address = new Address { City = p.City, District = p.District, Ward = p.Ward, Detail = $"{120 + b.Floors} {p.Street}" },
                 Location = _gf.CreatePoint(new Coordinate(p.Lng, p.Lat)),
                 Area = Math.Round(b.Width * b.Depth),
@@ -725,7 +719,6 @@ namespace kgs_api.Services.Seeding
                 var asset = new Asset
                 {
                     UserId = people["spam"], Name = $"Phòng trọ Ba Tháng Hai #{k + 1}", TypeProperty = AssetDomainType.Room,
-                    OwnershipType = AssetOwnershipType.Owned, Status = AssetStatus.Vacant, Notes = Tag,
                     Address = new Address { City = place.City, District = place.District, Ward = place.Ward, Detail = $"{200 + k} {place.Street}" },
                     Location = _gf.CreatePoint(new Coordinate(place.Lng + 0.001 * (k + 1), place.Lat)), Area = 25, Bedrooms = 1, Bathrooms = 1,
                 };

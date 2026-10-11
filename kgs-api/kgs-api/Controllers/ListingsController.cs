@@ -199,28 +199,4 @@ namespace kgs_api.Controllers
             return NoContent();
         }
     }
-
-    // ============================================================
-    // Đăng tin — lồng dưới tài sản, nhất quán với các endpoint khác
-    // ============================================================
-    [ApiController]
-    [Authorize(Policy = AppPolicies.Owner)]
-    [Route("api/assets/{assetId:guid}/listings")]
-    public sealed class AssetListingsController : ControllerBase
-    {
-        private readonly IListingService _listings;
-        public AssetListingsController(IListingService listings) => _listings = listings;
-
-        /// <summary>Đăng tin cho nguyên căn (AssetUnitId = null) hoặc cho một phòng cụ thể.</summary>
-        [HttpPost]
-        [EnableRateLimiting(RateLimitingExtensions.CreateListing)]
-        public async Task<ActionResult<OwnerListingDto>> Create(
-            Guid assetId, [FromBody] CreateListingRequest request, CancellationToken ct)
-            => Ok(await _listings.CreateAsync(assetId, request, ct));
-
-        [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<OwnerListingDto>>> GetByAsset(
-            Guid assetId, CancellationToken ct)
-            => Ok(await _listings.GetByAssetAsync(assetId, ct));
-    }
 }

@@ -92,10 +92,6 @@
             Other = 99
         }
 
-        public enum AssetOwnershipType { Owned = 1, Leasehold = 2 }        // Sở hữu / Đi thuê
-
-        public enum AssetStatus { InUse = 1, RentedOut = 2, ForSale = 3, Vacant = 4, Sold = 5, LeaseEnded = 6 }
-
         public enum UnitStatus { Vacant = 1, Occupied = 2, UnderMaintenance = 3 }
 
         public enum PaymentCycle { Monthly = 1, Quarterly = 2, SemiAnnually = 3, Annually = 4 }

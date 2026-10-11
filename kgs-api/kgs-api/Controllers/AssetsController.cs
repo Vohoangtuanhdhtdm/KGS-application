@@ -1,127 +1,39 @@
 ﻿using kgs_api.Authorization;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
-using kgs_api.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using static kgs_api.Common.Common;
-using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Controllers
 {
+    /// <summary>Căn/phòng của một toà nhà — trang Toà nhà của người đăng tin thêm, sửa, xoá căn.
+    ///
+    /// Trước đây controller này còn cả CRUD, ảnh và bản đồ tài sản của khu quản lý tài sản; khu đó
+    /// đã gỡ khỏi đề tài. Tạo toà nhà đi qua api/buildings, đăng tin qua api/listings.</summary>
     [ApiController]
     [Authorize(Policy = AppPolicies.Owner)]
-    [Route("api/assets")]
+    [Route("api/assets/{assetId:guid}/units")]
     public sealed class AssetsController : ControllerBase
     {
-        private readonly IAssetService _assets;
-        private readonly IAssetMediaService _media;
         private readonly IAssetUnitService _units;
 
-        public AssetsController(IAssetService assets, IAssetMediaService media, IAssetUnitService units)
-        {
-            _assets = assets; _media = media; _units = units;
-        }
-
-        // -------------------- A1. CRUD --------------------
+        public AssetsController(IAssetUnitService units) => _units = units;
 
         [HttpPost]
-        public async Task<ActionResult<AssetDetailDto>> Create(
-            [FromBody] AssetCreateRequest request, CancellationToken ct)
-        {
-            var result = await _assets.CreateAsync(request, ct);
-            return CreatedAtAction(nameof(GetById), new { assetId = result.Id }, result);
-        }
-
-        [HttpGet("{assetId:guid}")]
-        public async Task<ActionResult<AssetDetailDto>> GetById(Guid assetId, CancellationToken ct)
-            => Ok(await _assets.GetByIdAsync(assetId, ct));
-
-        [HttpPut("{assetId:guid}")]
-        public async Task<ActionResult<AssetDetailDto>> Update(
-            Guid assetId, [FromBody] AssetUpdateRequest request, CancellationToken ct)
-            => Ok(await _assets.UpdateAsync(assetId, request, ct));
-
-        [HttpDelete("{assetId:guid}")]
-        public async Task<IActionResult> Delete(Guid assetId, CancellationToken ct)
-        {
-            await _assets.DeleteAsync(assetId, ct);
-            return NoContent();
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<PagedResult<AssetSummaryDto>>> Search(
-            [FromQuery] AssetSearchQuery query, CancellationToken ct)
-            => Ok(await _assets.SearchAsync(query, ct));
-
-        // -------------------- A2. NEARBY (PostGIS) --------------------
-
-        [HttpGet("map-pins")]
-        public async Task<ActionResult<IReadOnlyList<AssetMapPinDto>>> GetMapPins(CancellationToken ct)
-        {
-            var result = await _assets.GetMapPinsAsync(ct);
-            return Ok(result);
-        }
-
-        [HttpGet("nearby")]
-        public async Task<ActionResult<IReadOnlyList<AssetNearbyDto>>> Nearby(
-            [FromQuery] NearbyQuery query, CancellationToken ct)
-            => Ok(await _assets.FindNearbyAsync(query, ct));
-
-        // -------------------- A4. MEDIA (ảnh theo thời gian) --------------------
-
-        [HttpPost("{assetId:guid}/media")]
-        [RequestSizeLimit(120_000_000)] // ~10MB x 10 files buffer an toàn
-        public async Task<ActionResult<IReadOnlyList<AssetMediaDto>>> UploadMedia(
-            Guid assetId, [FromForm] AssetMediaUploadRequest request, CancellationToken ct)
-            => Ok(await _media.UploadAsync(assetId, request, ct));
-
-        [HttpGet("{assetId:guid}/media")]
-        public async Task<ActionResult<IReadOnlyList<AssetMediaDto>>> GetGallery(Guid assetId, CancellationToken ct)
-            => Ok(await _media.GetGalleryAsync(assetId, ct));
-
-        [HttpDelete("{assetId:guid}/media/{mediaId:guid}")]
-        public async Task<IActionResult> DeleteMedia(Guid assetId, Guid mediaId, CancellationToken ct)
-        {
-            await _media.DeleteAsync(assetId, mediaId, ct);
-            return NoContent();
-        }
-
-        [HttpPut("{assetId:guid}/thumbnail")]
-        [RequestSizeLimit(15_000_000)]
-        public async Task<IActionResult> SetThumbnail(
-            Guid assetId, IFormFile file, CancellationToken ct)
-        {
-            await _media.SetThumbnailAsync(assetId, file, ct);
-            return NoContent();
-        }
-
-        /// <summary>Đặt một ảnh trong gallery làm ảnh đại diện — không upload lại file.</summary>
-        [HttpPut("{assetId:guid}/thumbnail/from-media/{mediaId:guid}")]
-        public async Task<IActionResult> SetThumbnailFromMedia(Guid assetId, Guid mediaId, CancellationToken ct)
-        {
-            await _media.SetThumbnailFromMediaAsync(assetId, mediaId, ct);
-            return NoContent();
-        }
-
-        // -------------------- A6. UNITS (tầng/phòng) --------------------
-
-        [HttpPost("{assetId:guid}/units")]
         public async Task<ActionResult<AssetUnitDto>> CreateUnit(
             Guid assetId, [FromBody] AssetUnitRequest request, CancellationToken ct)
             => Ok(await _units.CreateAsync(assetId, request, ct));
 
-        [HttpGet("{assetId:guid}/units")]
+        [HttpGet]
         public async Task<ActionResult<IReadOnlyList<AssetUnitDto>>> GetUnits(Guid assetId, CancellationToken ct)
             => Ok(await _units.GetByAssetAsync(assetId, ct));
 
-        [HttpPut("{assetId:guid}/units/{unitId:guid}")]
+        [HttpPut("{unitId:guid}")]
         public async Task<ActionResult<AssetUnitDto>> UpdateUnit(
             Guid assetId, Guid unitId, [FromBody] AssetUnitRequest request, CancellationToken ct)
             => Ok(await _units.UpdateAsync(assetId, unitId, request, ct));
 
-        [HttpDelete("{assetId:guid}/units/{unitId:guid}")]
+        [HttpDelete("{unitId:guid}")]
         public async Task<IActionResult> DeleteUnit(Guid assetId, Guid unitId, CancellationToken ct)
         {
             await _units.DeleteAsync(assetId, unitId, ct);
@@ -129,8 +41,3 @@ namespace kgs_api.Controllers
         }
     }
 }
-
-
-
-
-

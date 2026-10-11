@@ -251,9 +251,6 @@ namespace kgs_api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("AcquisitionDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<double?>("Area")
                         .HasColumnType("double precision");
 
@@ -271,9 +268,6 @@ namespace kgs_api.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
-
-                    b.Property<decimal?>("CurrentValue")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<double?>("FloorHeightMeters")
                         .HasColumnType("double precision");
@@ -307,12 +301,6 @@ namespace kgs_api.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
-                    b.Property<int>("OwnershipType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
                     b.Property<int>("TypeProperty")
                         .HasColumnType("integer");
 
@@ -333,8 +321,6 @@ namespace kgs_api.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Location"), "gist");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "Status");
 
                     b.HasIndex("UserId", "TypeProperty");
 
@@ -522,44 +508,6 @@ namespace kgs_api.Migrations
                     b.HasIndex("UserId", "ExpiresAt");
 
                     b.ToTable("RefreshTokens", (string)null);
-                });
-
-            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.AssetMedia", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AssetId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("TakenAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AssetId", "TakenAt");
-
-                    b.ToTable("AssetMedia");
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.AssetUnit", b =>
@@ -1084,40 +1032,6 @@ namespace kgs_api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.StoredFile", "Thumbnail", b1 =>
-                        {
-                            b1.Property<Guid>("AssetId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("ContentType")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("FileName")
-                                .HasMaxLength(255)
-                                .HasColumnType("character varying(255)");
-
-                            b1.Property<string>("PublicId")
-                                .IsRequired()
-                                .HasMaxLength(255)
-                                .HasColumnType("character varying(255)");
-
-                            b1.Property<long?>("SizeBytes")
-                                .HasColumnType("bigint");
-
-                            b1.Property<string>("Url")
-                                .IsRequired()
-                                .HasMaxLength(1000)
-                                .HasColumnType("character varying(1000)");
-
-                            b1.HasKey("AssetId");
-
-                            b1.ToTable("Assets");
-
-                            b1.WithOwner()
-                                .HasForeignKey("AssetId");
-                        });
-
                     b.OwnsOne("kgs_api.Domain.ValueObjects.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("AssetId")
@@ -1181,8 +1095,6 @@ namespace kgs_api.Migrations
 
                     b.Navigation("Address")
                         .IsRequired();
-
-                    b.Navigation("Thumbnail");
 
                     b.Navigation("User");
                 });
@@ -1272,56 +1184,6 @@ namespace kgs_api.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.AssetMedia", b =>
-                {
-                    b.HasOne("kgs_api.Domain.Entity.Asset", "Asset")
-                        .WithMany("Media")
-                        .HasForeignKey("AssetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.OwnsOne("kgs_api.Domain.ValueObjects.StoredFile", "File", b1 =>
-                        {
-                            b1.Property<Guid>("AssetMediaId")
-                                .HasColumnType("uuid");
-
-                            b1.Property<string>("ContentType")
-                                .HasMaxLength(100)
-                                .HasColumnType("character varying(100)");
-
-                            b1.Property<string>("FileName")
-                                .HasMaxLength(255)
-                                .HasColumnType("character varying(255)");
-
-                            b1.Property<string>("PublicId")
-                                .IsRequired()
-                                .HasMaxLength(255)
-                                .HasColumnType("character varying(255)");
-
-                            b1.Property<long?>("SizeBytes")
-                                .HasColumnType("bigint");
-
-                            b1.Property<string>("Url")
-                                .IsRequired()
-                                .HasMaxLength(1000)
-                                .HasColumnType("character varying(1000)");
-
-                            b1.HasKey("AssetMediaId");
-
-                            b1.HasIndex("PublicId");
-
-                            b1.ToTable("AssetMedia");
-
-                            b1.WithOwner()
-                                .HasForeignKey("AssetMediaId");
-                        });
-
-                    b.Navigation("Asset");
-
-                    b.Navigation("File")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.AssetUnit", b =>
@@ -1532,8 +1394,6 @@ namespace kgs_api.Migrations
             modelBuilder.Entity("kgs_api.Domain.Entity.Asset", b =>
                 {
                     b.Navigation("Listings");
-
-                    b.Navigation("Media");
 
                     b.Navigation("Units");
                 });
