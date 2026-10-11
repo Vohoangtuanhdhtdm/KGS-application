@@ -140,6 +140,14 @@ export const PropertyListCard = memo(
                   <Box className="h-3 w-3" /> 3D
                 </span>
               )}
+              {p.posterType === 1 && (
+                <span
+                  className={`absolute bottom-2 ${p.hasBuildingModel ? "left-12" : "left-2"} rounded bg-emerald-600/90 px-1.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur`}
+                  title="Người đăng khai là chính chủ"
+                >
+                  Chính chủ
+                </span>
+              )}
               {/* Nút thêm vào so sánh — đối xứng với nút lưu tin, nhưng ở góc trái để
                   không tranh chỗ. Chỉ hiện khi trang cha gắn CompareBar (truyền
                   onToggleCompare); im lặng biến mất ở những nơi chưa hỗ trợ so sánh

@@ -56,7 +56,11 @@ namespace kgs_api.Dtos
         int TotalSaved,
         IReadOnlyList<DailyViewPoint> DailyViews,
         /// <summary>Các tin xếp theo lượt xem 30 ngày, nhiều nhất trước.</summary>
-        IReadOnlyList<ListingPerformanceRow> Listings);
+        IReadOnlyList<ListingPerformanceRow> Listings)
+    {
+        /// <summary>Kết quả các tin đã đóng của người đăng — bao nhiêu tin có khách qua KGS.</summary>
+        public kgs_api.Domain.Rules.CloseOutcomeStatsDto? Closes { get; init; }
+    }
 
     public sealed record ListingPerformanceRow(
         Guid ListingId,

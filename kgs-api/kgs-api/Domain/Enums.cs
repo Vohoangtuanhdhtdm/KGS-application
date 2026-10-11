@@ -72,6 +72,31 @@
         }
 
         /// <summary>Xử lý tin đăng khi xác nhận một báo vi phạm (xem ReportOutcomes).</summary>
+        /// <summary>Ai đăng tin, người đăng tự khai: chủ của bất động sản hay môi giới.
+        /// Người tìm nhà ở Việt Nam rất quan tâm "tin chính chủ" — khai sai thì bị báo vi phạm
+        /// (thông tin sai lệch) như mọi thông tin khác trong tin.</summary>
+        public enum PosterType
+        {
+            Owner = 1,
+            Broker = 2,
+        }
+
+        /// <summary>Vì sao một tin đã đóng (xem ListingClosing). 1–3 người đăng tin tự chọn khi đóng;
+        /// 4–5 hệ thống ghi. Null = tin đóng trước khi có trường này.</summary>
+        public enum ListingCloseReason
+        {
+            /// <summary>Đã cho thuê / bán được nhờ khách tìm thấy trên KGS.</summary>
+            TakenViaKgs = 1,
+            /// <summary>Đã cho thuê / bán qua kênh khác.</summary>
+            TakenElsewhere = 2,
+            /// <summary>Không cho thuê / bán nữa.</summary>
+            Withdrawn = 3,
+            /// <summary>Hệ thống tự đóng sau thời hạn hiển thị.</summary>
+            Expired = 4,
+            /// <summary>Quản trị viên đóng theo phản ánh "đã cho thuê / đã bán".</summary>
+            ReportedTaken = 5,
+        }
+
         public enum ReportAction
         {
             /// <summary>Gỡ tin (về "Bị từ chối"): lừa đảo, tin rác, nội dung không phù hợp.</summary>
@@ -91,10 +116,6 @@
             Room = 7, CommercialSpace = 8, Warehouse = 9,
             Other = 99
         }
-
-        public enum AssetOwnershipType { Owned = 1, Leasehold = 2 }        // Sở hữu / Đi thuê
-
-        public enum AssetStatus { InUse = 1, RentedOut = 2, ForSale = 3, Vacant = 4, Sold = 5, LeaseEnded = 6 }
 
         public enum UnitStatus { Vacant = 1, Occupied = 2, UnderMaintenance = 3 }
 

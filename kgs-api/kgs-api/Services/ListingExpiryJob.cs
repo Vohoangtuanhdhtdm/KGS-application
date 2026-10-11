@@ -1,5 +1,6 @@
 using kgs_api.Data;
 using kgs_api.Domain.Entity;
+using kgs_api.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
 using static kgs_api.Domain.Enums;
 
@@ -31,7 +32,8 @@ namespace kgs_api.Services
 
         public async Task RunAsync(CancellationToken ct)
         {
-            var cutoff = DateTime.UtcNow.AddDays(-DaysVisible);
+            var now = DateTime.UtcNow;
+            var cutoff = now.AddDays(-DaysVisible);
 
             // Mốc tính hạn là lần đẩy gần nhất, không có thì tới lần duyệt, không có nữa
             // thì tới ngày tạo — cùng thứ tự ưu tiên mà marketplace dùng để sắp xếp.
@@ -44,7 +46,7 @@ namespace kgs_api.Services
 
             foreach (var listing in expired)
             {
-                listing.Status = ListingStatus.Closed;
+                ListingClosing.Close(listing, ListingCloseReason.Expired, now);
                 listing.ModerationNote =
                     $"Tự đóng sau {DaysVisible} ngày hiển thị. Bạn có thể mở lại và gửi duyệt tin này.";
             }

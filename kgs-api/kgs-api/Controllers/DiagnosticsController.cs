@@ -154,7 +154,6 @@ namespace kgs_api.Controllers
                 {
                     ["Assets"] = await _db.Assets.CountAsync(ct),
                     ["AssetUnits"] = await _db.AssetUnits.CountAsync(ct),
-                    ["AssetMedia"] = await _db.AssetMedia.CountAsync(ct),
                     ["FileDeletionQueueItems"] = await _db.FileDeletionQueueItems.CountAsync(ct),
                     ["Listings"] = await _db.Listings.CountAsync(ct),
                     ["ListingImages"] = await _db.ListingImages.CountAsync(ct),

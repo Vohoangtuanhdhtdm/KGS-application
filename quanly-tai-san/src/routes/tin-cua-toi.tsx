@@ -11,7 +11,14 @@ import type { AuthUser } from "@/lib/auth/types";
 import { formatDate } from "@/lib/format";
 import { matchmakingApi } from "@/lib/api/matchmaking";
 import { ListingDemandsSheet } from "@/components/matchmaking/ListingDemandsSheet";
-import { LISTING_TYPE, LISTING_STATUS, LISTING_STATUS_CLASS } from "@/constants/enums";
+import {
+  LISTING_CLOSE_REASON,
+  LISTING_TYPE,
+  LISTING_STATUS,
+  LISTING_STATUS_CLASS,
+  type ListingCloseReasonCode,
+} from "@/constants/enums";
+import { CloseListingDialog } from "@/components/listings/CloseListingDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,17 +82,14 @@ export const Route = createFileRoute("/tin-cua-toi")({
  * AI Agent. Tin bỏ trống sẽ bị loại khỏi mọi truy vấn có ràng buộc, dù thực tế có phù hợp.
  */
 function Completeness({ percent }: { percent: number }) {
-  const tone =
-    percent >= 80 ? "bg-success" : percent >= 50 ? "bg-warning" : "bg-destructive";
+  const tone = percent >= 80 ? "bg-success" : percent >= 50 ? "bg-warning" : "bg-destructive";
 
   return (
     <div className="flex items-center gap-2 min-w-[112px]">
       <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
         <div className={`h-full ${tone}`} style={{ width: `${percent}%` }} />
       </div>
-      <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
-        {percent}%
-      </span>
+      <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{percent}%</span>
     </div>
   );
 }
@@ -107,9 +111,13 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
     onError: (e) => toast.error(getErrorMessage(e, "Không đẩy được tin")),
   });
 
+  // Tin đang chờ chọn lý do đóng (hộp thoại mở khi khác null).
+  const [closing, setClosing] = useState<OwnerListingDto | null>(null);
   const close = useMutation({
-    mutationFn: (id: string) => listingsApi.close(id),
+    mutationFn: ({ id, reason }: { id: string; reason: ListingCloseReasonCode }) =>
+      listingsApi.close(id, reason),
     onSuccess: () => {
+      setClosing(null);
       refresh();
       toast.success("Đã đóng tin", { description: "Bạn có thể mở lại bất cứ lúc nào." });
     },
@@ -120,7 +128,9 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
     mutationFn: (id: string) => listingsApi.reopen(id),
     onSuccess: (l) => {
       refresh();
-      toast.success("Đã mở lại", { description: "Tin về bản nháp — kiểm tra giá rồi gửi duyệt lại." });
+      toast.success("Đã mở lại", {
+        description: "Tin về bản nháp — kiểm tra giá rồi gửi duyệt lại.",
+      });
       navigate({ to: "/dang-tin", search: { id: l.id } });
     },
     onError: (e) => toast.error(getErrorMessage(e, "Không mở lại được tin")),
@@ -163,9 +173,7 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
     retry: 1,
   });
   const thieuSoDienThoai =
-    meQuery.data != null &&
-    !meQuery.data.phoneNumber?.trim() &&
-    all.some((l) => l.status === 2);
+    meQuery.data != null && !meQuery.data.phoneNumber?.trim() && all.some((l) => l.status === 2);
 
   /**
    * Lọc theo trạng thái + tìm theo tiêu đề, và chỉ dựng dần từng đợt.
@@ -268,8 +276,8 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm font-medium">Tin của bạn đang hiển thị nhưng không ai gọi được</p>
             <p className="text-sm text-muted-foreground">
-              Hồ sơ của bạn chưa có số điện thoại, nên trang tin không hiện nút gọi. Người
-              tìm nhà chỉ còn cách gửi yêu cầu xem nhà và chờ bạn trả lời.
+              Hồ sơ của bạn chưa có số điện thoại, nên trang tin không hiện nút gọi. Người tìm nhà
+              chỉ còn cách gửi yêu cầu xem nhà và chờ bạn trả lời.
             </p>
           </div>
           <Button size="sm" variant="outline" className="shrink-0" asChild>
@@ -286,8 +294,8 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
               Có {demandTotal} lượt người đang tìm đúng loại nhà bạn đăng
             </p>
             <p className="text-sm text-muted-foreground">
-              Họ đã cho phép chủ nhà phù hợp mời xem nhà. Bấm dòng “… người đang tìm” dưới tin
-              để xem nhu cầu (ẩn danh) và gửi lời mời.
+              Họ đã cho phép chủ nhà phù hợp mời xem nhà. Bấm dòng “… người đang tìm” dưới tin để
+              xem nhu cầu (ẩn danh) và gửi lời mời.
             </p>
           </div>
         </div>
@@ -400,7 +408,7 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
                         busy={busy}
                         onEdit={() => navigate({ to: "/dang-tin", search: { id: l.id } })}
                         onBump={() => bump.mutate(l.id)}
-                        onClose={() => close.mutate(l.id)}
+                        onClose={() => setClosing(l)}
                         onReopen={() => reopen.mutate(l.id)}
                         onDelete={() => removeDraft.mutate(l.id)}
                       />
@@ -408,6 +416,9 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <Badge variant="outline" className={LISTING_STATUS_CLASS[l.status]}>
                         {LISTING_STATUS[l.status]}
+                        {l.status === 4 && l.closeReason
+                          ? ` · ${LISTING_CLOSE_REASON[l.closeReason]}`
+                          : ""}
                       </Badge>
                       <span className="font-medium">
                         {formatListingPrice(l.price, l.type, l.rentPaymentCycle)}
@@ -429,90 +440,93 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
               {/* Bọc trong div để ẩn cả khung cuộn ngang mà <Table> tự dựng, không chỉ
                   riêng thẻ <table>. */}
               <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Loại</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right">Giá</TableHead>
-                    <TableHead className="text-center">Lượt xem</TableHead>
-                    <TableHead>Độ đầy đủ</TableHead>
-                    <TableHead>Ngày đăng</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visible.map((l) => {
-                    const approved = l.status === 2;
-                    const row = (
-                      <TableRow
-                        key={l.id}
-                        className={approved ? "cursor-pointer" : "cursor-default"}
-                        onClick={() => openListing(l)}
-                      >
-                        <TableCell className="font-medium">
-                          {l.title}
-                          {/* Lý do bị trả về / gỡ / đóng do phản ánh — trước đây chỉ nằm trong
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tiêu đề</TableHead>
+                      <TableHead>Loại</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead className="text-right">Giá</TableHead>
+                      <TableHead className="text-center">Lượt xem</TableHead>
+                      <TableHead>Độ đầy đủ</TableHead>
+                      <TableHead>Ngày đăng</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visible.map((l) => {
+                      const approved = l.status === 2;
+                      const row = (
+                        <TableRow
+                          key={l.id}
+                          className={approved ? "cursor-pointer" : "cursor-default"}
+                          onClick={() => openListing(l)}
+                        >
+                          <TableCell className="font-medium">
+                            {l.title}
+                            {/* Lý do bị trả về / gỡ / đóng do phản ánh — trước đây chỉ nằm trong
                               email, chủ tin mở trang này không biết phải sửa gì. */}
-                          {(l.status === 3 || l.status === 4 || l.status === 6) &&
-                            l.moderationNote && (
-                              <p
-                                className={`mt-0.5 max-w-md text-xs font-normal ${
-                                  l.status === 3 ? "text-destructive" : "text-warning"
-                                }`}
-                              >
-                                {l.moderationNote}
-                              </p>
-                            )}
-                          {demandBadge(l) && <div>{demandBadge(l)}</div>}
-                        </TableCell>
-                        <TableCell className="text-sm">{LISTING_TYPE[l.type]}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={LISTING_STATUS_CLASS[l.status]}>
-                            {LISTING_STATUS[l.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatListingPrice(l.price, l.type, l.rentPaymentCycle)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                            <Eye className="h-3.5 w-3.5" />
-                            {l.viewCount}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Completeness percent={l.completenessPercent} />
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(l.createdAt)}
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <RowActions
-                            listing={l}
-                            busy={busy}
-                            onEdit={() => navigate({ to: "/dang-tin", search: { id: l.id } })}
-                            onBump={() => bump.mutate(l.id)}
-                            onClose={() => close.mutate(l.id)}
-                            onReopen={() => reopen.mutate(l.id)}
-                            onDelete={() => removeDraft.mutate(l.id)}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                    // Tin chờ duyệt: tooltip giải thích chưa hiển thị công khai
-                    return l.status === 1 ? (
-                      <Tooltip key={l.id}>
-                        <TooltipTrigger asChild>{row}</TooltipTrigger>
-                        <TooltipContent>Đang chờ duyệt, chưa hiển thị công khai.</TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      row
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                            {(l.status === 3 || l.status === 4 || l.status === 6) &&
+                              l.moderationNote && (
+                                <p
+                                  className={`mt-0.5 max-w-md text-xs font-normal ${
+                                    l.status === 3 ? "text-destructive" : "text-warning"
+                                  }`}
+                                >
+                                  {l.moderationNote}
+                                </p>
+                              )}
+                            {demandBadge(l) && <div>{demandBadge(l)}</div>}
+                          </TableCell>
+                          <TableCell className="text-sm">{LISTING_TYPE[l.type]}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={LISTING_STATUS_CLASS[l.status]}>
+                              {LISTING_STATUS[l.status]}
+                              {l.status === 4 && l.closeReason
+                                ? ` · ${LISTING_CLOSE_REASON[l.closeReason]}`
+                                : ""}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatListingPrice(l.price, l.type, l.rentPaymentCycle)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                              <Eye className="h-3.5 w-3.5" />
+                              {l.viewCount}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Completeness percent={l.completenessPercent} />
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDate(l.createdAt)}
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <RowActions
+                              listing={l}
+                              busy={busy}
+                              onEdit={() => navigate({ to: "/dang-tin", search: { id: l.id } })}
+                              onBump={() => bump.mutate(l.id)}
+                              onClose={() => setClosing(l)}
+                              onReopen={() => reopen.mutate(l.id)}
+                              onDelete={() => removeDraft.mutate(l.id)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                      // Tin chờ duyệt: tooltip giải thích chưa hiển thị công khai
+                      return l.status === 1 ? (
+                        <Tooltip key={l.id}>
+                          <TooltipTrigger asChild>{row}</TooltipTrigger>
+                          <TooltipContent>Đang chờ duyệt, chưa hiển thị công khai.</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        row
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             </TooltipProvider>
           )}
@@ -525,6 +539,13 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
           )}
         </CardContent>
       </Card>
+      <CloseListingDialog
+        title={closing?.title ?? null}
+        open={closing != null}
+        busy={close.isPending}
+        onOpenChange={(o) => !o && setClosing(null)}
+        onConfirm={(reason) => closing && close.mutate({ id: closing.id, reason })}
+      />
     </div>
   );
 }
@@ -556,7 +577,7 @@ function RowActions({
   onReopen: () => void;
   onDelete: () => void;
 }) {
-  const editable = l.status !== 4;   // mọi trạng thái trừ Đã đóng
+  const editable = l.status !== 4; // mọi trạng thái trừ Đã đóng
 
   return (
     <DropdownMenu>

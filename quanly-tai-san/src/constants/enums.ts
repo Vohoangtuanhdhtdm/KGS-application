@@ -77,6 +77,35 @@ export type PaymentCycleCode = keyof typeof PAYMENT_CYCLE;
 
 // ---- Marketplace: tin đăng công khai ----
 
+/** Người đăng tự khai — khớp enum PosterType ở backend. */
+export const POSTER_TYPE = { 1: "Chính chủ", 2: "Môi giới" } as const;
+export type PosterTypeCode = keyof typeof POSTER_TYPE;
+
+/** Vì sao tin đã đóng — khớp enum ListingCloseReason ở backend. 1–3 người đăng tự chọn. */
+export const LISTING_CLOSE_REASON = {
+  1: "Đã có khách qua KGS",
+  2: "Đã có khách qua kênh khác",
+  3: "Không cho thuê/bán nữa",
+  4: "Hết hạn hiển thị",
+  5: "Đóng theo phản ánh",
+} as const;
+export type ListingCloseReasonCode = keyof typeof LISTING_CLOSE_REASON;
+
+export const OWNER_CLOSE_REASONS: { value: ListingCloseReasonCode; label: string; hint: string }[] =
+  [
+    {
+      value: 1,
+      label: "Đã cho thuê / bán — khách tìm thấy trên KGS",
+      hint: "Khách liên hệ hoặc gửi yêu cầu xem nhà qua KGS",
+    },
+    {
+      value: 2,
+      label: "Đã cho thuê / bán qua kênh khác",
+      hint: "Người quen, môi giới, sàn khác, biển treo…",
+    },
+    { value: 3, label: "Không cho thuê / bán nữa", hint: "Tự ở, đổi kế hoạch, tạm ngừng" },
+  ];
+
 export const LISTING_TYPE = { 1: "Bán", 2: "Cho thuê" } as const;
 export type ListingTypeCode = keyof typeof LISTING_TYPE;
 

@@ -177,10 +177,8 @@ namespace kgs_api.Services.Seeding
                 var known = new[] { Tag, "[demo-3d]", "[demo-gd1]" };
                 var stray = await _db.Assets.Where(a => a.Notes == null || !known.Contains(a.Notes)).ToListAsync(ct);
                 var ids = stray.Select(a => a.Id).ToList();
-                var files = (await _db.ListingImages.Where(i => ids.Contains(i.Listing.AssetId))
-                        .Select(i => new { i.File.PublicId, i.File.Url, i.File.ContentType }).ToListAsync(ct))
-                    .Concat(await _db.AssetMedia.Where(m => ids.Contains(m.AssetId))
-                        .Select(m => new { m.File.PublicId, m.File.Url, m.File.ContentType }).ToListAsync(ct));
+                var files = await _db.ListingImages.Where(i => ids.Contains(i.Listing.AssetId))
+                        .Select(i => new { i.File.PublicId, i.File.Url, i.File.ContentType }).ToListAsync(ct);
                 foreach (var f in files.Where(f => !string.IsNullOrEmpty(f.PublicId) && f.Url.Contains("res.cloudinary.com")))
                     _db.FileDeletionQueueItems.Add(new FileDeletionQueueItem
                     {
@@ -292,8 +290,6 @@ namespace kgs_api.Services.Seeding
             {
                 Name = $"{TypeName(s.Type)} {p.Street} #{i + 1}",
                 TypeProperty = s.Type,
-                OwnershipType = AssetOwnershipType.Owned,
-                Status = isSale ? AssetStatus.ForSale : status == ListingStatus.Closed ? AssetStatus.RentedOut : AssetStatus.Vacant,
                 Address = new Address
                 {
                     City = p.City,
@@ -325,6 +321,19 @@ namespace kgs_api.Services.Seeding
                 Slug = status == ListingStatus.Draft ? null : SlugFor(s, p, idx, rnd),
                 PublishedAt = status is ListingStatus.Approved or ListingStatus.Closed ? now.AddDays(-(1 + (idx * 13) % 55)).AddHours(-rnd.Next(0, 20)) : null,
                 BumpedAt = idx % 17 == 4 ? now.AddDays(-rnd.Next(0, 3)) : null,
+                // Khoảng 1/4 tin do môi giới đăng — đủ để thử bộ lọc "chỉ tin chính chủ".
+                PosterType = idx % 4 == 1 ? PosterType.Broker : PosterType.Owner,
+                // Tin đã đóng có đủ các loại lý do — để thẻ "kết quả tin đã đóng" có số liệu khi trình
+                // diễn. Tin đóng là tin có idx % 20 == 19, nên chia theo idx / 20 (lần thứ mấy) chứ
+                // không theo idx % 5 — vẫn tất định giữa các lần seed.
+                CloseReason = status != ListingStatus.Closed ? null : (idx / 20 % 5) switch
+                {
+                    0 or 1 => ListingCloseReason.TakenViaKgs,
+                    2 => ListingCloseReason.TakenElsewhere,
+                    3 => ListingCloseReason.Withdrawn,
+                    _ => ListingCloseReason.Expired,
+                },
+                ClosedAt = status == ListingStatus.Closed ? now.AddDays(-(idx % 20)).AddHours(-3) : null,
                 ModerationNote = status switch
                 {
                     ListingStatus.Rejected => "Ảnh chưa đúng với bất động sản trong tin. Vui lòng chụp ảnh thật và gửi duyệt lại.",
@@ -499,8 +508,6 @@ namespace kgs_api.Services.Seeding
             {
                 Name = b.Name,
                 TypeProperty = b.Type,
-                OwnershipType = AssetOwnershipType.Owned,
-                Status = AssetStatus.InUse,
                 Address = new Address { City = p.City, District = p.District, Ward = p.Ward, Detail = $"{120 + b.Floors} {p.Street}" },
                 Location = _gf.CreatePoint(new Coordinate(p.Lng, p.Lat)),
                 Area = Math.Round(b.Width * b.Depth),
@@ -725,7 +732,7 @@ namespace kgs_api.Services.Seeding
                 var asset = new Asset
                 {
                     UserId = people["spam"], Name = $"Phòng trọ Ba Tháng Hai #{k + 1}", TypeProperty = AssetDomainType.Room,
-                    OwnershipType = AssetOwnershipType.Owned, Status = AssetStatus.Vacant, Notes = Tag,
+                    Notes = Tag,
                     Address = new Address { City = place.City, District = place.District, Ward = place.Ward, Detail = $"{200 + k} {place.Street}" },
                     Location = _gf.CreatePoint(new Coordinate(place.Lng + 0.001 * (k + 1), place.Lat)), Area = 25, Bedrooms = 1, Bathrooms = 1,
                 };
@@ -733,6 +740,7 @@ namespace kgs_api.Services.Seeding
                 var listing = new Listing
                 {
                     Asset = asset, Type = ListingType.Rent, RentPaymentCycle = PaymentCycle.Monthly,
+                    PosterType = PosterType.Broker,
                     Title = $"Phòng trọ 25 m² full nội thất chỉ 1,5 triệu gần ĐH Bách Khoa #{k + 1}",
                     Description = "Phòng đẹp giá rẻ nhất khu vực, chuyển cọc giữ phòng trước qua tài khoản, xem phòng sau.",
                     Price = 1_500_000, Status = ListingStatus.Rejected,

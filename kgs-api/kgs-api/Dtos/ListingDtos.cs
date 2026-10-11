@@ -3,25 +3,6 @@ using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Dtos
 {
-    /// <summary>Tạo tin đăng từ một tài sản.
-    ///
-    /// Sau khi gộp Property vào Asset, request này KHÔNG còn nhận các trường mô tả vật lý
-    /// (số tầng, phòng ngủ, hướng nhà, pháp lý, nội thất, mặt tiền). Chúng thuộc về tài sản,
-    /// sửa ở màn hình tài sản — tin đăng luôn đọc giá trị mới nhất. Trước đây chúng được
-    /// sao chép sang Property lúc đăng tin rồi đóng băng ở đó, nên sửa tài sản không làm
-    /// tin đăng đổi theo.</summary>
-    public sealed record CreateListingRequest(
-        ListingType Type,
-        /// <summary>null = đăng nguyên căn; có giá trị = đăng riêng một tầng/phòng.</summary>
-        Guid? AssetUnitId,
-        [Required, MaxLength(200)] string Title,
-        [Required] string Description,
-        [Range(0.01, (double)decimal.MaxValue)] decimal Price,
-        PaymentCycle? RentPaymentCycle,
-        List<Guid> SelectedAssetMediaIds,
-        ListingTermsDto? Terms,
-        List<string>? Amenities);
-
     /// <summary>Điều kiện thuê. Mọi trường nullable — null nghĩa là chủ tin CHƯA KHAI,
     /// khác hẳn với false (đã khai là không). Bộ lọc chỉ khớp khi khai tường minh.</summary>
     public sealed record ListingTermsDto(
@@ -68,7 +49,9 @@ namespace kgs_api.Dtos
         // Ghim vị trí do người đăng tự đặt trên bản đồ. Gửi đủ cả hai thì đặt/di chuyển ghim;
         // không gửi thì giữ nguyên. Cùng luật khoá với các trường vật lý ở trên.
         [Range(-90, 90)] double? Latitude = null,
-        [Range(-180, 180)] double? Longitude = null);
+        [Range(-180, 180)] double? Longitude = null,
+        /// <summary>Chính chủ hay môi giới — null = giữ nguyên.</summary>
+        PosterType? PosterType = null);
 
     /// <summary>Đăng tin TRỰC TIẾP — không cần tạo tài sản trước.
     ///
@@ -112,7 +95,9 @@ namespace kgs_api.Dtos
         /// tài sản mới.</summary>
         Guid? AssetId = null,
         /// <summary>Căn trong toà nhà đó. Tin gắn vào căn thì hiện đúng chỗ trên mô hình 3D.</summary>
-        Guid? AssetUnitId = null);
+        Guid? AssetUnitId = null,
+        /// <summary>Chính chủ hay môi giới — người đăng tự khai.</summary>
+        PosterType PosterType = PosterType.Owner);
 
     public sealed record ListingImageDto(Guid Id, string Url, int SortOrder);
 
@@ -151,7 +136,8 @@ namespace kgs_api.Dtos
         Guid AssetId = default,
         Guid? AssetUnitId = null,
         string? AssetName = null,
-        string? UnitName = null);
+        string? UnitName = null,
+        PosterType PosterType = PosterType.Owner);
 
     public sealed record PublicListingSearchQuery(
         ListingType? Type,
@@ -199,6 +185,9 @@ namespace kgs_api.Dtos
         [MaxLength(10)] string? NewProvinceCode = null,
         /// <summary>Mã phường/xã mới.</summary>
         [MaxLength(10)] string? NewWardCode = null,
+
+        /// <summary>Chỉ tin chính chủ (người đăng khai là chủ bất động sản).</summary>
+        bool? OwnerOnly = null,
 
         // ---- Đặc điểm bất động sản — phủ MỌI loại hình, cả bán lẫn thuê ----
         // Trước đây bộ lọc chỉ có các điều kiện của thuê phòng (tổng chi phí, nội quy...);
@@ -254,6 +243,8 @@ namespace kgs_api.Dtos
         /// <summary>Tổng số ảnh của tin (để ghi "1/12" khi chỉ gửi 5 ảnh đầu).</summary>
         public int ImageCount { get; init; }
         public AssetDomainType AssetType { get; init; }
+        /// <summary>Chính chủ hay môi giới — thẻ tin hiện nhãn "Chính chủ".</summary>
+        public PosterType PosterType { get; init; } = PosterType.Owner;
     }
 
     public sealed record PublicListingDetailDto(
@@ -296,6 +287,9 @@ namespace kgs_api.Dtos
         public string? NewWardCode { get; init; }
         /// <summary>Phường cũ bị chia cho nhiều phường mới: phường mới chỉ là ước đoán.</summary>
         public bool NewAddressApprox { get; init; }
+
+        /// <summary>Người đăng tự khai là chính chủ hay môi giới.</summary>
+        public PosterType PosterType { get; init; } = PosterType.Owner;
     }
 
     /// <summary>Hồ sơ công khai của người đăng — để người tìm nhà quyết định có liên hệ hay không.
@@ -399,5 +393,13 @@ namespace kgs_api.Dtos
         Guid AssetId, string AssetName, string? UnitName, string? ModerationNote,
         /// <summary>0–100. Tin càng đầy đủ dữ kiện càng được bộ lọc và AI Agent tìm thấy —
         /// hiển thị con số này là cách tạo động lực thật cho chủ tin, thay vì bắt ép nhập.</summary>
-        int CompletenessPercent);
+        int CompletenessPercent)
+    {
+        /// <summary>Vì sao tin đã đóng — null khi tin chưa đóng.</summary>
+        public ListingCloseReason? CloseReason { get; init; }
+        public DateTime? ClosedAt { get; init; }
+    }
+
+    /// <summary>Người đăng tin đóng tin — bắt buộc nói vì sao (ListingClosing.OwnerReasons).</summary>
+    public sealed record CloseListingRequest(ListingCloseReason Reason);
 }

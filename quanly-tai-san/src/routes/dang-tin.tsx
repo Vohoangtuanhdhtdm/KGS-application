@@ -37,6 +37,7 @@ import {
   PAYMENT_CYCLE,
   enumOptions,
   type PaymentCycleCode,
+  type PosterTypeCode,
 } from "@/constants/enums";
 import { formatDateTime } from "@/lib/format";
 import { ListingTermsFields } from "@/components/listings/ListingTermsFields";
@@ -178,6 +179,8 @@ function CreateListingPage() {
   const [reached, setReached] = useState(0);
 
   const [type, setType] = useState<1 | 2>(2);
+  // Chính chủ hay môi giới — người đăng tự khai, hiện nhãn trên tin.
+  const [posterType, setPosterType] = useState<PosterTypeCode>(1);
   const [propertyType, setPropertyType] = useState<number>(7);
   // Chưa tự chọn loại hình thì đổi Cho thuê/Bán sẽ đổi luôn mặc định (phòng trọ / nhà riêng).
   const typeTouched = useRef(false);
@@ -265,6 +268,7 @@ function CreateListingPage() {
     setWard(d.ward);
     setAddressDetail(d.addressDetail);
     setPropertyType(d.propertyType);
+    if (d.posterType) setPosterType(d.posterType);
     setArea(d.area?.toString() ?? "");
     setBedrooms(d.bedrooms?.toString() ?? "");
     setBathrooms(d.bathrooms?.toString() ?? "");
@@ -363,6 +367,7 @@ function CreateListingPage() {
 
   const buildBody = (): CreateListingDirectInput => ({
     type,
+    posterType,
     title: titleValue.trim(),
     description: descriptionValue.trim(),
     price: price ?? 0,
@@ -393,6 +398,7 @@ function CreateListingPage() {
       const b = buildBody();
       if (draftId) {
         return listingsApi.update(draftId, {
+          posterType: b.posterType,
           title: b.title,
           description: b.description,
           price: b.price,
@@ -755,6 +761,40 @@ function CreateListingPage() {
                       {label}
                     </button>
                   ))}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Bạn đăng với tư cách</p>
+                  <div
+                    role="radiogroup"
+                    aria-label="Người đăng"
+                    className="grid grid-cols-2 gap-2 sm:max-w-sm"
+                  >
+                    {(
+                      [
+                        [1, "Chính chủ", "Bất động sản của tôi"],
+                        [2, "Môi giới", "Đăng giúp chủ nhà"],
+                      ] as const
+                    ).map(([v, label, hint]) => (
+                      <button
+                        key={v}
+                        type="button"
+                        role="radio"
+                        aria-checked={posterType === v}
+                        onClick={() => setPosterType(v)}
+                        className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                          posterType === v ? "border-primary bg-primary/5" : "hover:bg-accent"
+                        }`}
+                      >
+                        <span className="block text-sm font-medium">{label}</span>
+                        <span className="block text-xs text-muted-foreground">{hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tin chính chủ có nhãn riêng và hiện trong bộ lọc "Chỉ tin chính chủ". Khai sai
+                    có thể bị người xem báo vi phạm.
+                  </p>
                 </div>
 
                 {editUnit || (draftId && building && unit) ? (

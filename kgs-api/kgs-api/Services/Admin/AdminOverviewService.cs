@@ -1,3 +1,4 @@
+using kgs_api.Domain.Rules;
 using kgs_api.Data;
 using Microsoft.EntityFrameworkCore;
 using static kgs_api.Domain.Enums;
@@ -31,7 +32,9 @@ namespace kgs_api.Services.Admin
         ReportStatsDto Reports,
         /// <summary>Tin đang hiển thị theo loại hình (mã AssetDomainType) và theo tỉnh/thành.</summary>
         IReadOnlyList<CountDto> LiveByType, IReadOnlyList<CountDto> LiveByCity,
-        AdminBuildingStatsDto? Buildings = null);
+        AdminBuildingStatsDto? Buildings = null,
+        /// <summary>Kết quả các tin đóng trong kỳ — tỷ lệ có khách nhờ KGS (ListingClosing).</summary>
+        CloseOutcomeStatsDto? Closes = null);
 
     /// <summary>Toà nhà nhiều căn và mô hình 3D: bao nhiêu toà, bao nhiêu đã công khai 3D, bao
     /// nhiêu căn còn trống chưa đăng tin (việc chủ nhà còn có thể làm), tỉ lệ tin xem được 3D.</summary>
@@ -153,7 +156,12 @@ namespace kgs_api.Services.Admin
                     && l.Asset.FootprintJson != null && l.Asset.BuildingModelPublished, ct),
                 await _db.Listings.CountAsync(l => l.Status == ListingStatus.Approved, ct));
 
-            return new AdminOverviewDto(days, kpis, daily, moderation, reportStats, byType, byCity, buildings);
+            var closes = ListingClosing.Summarize(await _db.Listings.AsNoTracking()
+                .Where(l => l.Status == ListingStatus.Closed && l.ClosedAt >= since)
+                .Select(l => l.CloseReason)
+                .ToListAsync(ct));
+
+            return new AdminOverviewDto(days, kpis, daily, moderation, reportStats, byType, byCity, buildings, closes);
         }
 
         /// <summary>Phân vị theo cách "gần nhất" — đủ cho số liệu hiển thị; null khi rỗng.</summary>

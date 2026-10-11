@@ -217,6 +217,21 @@ export function PropertyFiltersPanel({
         </span>
       </label>
 
+      <label className="flex cursor-pointer items-start gap-2 rounded-md border p-2.5">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
+          checked={s.ownerOnly}
+          onChange={(e) => onChange({ ...s, ownerOnly: e.target.checked })}
+        />
+        <span className="text-xs">
+          <span className="font-medium">Chỉ tin chính chủ</span>
+          <span className="block text-muted-foreground">
+            Người đăng tự khai là chủ nhà — khai sai có thể bị báo vi phạm.
+          </span>
+        </span>
+      </label>
+
       {show.furniture && (
         <div className="space-y-1.5">
           <Label className="text-xs">Nội thất</Label>

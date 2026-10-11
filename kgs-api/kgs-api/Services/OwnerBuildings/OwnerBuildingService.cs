@@ -131,8 +131,6 @@ namespace kgs_api.Services.OwnerBuildings
                 {
                     UserId = userId,
                     Name = name,
-                    OwnershipType = AssetOwnershipType.Owned,
-                    Status = AssetStatus.InUse,
                     Address = address,
                 };
                 _db.Assets.Add(asset);
