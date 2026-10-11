@@ -380,5 +380,13 @@ namespace kgs_api.Dtos
         Guid AssetId, string AssetName, string? UnitName, string? ModerationNote,
         /// <summary>0–100. Tin càng đầy đủ dữ kiện càng được bộ lọc và AI Agent tìm thấy —
         /// hiển thị con số này là cách tạo động lực thật cho chủ tin, thay vì bắt ép nhập.</summary>
-        int CompletenessPercent);
+        int CompletenessPercent)
+    {
+        /// <summary>Vì sao tin đã đóng — null khi tin chưa đóng.</summary>
+        public ListingCloseReason? CloseReason { get; init; }
+        public DateTime? ClosedAt { get; init; }
+    }
+
+    /// <summary>Người đăng tin đóng tin — bắt buộc nói vì sao (ListingClosing.OwnerReasons).</summary>
+    public sealed record CloseListingRequest(ListingCloseReason Reason);
 }

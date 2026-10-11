@@ -1,3 +1,4 @@
+import type { CloseOutcomeStats } from "@/components/listings/CloseOutcomesCard";
 import { api } from "./http";
 
 export interface DailyViewPoint {
@@ -24,6 +25,8 @@ export interface OwnerAnalyticsSummaryDto {
   totalSaved: number;
   dailyViews: DailyViewPoint[];
   listings: ListingPerformanceRow[];
+  /** Kết quả các tin đã đóng — tỷ lệ có khách nhờ KGS. */
+  closes?: CloseOutcomeStats | null;
 }
 
 export interface ListingAnalyticsDto {
@@ -53,6 +56,5 @@ export interface ListingAnalyticsDto {
 
 export const analyticsApi = {
   summary: () => api<OwnerAnalyticsSummaryDto>("/listing-analytics/summary"),
-  forListing: (listingId: string) =>
-    api<ListingAnalyticsDto>(`/listing-analytics/${listingId}`),
+  forListing: (listingId: string) => api<ListingAnalyticsDto>(`/listing-analytics/${listingId}`),
 };

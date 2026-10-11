@@ -27,6 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CloseOutcomesCard } from "@/components/listings/CloseOutcomesCard";
 import { Progress } from "@/components/ui/progress";
 
 /** Số tin dựng mỗi đợt trong bảng "Theo từng tin". */
@@ -223,9 +224,9 @@ function ListingAnalyticsPage() {
       <div>
         <h1 className="text-xl font-semibold">Thống kê tin đăng</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Câu hỏi thật sự không phải "tin có bao nhiêu lượt xem" mà "vì sao chưa ai gọi".
-          Các con số dưới đây để tách ra một trong ba nguyên nhân: không ai nhìn thấy tin,
-          có nhìn nhưng chưa đủ thuyết phục, hay giá lệch mặt bằng.
+          Câu hỏi thật sự không phải "tin có bao nhiêu lượt xem" mà "vì sao chưa ai gọi". Các con số
+          dưới đây để tách ra một trong ba nguyên nhân: không ai nhìn thấy tin, có nhìn nhưng chưa
+          đủ thuyết phục, hay giá lệch mặt bằng.
         </p>
       </div>
 
@@ -245,6 +246,8 @@ function ListingAnalyticsPage() {
         />
       </div>
 
+      {s.closes && <CloseOutcomesCard stats={s.closes} scope="của bạn" />}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Lượt xem 30 ngày qua — tất cả tin</CardTitle>
@@ -260,9 +263,7 @@ function ListingAnalyticsPage() {
           {/* Ba con số bên dưới trước đây chỉ có biểu tượng, mà biểu tượng thì lại
               aria-hidden — người dùng phải đoán, còn trình đọc màn hình đọc ra "54 0 0".
               Một dòng chú giải rẻ hơn nhiều so với ba nhãn lặp lại ở từng dòng. */}
-          <p className="text-xs text-muted-foreground">
-            Lượt xem · Yêu cầu xem nhà · Lượt lưu
-          </p>
+          <p className="text-xs text-muted-foreground">Lượt xem · Yêu cầu xem nhà · Lượt lưu</p>
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
@@ -359,8 +360,8 @@ function ListingAnalyticsPage() {
                       // Nói thẳng vì sao không có số, thay vì hiện một ô trống. Người dùng
                       // thấy ô trống sẽ tưởng hệ thống hỏng.
                       <p className="text-sm">
-                        Khu vực mới có {d.areaListingCount} tin cùng loại — chưa đủ để so
-                        sánh giá một cách có nghĩa.
+                        Khu vực mới có {d.areaListingCount} tin cùng loại — chưa đủ để so sánh giá
+                        một cách có nghĩa.
                       </p>
                     ) : (
                       <>
@@ -369,9 +370,7 @@ function ListingAnalyticsPage() {
                           <span className="font-medium">
                             {formatCurrency(d.areaMedianPrice, { compact: true })}
                           </span>{" "}
-                          <span className="text-muted-foreground">
-                            ({d.areaListingCount} tin)
-                          </span>
+                          <span className="text-muted-foreground">({d.areaListingCount} tin)</span>
                         </p>
                         {d.priceDiffPercent != null && (
                           <Badge

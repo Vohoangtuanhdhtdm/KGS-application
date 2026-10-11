@@ -190,12 +190,14 @@ namespace kgs_api.Controllers
             return NoContent();
         }
 
-        /// <summary>Đóng tin khi đã có khách / đã bán. Không xoá — giữ lượt xem và lịch sử.</summary>
+        /// <summary>Đóng tin khi đã có khách / đã bán / không đăng nữa — kèm lý do. Không xoá: giữ
+        /// lượt xem và lịch sử.</summary>
         [HttpPost("{listingId:guid}/close")]
         [Authorize(Policy = AppPolicies.Owner)]
-        public async Task<IActionResult> Close(Guid listingId, CancellationToken ct)
+        public async Task<IActionResult> Close(
+            Guid listingId, [FromBody] CloseListingRequest request, CancellationToken ct)
         {
-            await _listings.CloseAsync(listingId, ct);
+            await _listings.CloseAsync(listingId, request.Reason, ct);
             return NoContent();
         }
     }

@@ -1,3 +1,4 @@
+import type { CloseOutcomeStats } from "@/components/listings/CloseOutcomesCard";
 import { api, toQuery } from "./http";
 import type { BuildingModel } from "./buildingModel";
 import type { ListingReportDto, ReportStatusCode } from "./listings";
@@ -339,6 +340,8 @@ export interface AdminOverview {
     unitListingsLive: number;
     liveListings: number;
   } | null;
+  /** Kết quả các tin đóng trong kỳ. */
+  closes?: CloseOutcomeStats | null;
 }
 
 export const adminOverviewApi = {

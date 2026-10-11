@@ -47,6 +47,10 @@ namespace kgs_api.Domain.Entity
 
         public ListingStatus Status { get; set; } = ListingStatus.Pending;
 
+        /// <summary>Vì sao tin đóng và lúc nào — chỉ có giá trị khi Status = Closed (ListingClosing).</summary>
+        public ListingCloseReason? CloseReason { get; set; }
+        public DateTime? ClosedAt { get; set; }
+
         /// <summary>URL thân thiện, VD: "phong-tro-quan-7-a1b2c3" — tránh lộ khoá chính.</summary>
         [MaxLength(300)] public string? Slug { get; set; }
 

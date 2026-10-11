@@ -72,6 +72,22 @@
         }
 
         /// <summary>Xử lý tin đăng khi xác nhận một báo vi phạm (xem ReportOutcomes).</summary>
+        /// <summary>Vì sao một tin đã đóng (xem ListingClosing). 1–3 người đăng tin tự chọn khi đóng;
+        /// 4–5 hệ thống ghi. Null = tin đóng trước khi có trường này.</summary>
+        public enum ListingCloseReason
+        {
+            /// <summary>Đã cho thuê / bán được nhờ khách tìm thấy trên KGS.</summary>
+            TakenViaKgs = 1,
+            /// <summary>Đã cho thuê / bán qua kênh khác.</summary>
+            TakenElsewhere = 2,
+            /// <summary>Không cho thuê / bán nữa.</summary>
+            Withdrawn = 3,
+            /// <summary>Hệ thống tự đóng sau thời hạn hiển thị.</summary>
+            Expired = 4,
+            /// <summary>Quản trị viên đóng theo phản ánh "đã cho thuê / đã bán".</summary>
+            ReportedTaken = 5,
+        }
+
         public enum ReportAction
         {
             /// <summary>Gỡ tin (về "Bị từ chối"): lừa đảo, tin rác, nội dung không phù hợp.</summary>

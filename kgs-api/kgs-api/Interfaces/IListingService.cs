@@ -46,7 +46,7 @@ namespace kgs_api.Interfaces
         Task DeleteDraftAsync(Guid listingId, CancellationToken ct = default);
 
         /// <summary>Đóng tin (đã có khách / đã bán). Không xoá — giữ lịch sử và lượt xem.</summary>
-        Task CloseAsync(Guid listingId, CancellationToken ct = default);
+        Task CloseAsync(Guid listingId, ListingCloseReason reason, CancellationToken ct = default);
 
         Task<IReadOnlyList<OwnerListingDto>> GetMyListingsAsync(CancellationToken ct = default);
 

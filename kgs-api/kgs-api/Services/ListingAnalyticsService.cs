@@ -1,3 +1,4 @@
+using kgs_api.Domain.Rules;
 using kgs_api.Domain.Entity;
 using kgs_api.Domain.Entity.SubEntity;
 using kgs_api.Domain.ValueObjects;
@@ -99,7 +100,13 @@ namespace kgs_api.Services
                 TotalInquiries: inquiriesByListing.Values.Sum(),
                 TotalSaved: savedByListing.Values.Sum(),
                 DailyViews: ZeroFill(viewsByDay, from),
-                Listings: rows);
+                Listings: rows)
+            {
+                Closes = ListingClosing.Summarize(await mine
+                    .Where(l => l.Status == ListingStatus.Closed)
+                    .Select(l => l.CloseReason)
+                    .ToListAsync(ct)),
+            };
         }
 
         public async Task<ListingAnalyticsDto> GetForListingAsync(Guid listingId, CancellationToken ct = default)

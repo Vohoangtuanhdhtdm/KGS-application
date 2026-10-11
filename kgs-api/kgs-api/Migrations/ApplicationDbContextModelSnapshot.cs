@@ -377,6 +377,12 @@ namespace kgs_api.Migrations
                     b.Property<DateTime?>("BumpedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("CloseReason")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 

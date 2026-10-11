@@ -100,14 +100,18 @@ namespace kgs_api.Services
             return await GetOwnedDtoAsync(listingId, ct);
         }
 
-        public async Task CloseAsync(Guid listingId, CancellationToken ct = default)
+        public async Task CloseAsync(Guid listingId, ListingCloseReason reason, CancellationToken ct = default)
         {
+            if (!ListingClosing.OwnerReasons.Contains(reason))
+                throw new ValidationFailedException(
+                    "Chọn lý do đóng tin: đã cho thuê/bán qua KGS, qua kênh khác, hoặc không cho thuê/bán nữa.");
+
             var listing = await GetOwnedListingAsync(listingId, ct);
 
             if (listing.Status == ListingStatus.Closed)
                 return;   // idempotent
 
-            listing.Status = ListingStatus.Closed;
+            ListingClosing.Close(listing, reason, DateTime.UtcNow);
             await _uow.SaveChangesAsync(ct);
         }
 
@@ -653,6 +657,7 @@ namespace kgs_api.Services
             // trống), và tin mở lại vẫn phải qua kiểm duyệt như mọi tin khác.
             listing.Status = ListingStatus.Draft;
             listing.ModerationNote = null;
+            ListingClosing.ClearClose(listing);
             await _uow.SaveChangesAsync(ct);
 
             return await GetOwnedDtoAsync(listingId, ct);
@@ -742,7 +747,11 @@ namespace kgs_api.Services
                 l.Id, l.Slug, l.Title, l.Type, l.Status, l.Price, l.RentPaymentCycle, l.ViewCount,
                 l.CreatedAt, l.PublishedAt, l.AssetId, l.Asset.Name,
                 l.AssetUnit != null ? l.AssetUnit.Name : null, l.ModerationNote,
-                Completeness(l)));
+                Completeness(l))
+            {
+                CloseReason = l.CloseReason,
+                ClosedAt = l.ClosedAt,
+            });
 
         // ==================== Điều kiện thuê ====================
 

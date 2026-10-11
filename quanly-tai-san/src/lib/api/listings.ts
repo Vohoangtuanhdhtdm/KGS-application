@@ -7,7 +7,11 @@ import type {
   WaterPricingCode,
 } from "@/constants/enums";
 import { PAYMENT_CYCLE } from "@/constants/enums";
-import type { ModerationActionCode, ModerationReasonCode } from "@/constants/enums";
+import type {
+  ListingCloseReasonCode,
+  ModerationActionCode,
+  ModerationReasonCode,
+} from "@/constants/enums";
 import { formatCurrency } from "@/lib/format";
 
 // ---- Types ----
@@ -199,6 +203,9 @@ export interface OwnerListingDto {
   moderationNote: string | null;
   /** 0–100. Tin càng đầy đủ dữ kiện càng được bộ lọc và AI Agent tìm thấy. */
   completenessPercent: number;
+  /** Vì sao tin đã đóng — null khi chưa đóng. */
+  closeReason?: ListingCloseReasonCode | null;
+  closedAt?: string | null;
 }
 
 export interface ListingImageDto {
@@ -489,7 +496,8 @@ export const listingsApi = {
     api<OwnerListingDto>(`/assets/${assetId}/listings`, { method: "POST", body }),
   update: (listingId: string, body: UpdateListingInput) =>
     api<OwnerListingDto>(`/listings/${listingId}`, { method: "PUT", body }),
-  close: (listingId: string) => api<void>(`/listings/${listingId}/close`, { method: "POST" }),
+  close: (listingId: string, reason: ListingCloseReasonCode) =>
+    api<void>(`/listings/${listingId}/close`, { method: "POST", body: { reason } }),
 
   // ---- Luong dang tin truc tiep: tao nhap -> them anh -> gui duyet ----
   createDirect: (body: CreateListingDirectInput) =>

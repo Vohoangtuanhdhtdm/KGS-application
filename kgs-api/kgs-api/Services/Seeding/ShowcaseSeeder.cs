@@ -321,6 +321,17 @@ namespace kgs_api.Services.Seeding
                 Slug = status == ListingStatus.Draft ? null : SlugFor(s, p, idx, rnd),
                 PublishedAt = status is ListingStatus.Approved or ListingStatus.Closed ? now.AddDays(-(1 + (idx * 13) % 55)).AddHours(-rnd.Next(0, 20)) : null,
                 BumpedAt = idx % 17 == 4 ? now.AddDays(-rnd.Next(0, 3)) : null,
+                // Tin đã đóng có đủ các loại lý do — để thẻ "kết quả tin đã đóng" có số liệu khi trình
+                // diễn. Tin đóng là tin có idx % 20 == 19, nên chia theo idx / 20 (lần thứ mấy) chứ
+                // không theo idx % 5 — vẫn tất định giữa các lần seed.
+                CloseReason = status != ListingStatus.Closed ? null : (idx / 20 % 5) switch
+                {
+                    0 or 1 => ListingCloseReason.TakenViaKgs,
+                    2 => ListingCloseReason.TakenElsewhere,
+                    3 => ListingCloseReason.Withdrawn,
+                    _ => ListingCloseReason.Expired,
+                },
+                ClosedAt = status == ListingStatus.Closed ? now.AddDays(-(idx % 20)).AddHours(-3) : null,
                 ModerationNote = status switch
                 {
                     ListingStatus.Rejected => "Ảnh chưa đúng với bất động sản trong tin. Vui lòng chụp ảnh thật và gửi duyệt lại.",
@@ -719,6 +730,7 @@ namespace kgs_api.Services.Seeding
                 var asset = new Asset
                 {
                     UserId = people["spam"], Name = $"Phòng trọ Ba Tháng Hai #{k + 1}", TypeProperty = AssetDomainType.Room,
+                    Notes = Tag,
                     Address = new Address { City = place.City, District = place.District, Ward = place.Ward, Detail = $"{200 + k} {place.Street}" },
                     Location = _gf.CreatePoint(new Coordinate(place.Lng + 0.001 * (k + 1), place.Lat)), Area = 25, Bedrooms = 1, Bathrooms = 1,
                 };

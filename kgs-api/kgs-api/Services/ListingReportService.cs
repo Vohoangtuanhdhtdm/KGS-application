@@ -161,6 +161,8 @@ namespace kgs_api.Services
                 var why = ReportOutcomes.Describe(report.Reason);
 
                 listing.Status = status;
+                if (status == ListingStatus.Closed)
+                    ListingClosing.Close(listing, ListingCloseReason.ReportedTaken, DateTime.UtcNow);
                 listing.ModerationNote = $"Theo phản ánh của người dùng: {why}." + (note is null ? "" : $" {note}");
 
                 var round = await _events.Query().CountAsync(e => e.ListingId == listing.Id, ct);

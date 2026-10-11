@@ -22,6 +22,7 @@ import { getErrorMessage } from "@/lib/api/errors";
 import { ASSET_TYPE, MODERATION_REASON } from "@/constants/enums";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CloseOutcomesCard } from "@/components/listings/CloseOutcomesCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/admin/overview")({
@@ -258,6 +259,8 @@ function OverviewPage() {
           </div>
 
           {d.buildings && d.buildings.buildings > 0 && <BuildingsCard b={d.buildings} />}
+
+          {d.closes && <CloseOutcomesCard stats={d.closes} scope={`trong ${d.days} ngày qua`} />}
 
           <p className="text-xs text-muted-foreground">
             <Inbox className="mr-1 inline h-3.5 w-3.5" />
