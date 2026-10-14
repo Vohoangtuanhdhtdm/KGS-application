@@ -89,14 +89,25 @@ CONTROL_NUM = ["log_area", "bedroom_count", "bathroom_count", "floor_count", "fr
 
 
 def weekly_hedonic_index(
-    df: pd.DataFrame, weeks: pd.Series, label: str, min_week: int = MIN_WEEK_SAMPLE
+    df: pd.DataFrame,
+    weeks: pd.Series,
+    label: str,
+    min_week: int = MIN_WEEK_SAMPLE,
+    allowed_weeks: pd.Index | None = None,
 ) -> list[dict] | None:
     """Dựng chỉ số hedonic theo tuần cho một tập dữ liệu.
+
+    ``allowed_weeks``: chỉ dùng các tuần này (chuỗi quận truyền vào tập tuần của chuỗi toàn
+    quốc). Thiếu nó thì một quận lớn có thể vượt ngưỡng 150 tin ở tuần ĐẦU bị cắt cụt (dữ
+    liệu chỉ có 1 ngày của tuần đó) — tuần ấy thành tuần gốc = 100, và cả chuỗi lệch theo:
+    Thủ Đức từng "tăng 28 điểm", hầu hết là do tuần gốc chỉ có tin của một ngày Chủ nhật.
 
     Trả về danh sách điểm chỉ số, hoặc None nếu không đủ dữ liệu.
     """
     counts = weeks.value_counts().sort_index()
     good = counts[counts >= min_week].index
+    if allowed_weeks is not None:
+        good = good[good.isin(allowed_weeks)]
 
     if len(good) < 4:
         print(f"  [{label}] chỉ có {len(good)} tuần đủ mẫu — bỏ qua.")
@@ -223,6 +234,8 @@ def main() -> None:
     national = weekly_hedonic_index(df, weeks, "hedonic toàn quốc")
     if national is None:
         sys.exit("Không đủ tuần có mẫu để dựng chỉ số.")
+    # Chuỗi quận dùng chung bộ tuần với toàn quốc: cùng tuần gốc, và không tuần cắt cụt nào.
+    national_weeks = pd.PeriodIndex([p["week_start"] for p in national], freq="W")
 
     naive = naive_median_index(df, weeks)
 
@@ -256,7 +269,8 @@ def main() -> None:
     for (prov, dist), n in big.head(20).items():
         sub = df[(df["_prov"] == prov) & (df["_dist"] == dist)]
         pts = weekly_hedonic_index(
-            sub, weeks.loc[sub.index], f"{prov}/{dist}", min_week=MIN_WEEK_SAMPLE_DISTRICT
+            sub, weeks.loc[sub.index], f"{prov}/{dist}",
+            min_week=MIN_WEEK_SAMPLE_DISTRICT, allowed_weeks=national_weeks,
         )
         if pts is None:
             continue
