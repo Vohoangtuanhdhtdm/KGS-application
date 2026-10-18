@@ -18,6 +18,7 @@ import {
 import { TravelTimeControl } from "@/components/listings/TravelTimeControl";
 import { PropertyFiltersPanel } from "@/components/public/PropertyFiltersPanel";
 import { AssistantBar } from "@/components/public/AssistantBar";
+import { takeHandoff } from "@/lib/voice/handoff";
 import { assistantApi, type AssistantAnchor, type AssistantResult } from "@/lib/api/assistant";
 import { geocodeForward } from "@/lib/geocode";
 import { matchReasons } from "@/lib/matchReasons";
@@ -126,6 +127,8 @@ export interface ListingsSearchParams {
   phuong?: string;
   /** Mã tỉnh/thành mới. */
   tinh?: string;
+  /** 1 = vừa đến từ trợ lý giọng nói KiGi: áp kết quả bàn giao trong sessionStorage. */
+  tro_ly?: 1;
 }
 
 const numParam = (v: unknown): number | undefined => {
@@ -158,6 +161,7 @@ export const Route = createFileRoute("/tin-dang/")({
         s.has3D === true || s.has3D === "1" || s.has3D === 1 || s.has3D === "true" || undefined,
       phuong: codeParam(s.phuong),
       tinh: codeParam(s.tinh),
+      tro_ly: s.tro_ly === 1 || s.tro_ly === "1" ? 1 : undefined,
     };
   },
   head: () => ({ meta: [{ title: "Tin đăng bất động sản — KGS" }] }),
@@ -909,6 +913,12 @@ function PublicListingsPage() {
         types: u.loai != null ? [u.loai as AssetTypeCode] : [],
         has3D: !!u.has3D,
       });
+    }
+    if (u.tro_ly) {
+      // Bàn giao từ KiGi: áp bằng đúng hàm của trợ lý gõ tay. Không có gì để nhận (mở lại liên
+      // kết sau đó) thì trang mở như thường.
+      const handed = takeHandoff();
+      if (handed) applyAssistant(handed);
     }
     if (u.q) {
       const q = u.q;

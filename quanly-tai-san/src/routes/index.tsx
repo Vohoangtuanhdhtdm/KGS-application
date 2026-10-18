@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
 import { savedListingsApi } from "@/lib/api/engagement";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -111,6 +112,7 @@ function Hero({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"ai" | "area">("ai");
   const [ask, setAsk] = useState("");
+  const askRef = useRef<HTMLInputElement>(null);
   const [keyword, setKeyword] = useState("");
   const [city, setCity] = useState("");
 
@@ -171,25 +173,29 @@ function Hero({ mode, setMode }: { mode: Mode; setMode: (m: Mode) => void }) {
             </div>
 
             {tab === "ai" ? (
-              <form
-                className="flex flex-col gap-2 p-1 sm:flex-row"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  askAi(ask);
-                }}
-              >
-                <Input
-                  value={ask}
-                  onChange={(e) => setAsk(e.target.value)}
-                  placeholder="Mô tả căn bạn cần…"
-                  className="h-12 flex-1 border-0 bg-muted/50 text-base focus-visible:ring-1"
-                  aria-label="Mô tả căn bạn cần"
-                  maxLength={300}
-                />
-                <Button type="submit" className="h-12 px-6">
-                  <Sparkles className="mr-1.5 h-4 w-4" /> Tìm với AI
-                </Button>
-              </form>
+              <>
+                <form
+                  className="flex flex-col gap-2 p-1 sm:flex-row"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    askAi(ask);
+                  }}
+                >
+                  <Input
+                    ref={askRef}
+                    value={ask}
+                    onChange={(e) => setAsk(e.target.value)}
+                    placeholder="Mô tả căn bạn cần…"
+                    className="h-12 flex-1 border-0 bg-muted/50 text-base focus-visible:ring-1"
+                    aria-label="Mô tả căn bạn cần"
+                    maxLength={300}
+                  />
+                  <Button type="submit" className="h-12 px-6">
+                    <Sparkles className="mr-1.5 h-4 w-4" /> Tìm với AI
+                  </Button>
+                </form>
+                <VoiceAssistant focusTyping={() => askRef.current?.focus()} />
+              </>
             ) : (
               <form
                 className="flex flex-col gap-2 p-1 sm:flex-row"
