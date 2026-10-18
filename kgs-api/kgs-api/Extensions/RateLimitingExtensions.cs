@@ -67,7 +67,9 @@ namespace kgs_api.Extensions
                 // (vài trăm câu liền) trên máy dev; mặc định giữ 20.
                 // 5 phiên / 10 phút: một người tập nói vài lần là đủ, một script không đốt được
                 // hạn mức Gemini miễn phí (mỗi phiên dài tối đa 3 phút).
-                options.AddPolicy(Voice, PartitionByUserOrIp(limit: 5, minutes: 10));
+                // Đặt lại được qua "RateLimits:Voice" — chỉ để tập demo trên máy dev; mặc định giữ 5.
+                options.AddPolicy(Voice, PartitionByUserOrIp(
+                    limit: config?.GetValue<int?>("RateLimits:Voice") ?? 5, minutes: 10));
                 options.AddPolicy(Assistant, PartitionByUserOrIp(
                     limit: config?.GetValue<int?>("RateLimits:Assistant") ?? 20, minutes: 10));
             });
