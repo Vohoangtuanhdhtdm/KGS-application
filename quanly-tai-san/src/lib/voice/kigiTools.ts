@@ -15,11 +15,12 @@ export type MissingKey = "thuê hay mua" | "khu vực" | "ngân sách" | "loại
 
 const has = (v: unknown) => v !== null && v !== undefined && v !== "";
 
-/** Điều quan trọng còn thiếu, theo thứ tự KiGi nên hỏi. */
-export function missingInfo(c: SavedSearchCriteria): MissingKey[] {
+/** Điều quan trọng còn thiếu, theo thứ tự KiGi nên hỏi. Có điểm neo ("gần chợ Bến Thành") là đã có
+ *  khu vực — toạ độ của nó chỉ được tìm ở trang Tìm nhà, không nằm trong tiêu chí. */
+export function missingInfo(c: SavedSearchCriteria, hasAnchor = false): MissingKey[] {
   const out: MissingKey[] = [];
   if (c.type !== 1 && c.type !== 2) out.push("thuê hay mua");
-  if (![c.city, c.district, c.newProvinceCode, c.newWardCode, c.latitude].some(has))
+  if (!hasAnchor && ![c.city, c.district, c.newProvinceCode, c.newWardCode, c.latitude].some(has))
     out.push("khu vực");
   if (![c.priceMin, c.priceMax, c.totalCostMax].some(has)) out.push("ngân sách");
   if (!c.propertyTypes?.length) out.push("loại nhà");
@@ -68,7 +69,8 @@ export interface KiGiToolPayload {
   dieu_kien_da_hieu: string[];
   chua_loc_duoc: string[];
   so_can: number;
-  /** Có điểm neo thời gian đi lại: số đếm chưa tính vùng đi lại nên KiGi phải nói "khoảng". */
+  /** Có điểm neo (thời gian đi lại hoặc bán kính): số đếm chưa tính vùng quanh điểm neo — trang
+   *  Tìm nhà mới tìm toạ độ của nó — nên KiGi phải nói "khoảng". */
   uoc_tinh: boolean;
   con_thieu: MissingKey[];
   goi_y_noi: { bo: string; so_can: number } | null;
@@ -83,8 +85,8 @@ export function buildToolPayload(
     dieu_kien_da_hieu: [...describeDemand(r.criteria), ...r.preferences],
     chua_loc_duoc: r.unrecognized,
     so_can: soCan,
-    uoc_tinh: r.anchor?.travelMinutes != null,
-    con_thieu: missingInfo(r.criteria),
+    uoc_tinh: r.anchor != null,
+    con_thieu: missingInfo(r.criteria, r.anchor != null),
     goi_y_noi: goiY,
   };
 }

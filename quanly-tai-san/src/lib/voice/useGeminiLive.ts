@@ -29,6 +29,8 @@ export interface UseGeminiLiveOptions {
 const END_OF_TURN_QUIET_MS = 1200;
 const MAX_TURN_MS = 15_000;
 const FRAME_MS = 100;
+/** Lượt đã gửi mà KiGi không trả lời gì trong ngần này: về lại "chạm để nói". */
+const THINKING_TIMEOUT_MS = 10_000;
 
 export function useGeminiLive(o: UseGeminiLiveOptions) {
   const maxSeconds = o.maxSeconds ?? 180;
@@ -64,8 +66,12 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
     agentTurnOpen: false,
     closingAfterTurn: false,
     stopping: false,
+    /** Thế hệ phiên: tăng mỗi lần start()/stop(). Việc nào thuộc thế hệ cũ (await còn dở, sự kiện
+     *  đóng muộn, công cụ trả về sau khi dừng) đều bị bỏ qua và tự dọn tài nguyên của nó. */
+    gen: 0,
     maxTimer: 0 as ReturnType<typeof setTimeout> | 0,
     silenceTimer: 0 as ReturnType<typeof setTimeout> | 0,
+    thinkingTimer: 0 as ReturnType<typeof setTimeout> | 0,
     raf: 0,
   });
 
@@ -73,12 +79,18 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
     if (r.current.silenceTimer) clearTimeout(r.current.silenceTimer);
     r.current.silenceTimer = 0;
   };
+  const clearThinking = () => {
+    if (r.current.thinkingTimer) clearTimeout(r.current.thinkingTimer);
+    r.current.thinkingTimer = 0;
+  };
 
   const stop = useCallback(() => {
     const c = r.current;
     c.stopping = true;
+    c.gen++;
     if (c.maxTimer) clearTimeout(c.maxTimer);
     clearSilence();
+    clearThinking();
     cancelAnimationFrame(c.raf);
     c.sources.forEach((s) => {
       try {
@@ -186,6 +198,13 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
       c.agentTurnOpen = true;
       setAgentText("");
       setState("thinking");
+      // Lượt chỉ có tiếng ồn: mô hình có thể không trả lời gì. Đừng để nút micro bị khoá mãi.
+      clearThinking();
+      c.thinkingTimer = setTimeout(() => {
+        if (stateRef.current !== "thinking" || c.toolRunning || c.sources.size > 0) return;
+        c.agentTurnOpen = false;
+        settle();
+      }, THINKING_TIMEOUT_MS);
     } else settle();
   };
 
@@ -205,8 +224,10 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
     if ((c.heardSpeech && c.quietMs >= END_OF_TURN_QUIET_MS) || tooLong) endTurn();
   };
 
-  const onMessage = async (m: LiveServerMessage) => {
+  const onMessage = async (m: LiveServerMessage, g: number) => {
     const c = r.current;
+    if (g !== c.gen) return;
+    clearThinking();
     if (m.toolCall?.functionCalls?.length) {
       c.toolRunning = true;
       setState("thinking");
@@ -220,7 +241,7 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
         } catch {
           response = { loi: "Chưa xử lý được câu này" };
         }
-        if (!c.session) return;
+        if (g !== c.gen || !c.session) return;
         c.session.sendToolResponse({
           functionResponses: [{ id: fc.id, name: fc.name, response }],
         });
@@ -263,37 +284,53 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
   const start = useCallback(async () => {
     if (stateRef.current !== "idle" && stateRef.current !== "error") return;
     const c = r.current;
+    const g = ++c.gen;
+    const stale = () => g !== c.gen;
     c.stopping = false;
     setError(null);
     setUserText("");
     setAgentText("");
     setState("connecting");
 
+    let stream: MediaStream;
     try {
-      c.stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
       });
     } catch {
-      fail("mic-denied");
+      if (!stale()) fail("mic-denied");
       return;
     }
+    // Đã dừng trong lúc chờ quyền micro: tắt ngay micro vừa được cấp.
+    if (stale()) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    c.stream = stream;
 
     let token: string;
     let model: string;
     try {
       ({ token, model } = await voiceApi.session());
     } catch (e) {
-      fail(e instanceof ApiError && e.status === 429 ? "quota" : "unavailable");
+      if (!stale()) fail(e instanceof ApiError && e.status === 429 ? "quota" : "unavailable");
       return;
     }
-    if (c.stopping) return;
+    if (stale()) return;
 
     try {
-      c.micCtx = new AudioContext({ sampleRate: 16000 });
-      await c.micCtx.audioWorklet.addModule("/voice/mic-worklet.js");
-      const node = new AudioWorkletNode(c.micCtx, "kgs-mic");
-      node.port.onmessage = (e: MessageEvent<Float32Array>) => onFrame(e.data);
-      c.micCtx.createMediaStreamSource(c.stream).connect(node);
+      const micCtx = new AudioContext({ sampleRate: 16000 });
+      await micCtx.audioWorklet.addModule("/voice/mic-worklet.js");
+      if (stale()) {
+        void micCtx.close().catch(() => {});
+        return;
+      }
+      c.micCtx = micCtx;
+      const node = new AudioWorkletNode(micCtx, "kgs-mic");
+      node.port.onmessage = (e: MessageEvent<Float32Array>) => {
+        if (g === c.gen) onFrame(e.data);
+      };
+      micCtx.createMediaStreamSource(stream).connect(node);
 
       c.outCtx = new AudioContext({ sampleRate: 24000 });
       c.analyser = c.outCtx.createAnalyser();
@@ -302,25 +339,30 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
       c.playhead = 0;
 
       const ai = new GoogleGenAI({ apiKey: token, httpOptions: { apiVersion: "v1beta" } });
-      c.session = await ai.live.connect({
+      const session = await ai.live.connect({
         model,
         config: { responseModalities: [Modality.AUDIO] },
         callbacks: {
-          onmessage: (m) => void onMessage(m),
+          onmessage: (m) => void onMessage(m, g),
           onerror: () => {
-            if (!c.stopping) fail("network");
+            if (g === c.gen && !c.stopping) fail("network");
           },
           onclose: (e) => {
-            if (c.stopping) return;
+            if (g !== c.gen || c.stopping) return;
             fail(e.code === 1011 && /quota|exhausted/i.test(e.reason) ? "quota" : "network");
           },
         },
       });
+      // Đã dừng trong lúc đang kết nối: đóng phiên vừa mở, không để nó treo tới khi token hết hạn.
+      if (stale()) {
+        session.close();
+        return;
+      }
+      c.session = session;
     } catch {
-      fail("network");
+      if (!stale()) fail("network");
       return;
     }
-    if (c.stopping) return;
 
     c.maxTimer = setTimeout(stop, maxSeconds * 1000);
     c.raf = requestAnimationFrame(meter);
@@ -340,6 +382,7 @@ export function useGeminiLive(o: UseGeminiLiveOptions) {
     }
     if (stateRef.current === "speaking" || c.sources.size > 0) flushPlayback();
     clearSilence();
+    clearThinking();
     c.agentTurnOpen = false;
     c.closingAfterTurn = false;
     c.turnActive = true;

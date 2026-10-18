@@ -62,6 +62,17 @@ describe("buildToolPayload", () => {
     expect(p.con_thieu).toEqual(["ngân sách", "loại nhà"]);
   });
 
+  test('điểm neo bán kính ("gần chợ Bến Thành") cũng làm số căn thành ước tính và đủ khu vực', () => {
+    const anchor = { text: "chợ Bến Thành", travelMinutes: null, travelMode: null, radiusKm: 3 };
+    const p = buildToolPayload(
+      result({ type: 2, priceMax: 4e6, propertyTypes: [1] }, { anchor }),
+      120,
+      null,
+    );
+    expect(p.uoc_tinh).toBe(true);
+    expect(p.con_thieu).toEqual([]);
+  });
+
   test("có điểm neo thời gian đi lại thì số căn là ước tính", () => {
     const anchor = { text: "Hàm Nghi", travelMinutes: 20, travelMode: "driving", radiusKm: null };
     expect(buildToolPayload(result({}, { anchor }), 5, null).uoc_tinh).toBe(true);
