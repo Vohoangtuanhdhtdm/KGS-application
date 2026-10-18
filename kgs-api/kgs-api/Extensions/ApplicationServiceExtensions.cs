@@ -7,6 +7,7 @@ using kgs_api.Interfaces;
 using kgs_api.Repositories;
 using kgs_api.Services;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using kgs_api.Storage;
 using kgs_api.Utility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -92,6 +93,16 @@ namespace kgs_api.Extensions
             services.AddScoped<kgs_api.Services.Assistant.SearchAssistantService>();
             services.AddScoped<kgs_api.Services.Assistant.ListingWriterService>();
             services.AddScoped<kgs_api.Services.OwnerBuildings.OwnerBuildingService>();
+
+            // Trợ lý giọng nói KiGi (Gemini Live). Thiếu khoá thì /api/voice/status báo tắt và
+            // Trang chủ không hiện micro.
+            services.Configure<kgs_api.Services.Voice.GeminiSettings>(config.GetSection("Gemini"));
+            services.TryAddSingleton(TimeProvider.System);
+            services.AddHttpClient<kgs_api.Services.Voice.VoiceSessionService>(http =>
+            {
+                http.BaseAddress = new Uri("https://generativelanguage.googleapis.com/");
+                http.Timeout = TimeSpan.FromSeconds(10);
+            });
             services.AddScoped<IListingReportService, ListingReportService>();
             services.AddScoped<IListingViewTracker, ListingViewTracker>();
             services.AddScoped<IListingAnalyticsService, ListingAnalyticsService>();

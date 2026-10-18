@@ -28,6 +28,8 @@ namespace kgs_api.Extensions
         /// hạn endpoint đọc": nó đọc, nhưng cái giá của mỗi lần đọc không bằng không.</summary>
         public const string Valuation = "valuation";
         public const string Assistant = "assistant";
+        /// <summary>Tạo phiên giọng nói — mỗi phiên tiêu hạn mức Gemini miễn phí của cả hệ thống.</summary>
+        public const string Voice = "voice";
 
         public static IServiceCollection AddKgsRateLimiting(
             this IServiceCollection services, IConfiguration? config = null)
@@ -63,6 +65,9 @@ namespace kgs_api.Extensions
                 // script đốt sạch hạn mức Groq miễn phí (1000 lượt/ngày cho cả hệ thống).
                 // Đặt lại được qua cấu hình "RateLimits:Assistant" — chỉ để chạy bộ đánh giá
                 // (vài trăm câu liền) trên máy dev; mặc định giữ 20.
+                // 5 phiên / 10 phút: một người tập nói vài lần là đủ, một script không đốt được
+                // hạn mức Gemini miễn phí (mỗi phiên dài tối đa 3 phút).
+                options.AddPolicy(Voice, PartitionByUserOrIp(limit: 5, minutes: 10));
                 options.AddPolicy(Assistant, PartitionByUserOrIp(
                     limit: config?.GetValue<int?>("RateLimits:Assistant") ?? 20, minutes: 10));
             });
