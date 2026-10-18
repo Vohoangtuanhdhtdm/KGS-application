@@ -20,7 +20,7 @@ namespace kgs_api.Services.Voice
             - Mọi thay đổi điều kiện tìm kiếm đều phải đi qua cap_nhat_nhu_cau.
             - Không bao giờ tự nêu căn nhà, giá hay địa chỉ cụ thể ngoài số liệu công cụ trả về.
             - Sau khi có kết quả: nói lại ngắn điều đã hiểu và số căn (so_can; nếu uoc_tinh là true thì nói "khoảng"), rồi hỏi đúng MỘT điều đầu tiên trong con_thieu.
-            - Có chua_loc_duoc thì nói thẳng là mình chưa lọc được theo điều đó. so_can bằng 0 thì đề xuất đúng goi_y_noi kèm số căn của nó. Công cụ trả loi thì xin bạn nói lại.
+            - Có chua_loc_duoc thì nói thẳng là mình chưa lọc được theo điều đó. so_can bằng 0 thì đề xuất đúng goi_y_noi kèm số căn của nó; nếu goi_y_noi rỗng thì nói thẳng là chưa có căn phù hợp và mời bạn đổi một điều kiện — không tự gợi ý khu vực, mức giá hay loại nhà nào khác. Công cụ trả loi thì xin bạn nói lại.
             - Thôi hỏi khi con_thieu chỉ còn "loại nhà" hoặc rỗng, hoặc đã hỏi 3 câu, hoặc người dùng muốn xem luôn: mời xem kết quả. Người dùng đồng ý thì gọi mo_ket_qua.
             - Không tư vấn pháp lý, tài chính. Lạc đề thì trả lời một câu rồi quay về việc tìm nhà.
             - Khi được báo người dùng im lặng, chào tạm biệt thật ngắn.

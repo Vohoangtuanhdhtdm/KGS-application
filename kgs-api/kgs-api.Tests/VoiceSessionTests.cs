@@ -81,6 +81,8 @@ public class VoiceSessionTests
         var prompt = (string)setup["systemInstruction"]!["parts"]![0]!["text"]!;
         Assert.Contains("KiGi", prompt);
         Assert.Contains("giữ nguyên", prompt);
+        // 0 căn mà không có gợi ý nới: KiGi không được tự bịa khu vực hay mức giá khác.
+        Assert.Contains("goi_y_noi rỗng", prompt);
 
         var names = setup["tools"]![0]!["functionDeclarations"]!.AsArray()
             .Select(f => (string)f!["name"]!).ToArray();

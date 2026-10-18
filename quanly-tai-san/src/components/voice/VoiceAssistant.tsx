@@ -139,7 +139,7 @@ export function VoiceAssistant({ focusTyping }: { focusTyping: () => void }) {
               <Mic className="mr-1.5 h-4 w-4" /> {TALK_LABEL[voice.state] ?? "Chạm để nói"}
             </Button>
           )}
-          {payload && (
+          {payload && payload.so_can > 0 && (
             <Button type="button" variant="outline" className="h-10" onClick={openResults}>
               Xem {payload.uoc_tinh ? "khoảng " : ""}
               {payload.so_can} căn
