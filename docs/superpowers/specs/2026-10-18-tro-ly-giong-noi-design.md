@@ -95,13 +95,33 @@ trình duyệt gọi API KGS rồi gửi kết quả ngược lại. Máy chủ 
 "Gemini": {
   "ApiKey": "",
   "LiveModel": "gemini-3.8-live",
-  "Voice": "Leda",
+  "Voice": "Kore",
   "SessionMinutes": 3
 }
 ```
 
-`Voice` mặc định `Leda`; bài thử khả thi (mục 8) nghe thử các giọng của Gemini với tiếng Việt
-và chốt giọng cuối cùng vào cấu hình.
+Giọng `Kore` do người dùng chọn sau khi nghe thử Leda, Aoede, Kore, Puck (mục 11).
+
+**Thân yêu cầu tạo token thật** (REST, `POST v1beta/auth_tokens`) — `liveConnectConstraints`
+chỉ là tên trong SDK; API nhận:
+
+```json
+{
+  "uses": 1, "expireTime": "<+4 phút>", "newSessionExpireTime": "<+1 phút>",
+  "bidiGenerateContentSetup": {
+    "model": "models/gemini-3.8-live",
+    "generationConfig": { "responseModalities": ["AUDIO"],
+      "speechConfig": { "voiceConfig": { "prebuiltVoiceConfig": { "voiceName": "Kore" } } } },
+    "systemInstruction": { "parts": [{ "text": "<lời dặn>" }], "role": "user" },
+    "tools": [{ "functionDeclarations": [ … ] }],
+    "inputAudioTranscription": {}, "outputAudioTranscription": {},
+    "realtimeInputConfig": { "automaticActivityDetection": { "disabled": true } }
+  },
+  "fieldMask": "model,generationConfig.responseModalities,generationConfig.speechConfig,systemInstruction.parts,systemInstruction.role,tools,inputAudioTranscription,outputAudioTranscription,realtimeInputConfig"
+}
+```
+
+Phản hồi `{ "name": "auth_tokens/…" }`; trình duyệt dùng `name` làm `apiKey` của SDK.
 
 ## 4. Hội thoại
 
@@ -148,8 +168,20 @@ thường. Đoạn mã áp được tách thành một hàm dùng chung cho cả
 
 ### 4.3 Luồng một phiên
 
-1. Người dùng bấm micro → xin quyền micro → gọi `/api/voice/session` → kết nối Live.
-2. KiGi chào và hỏi: thuê hay mua, ở khu nào.
+**Lượt nói do trình duyệt điều khiển ("chạm để nói").** Bài thử cho thấy chế độ tự phát hiện
+lượt nói của Gemini bỏ lỡ một số đoạn nói; khi trình duyệt tự đánh dấu, mọi đoạn đều chạy.
+Vì vậy phiên tắt tự phát hiện (`automaticActivityDetection.disabled = true`) và:
+
+- Người dùng **chạm micro** → trình duyệt gửi `activityStart` rồi truyền âm thanh.
+- Lượt kết thúc khi **im lặng 1,2 giây sau khi đã có tiếng nói** (đo âm lượng ở trình duyệt),
+  khi người dùng **chạm lại**, hoặc khi lượt dài quá **15 giây** → gửi `activityEnd`.
+- Chạm micro **khi KiGi đang nói** → dừng phát ngay, xoá hàng đợi âm thanh, mở lượt mới (ngắt lời).
+- Ngoài lượt nói, micro không gửi gì — tiếng ồn phòng hay tiếng loa của chính KiGi không kích
+  hoạt nhầm.
+
+1. Người dùng bấm "Nói với KiGi" → xin quyền micro → gọi `/api/voice/session` → kết nối Live →
+   trình duyệt gửi "(Bắt đầu phiên.)" để KiGi chào.
+2. KiGi chào và hỏi: thuê hay mua, ở khu nào; người dùng chạm micro để trả lời.
 3. Mỗi lượt: người dùng nói → Gemini gọi `cap_nhat_nhu_cau` → thẻ trên màn hình đổi → KiGi nói
    lại điều vừa hiểu + số căn, rồi hỏi **một** điều trong `con_thieu`.
 4. Thôi hỏi khi: đủ ba thông tin chính (thuê/mua, khu vực, ngân sách), **hoặc** đã hỏi 3 câu,
@@ -159,6 +191,10 @@ thường. Đoạn mã áp được tách thành một hàm dùng chung cho cả
 ### 4.4 Lời dặn hệ thống (ràng buộc cứng)
 
 - Chỉ nói tiếng Việt; mỗi lượt tối đa 2 câu.
+- Người dùng nói xong một điều kiện thì nói ngay một câu đệm rất ngắn ("Để mình xem nhé") rồi
+  mới gọi công cụ — bài thử: âm thanh đầu tiên sau 0,4–1,1 giây thay vì 2–3 giây.
+- Khi tóm lời cho công cụ, giữ **nguyên** mọi con số, tên quận, tên đường (bài thử từng gặp
+  "120 m²" thành "122").
 - Mọi thay đổi điều kiện tìm kiếm phải đi qua `cap_nhat_nhu_cau`.
 - **Không bao giờ tự nêu căn nhà, giá, địa chỉ cụ thể** ngoài số liệu công cụ trả về.
 - Có `chua_loc_duoc` thì nói thẳng là chưa lọc được theo điều đó.
@@ -197,7 +233,7 @@ thường. Đoạn mã áp được tách thành một hàm dùng chung cho cả
 | Hết hạn mức (429), mất mạng, phiên hết hạn | Đóng phiên gọn, mascot "buồn" | "Trợ lý giọng nói đang bận"; **thẻ đã dựng được giữ lại**, nút "Xem N căn" vẫn dùng được |
 | Công cụ gọi API lỗi | Trả `loi` cho Gemini | KiGi xin nói lại |
 | Nghe nhầm | Bản ghi chữ của người dùng hiện ngay | Nói lại hoặc gỡ thẻ sai |
-| Spam phiên | 5 phiên / 10 phút / IP; phiên tối đa 3 phút; im lặng 20 giây thì KiGi chào và đóng | Thông báo thử lại sau |
+| Spam phiên | 5 phiên / 10 phút / IP; phiên tối đa 3 phút; 20 giây không chạm micro sau khi KiGi nói xong thì KiGi chào và đóng | Thông báo thử lại sau |
 
 ## 7. Riêng tư
 
@@ -248,3 +284,15 @@ khỏi cấu hình; im lặng 20 giây. Chụp màn hình làm bằng chứng.
 - Chạy qua `localhost` (trình duyệt coi là ngữ cảnh an toàn nên cho dùng micro).
 - Kiểm tra trước: khoá còn hạn mức, micro đã cấp quyền, dịch vụ API và Groq đang chạy.
 - Có sẵn video màn demo để chiếu nếu mạng phòng bảo vệ chập chờn.
+
+## 11. Kết quả bài thử (18/10/2026)
+
+Tự động hoá: 10 câu mẫu đọc bằng Gemini TTS, phát vào Gemini Live qua đúng đường token tạm.
+
+| Tiêu chí | Kết quả |
+|---|---|
+| Giọng | Người dùng chọn **Kore** |
+| Bản ghi chữ | 10/10 đúng ý khi âm thanh được nhận ("2tr5" → 2,5 triệu, "3 tỷ 5" → 3 tỷ rưỡi) |
+| Gọi công cụ | 10/10 đúng; KiGi chờ kết quả rồi mới đọc số căn |
+| Độ trễ tới âm thanh đầu | Không câu đệm 1,95–3,2 giây; có câu đệm 0,4–1,1 giây |
+| Tự phát hiện lượt nói | Bỏ lỡ 2 đoạn nhất quán (tăng độ nhạy không đỡ); đánh dấu thủ công chạy 2/2 → chọn "chạm để nói" |

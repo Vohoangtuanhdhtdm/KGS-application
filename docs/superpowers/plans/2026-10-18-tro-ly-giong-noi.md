@@ -15,7 +15,8 @@
 - Chỉ dùng gói miễn phí của Gemini API; mô hình chính `gemini-3.8-live`, dự phòng `gemini-3.1-flash-live-preview` (đổi bằng cấu hình `Gemini:LiveModel`).
 - Khoá Gemini chỉ nằm trong `kgs-api/kgs-api/appsettings.Development.json` (đã gitignore); `appsettings.json` để `"ApiKey": ""`. Trước mỗi commit chạy quét `git diff --cached | grep -E 'AQ\.[A-Za-z0-9_-]{20}|AIza|gsk_|pk\.eyJ|sk\.eyJ'` — phải rỗng.
 - Token tạm: `uses = 1`, `newSessionExpireTime` = bây giờ + 1 phút, `expireTime` = bây giờ + 4 phút; endpoint `v1beta/auth_tokens`.
-- Phiên tối đa **3 phút**; im lặng **20 giây** thì KiGi chào và đóng; tối đa **3 câu hỏi bù**; mỗi lượt KiGi tối đa **2 câu**.
+- Lượt nói do trình duyệt điều khiển ("chạm để nói"): `automaticActivityDetection.disabled = true`; lượt kết thúc sau **1,2 giây** im lặng (sau khi đã có tiếng), chạm lại, hoặc **15 giây**.
+- Phiên tối đa **3 phút**; **20 giây** không chạm micro sau khi KiGi nói xong thì KiGi chào và đóng; tối đa **3 câu hỏi bù**; mỗi lượt KiGi tối đa **2 câu**.
 - Giới hạn tạo phiên: **5 phiên / 10 phút / IP** (chính sách rate limit `voice`).
 - Thứ tự "còn thiếu": **thuê hay mua → khu vực → ngân sách → loại nhà**.
 - Khoá bàn giao `sessionStorage`: `kgs:tro-ly-ban-giao`; tham số URL trang Tìm nhà: `tro_ly=1`.
@@ -33,7 +34,7 @@
 
 ---
 
-### Task 1: Bài thử khả thi (cổng quyết định — mã bỏ đi)
+### Task 1: Bài thử khả thi (cổng quyết định — mã bỏ đi) — ĐÃ ĐẠT, xem spec mục 11
 
 **Files:**
 - Create (KHÔNG commit, đặt trong thư mục scratchpad của phiên): `spike-kigi/index.html`
@@ -73,10 +74,10 @@ git commit -m "docs(spec): kết quả bài thử Gemini Live tiếng Việt"
 - Produces:
   - `GET /api/voice/status` → `200 { "enabled": bool }` (enabled = có `Gemini:ApiKey`). Không rate limit, không gọi Google.
   - `POST /api/voice/session` → `200 { "token": string, "model": string, "expiresAt": string(ISO) }` | `503 { "message": "Trợ lý giọng nói hiện chưa sẵn sàng." }` | `429` (chính sách `voice`).
-  - `public sealed class GeminiSettings { string ApiKey = ""; string LiveModel = "gemini-3.8-live"; string Voice = "Leda"; int SessionMinutes = 3; }`
+  - `public sealed class GeminiSettings { string ApiKey = ""; string LiveModel = "gemini-3.8-live"; string Voice = "Kore"; int SessionMinutes = 3; }`
   - `public sealed record VoiceSessionResult(string Token, string Model, DateTimeOffset ExpiresAt);`
   - `VoiceSessionService(HttpClient http, IOptions<GeminiSettings> o, TimeProvider clock, ILogger<VoiceSessionService> log)`; `bool Enabled { get; }`; `Task<VoiceSessionResult?> CreateAsync(CancellationToken ct)` — null khi thiếu khoá hoặc Gemini lỗi; `internal static JsonObject BuildTokenRequest(GeminiSettings s, DateTimeOffset now)`.
-  - `KiGiPrompt.SystemInstruction` (string, nguyên văn ràng buộc spec 4.4 + vai KiGi 4.1 + luồng 4.3) và `KiGiPrompt.Tools` (khai báo hai hàm: `cap_nhat_nhu_cau` với tham số bắt buộc `mo_ta: STRING`, mô tả "Lời người dùng vừa nói, tóm thành một câu tiếng Việt"; `mo_ket_qua` không tham số).
+  - `KiGiPrompt.SystemInstruction` (string, nguyên văn ràng buộc spec 4.4 — kể cả câu đệm và "giữ nguyên con số" — + vai KiGi 4.1 + luồng 4.3; câu "Khi được báo bắt đầu, chào thật ngắn và hỏi thuê hay mua, ở khu nào") và `KiGiPrompt.Tools` (khai báo hai hàm: `cap_nhat_nhu_cau` với tham số bắt buộc `mo_ta: STRING`, mô tả "Lời người dùng vừa nói, tóm thành một câu tiếng Việt"; `mo_ket_qua` không tham số).
 
 - [ ] **Step 1: Viết test thất bại** trong `VoiceSessionTests.cs` (dùng `CapturingHandler : HttpMessageHandler` ghi lại request, theo mẫu `ValuationCircuitTests`; `FakeTimeProvider` tự viết hoặc `TimeProvider` cố định 2026-10-18T10:00:00Z):
 
@@ -84,10 +85,12 @@ git commit -m "docs(spec): kết quả bài thử Gemini Live tiếng Việt"
 [Fact] public async Task ThieuKhoa_TraNull_KhongGoiGoogle()      // ApiKey "" → null, handler.Calls == 0, Enabled == false
 [Fact] public async Task YeuCauToken_DungRangBuoc()
 // body: uses == 1; expireTime == "2026-10-18T10:04:00Z"; newSessionExpireTime == "2026-10-18T10:01:00Z";
-// liveConnectConstraints.model == "models/gemini-3.8-live";
-// config.responseModalities == ["AUDIO"]; config.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName == "Leda";
-// config.inputAudioTranscription và outputAudioTranscription tồn tại;
-// config.systemInstruction chứa "KiGi"; tên hàm trong tools == ["cap_nhat_nhu_cau","mo_ket_qua"];
+// bidiGenerateContentSetup.model == "models/gemini-3.8-live";
+// setup.generationConfig.responseModalities == ["AUDIO"]; setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName == "Kore";
+// setup.inputAudioTranscription và outputAudioTranscription tồn tại;
+// setup.realtimeInputConfig.automaticActivityDetection.disabled == true;
+// setup.systemInstruction.parts[0].text chứa "KiGi" và "giữ nguyên"; tên hàm trong tools == ["cap_nhat_nhu_cau","mo_ket_qua"];
+// fieldMask liệt kê đủ: model, generationConfig.responseModalities, generationConfig.speechConfig, systemInstruction.parts, systemInstruction.role, tools, inputAudioTranscription, outputAudioTranscription, realtimeInputConfig
 // request đi tới "/v1beta/auth_tokens" với header "x-goog-api-key" == khoá
 [Fact] public async Task GoogleTra500_TraNull()
 [Fact] public async Task TraTokenTuTruongName()                  // phản hồi {"name":"auth_tokens/abc"} → Token == "auth_tokens/abc", Model == "gemini-3.8-live", ExpiresAt == 10:04Z
@@ -208,7 +211,7 @@ export function floatToPcm16Base64(samples: Float32Array): string;     // kẹp 
 export function pcm16Base64ToFloat(b64: string): Float32Array;
 export function rms(samples: Float32Array): number;                   // 0..1
 // lib/voice/useGeminiLive.ts
-export type VoiceState = "idle" | "connecting" | "listening" | "thinking" | "speaking" | "error";
+export type VoiceState = "idle" | "connecting" | "ready" | "listening" | "thinking" | "speaking" | "error";
 export type VoiceError = "mic-denied" | "unavailable" | "quota" | "network";
 export interface UseGeminiLiveOptions {
   onToolCall: (name: string, args: Record<string, unknown>) => Promise<Record<string, unknown>>;
@@ -219,17 +222,22 @@ export function useGeminiLive(o: UseGeminiLiveOptions): {
   state: VoiceState; error: VoiceError | null;
   userText: string; agentText: string;   // bản ghi chữ lượt gần nhất
   level: number;                         // 0..1: âm lượng micro khi listening, âm lượng phát khi speaking
-  start: () => Promise<void>; stop: () => void;
+  start: () => Promise<void>;            // mở phiên; KiGi chào; sau đó state = "ready"
+  talk: () => void;                      // chạm micro: mở lượt (ngắt KiGi nếu đang nói) / đang nghe thì kết thúc lượt
+  stop: () => void;
 };
 ```
 
 Quy tắc chốt:
 - `start()` chỉ chạy khi `state` là `idle` hoặc `error` (chống bấm hai lần). Thứ tự: xin micro (`getUserMedia`, từ chối → `error = "mic-denied"`) → `voiceApi.session()` (503 → `"unavailable"`, 429 → `"quota"`) → `new GoogleGenAI({ apiKey: token })` → `ai.live.connect({ model, callbacks })`. Cấu hình phiên đã khoá trong token, không gửi lại từ trình duyệt.
-- Micro: `AudioContext({ sampleRate: 16000 })` + worklet `mic-worklet.js` gửi khung Float32 → `floatToPcm16Base64` → `session.sendRealtimeInput({ audio: { data, mimeType: "audio/pcm;rate=16000" } })`.
+- Sau khi kết nối: `session.sendClientContent({ turns: "(Bắt đầu phiên.)", turnComplete: true })` để KiGi chào.
+- Micro: `AudioContext({ sampleRate: 16000 })` + worklet `mic-worklet.js` gửi khung Float32. **Chỉ trong lượt nói** mới gửi: `talk()` → `sendRealtimeInput({ activityStart: {} })` → mỗi khung `sendRealtimeInput({ audio: { data: floatToPcm16Base64(f), mimeType: "audio/pcm;rate=16000" } })` → kết thúc lượt bằng `sendRealtimeInput({ activityEnd: {} })`.
+- Kết thúc lượt: `rms(khung) > 0,02` đánh dấu đã có tiếng nói; sau đó 1,2 giây liền `rms ≤ 0,02` → kết thúc; hoặc `talk()` lần nữa; hoặc lượt đủ 15 giây. Ngưỡng `0,02` là hằng số `SPEECH_RMS` trong `pcm.ts`.
+- `talk()` khi `speaking` → dừng mọi đoạn đang phát, xoá hàng đợi, rồi mở lượt mới.
 - Loa: `AudioContext({ sampleRate: 24000 })`, xếp hàng các đoạn `pcm16Base64ToFloat` liền nhau; khi có `serverContent.interrupted` thì dừng mọi đoạn đang phát và xoá hàng đợi.
-- Trạng thái: có âm thanh đang phát → `speaking`; đang chờ `onToolCall` → `thinking`; còn lại khi đã kết nối → `listening`.
+- Trạng thái: đang trong lượt nói → `listening`; có âm thanh đang phát → `speaking`; đang chờ `onToolCall` → `thinking`; còn lại khi đã kết nối → `ready`.
 - `toolCall.functionCalls` → gọi `onToolCall(fc.name, fc.args)` tuần tự → `session.sendToolResponse({ functionResponses: [{ id, name, response }] })` (thêm `scheduling` nếu Task 1 ghi là cần).
-- Hết `maxSeconds` → `stop()`. Không có `inputTranscription` mới trong `silenceSeconds` và không đang nói → gửi `session.sendClientContent({ turns: "(Người dùng im lặng. Hãy chào tạm biệt thật ngắn.)", turnComplete: true })`, đóng phiên khi nhận `turnComplete` kế tiếp.
+- Hết `maxSeconds` → `stop()`. Ở `ready` liền `silenceSeconds` → gửi `session.sendClientContent({ turns: "(Người dùng im lặng. Hãy chào tạm biệt thật ngắn.)", turnComplete: true })`, đóng phiên khi nhận `turnComplete` kế tiếp.
 - `onclose`/`onerror` ngoài ý muốn → `state = "error"`, `error = "network"`.
 - Unmount → `stop()`: dừng track micro, đóng hai `AudioContext`, đóng session.
 
@@ -244,7 +252,7 @@ test("rms của im lặng là 0, của sóng biên độ 1 là ≈ 0,707", …);
 - [ ] **Step 2: Chạy** `npm test -- pcm` → FAIL.
 - [ ] **Step 3: Cài đặt** `pcm.ts`, `voice.ts`, `mic-worklet.js` (một `AudioWorkletProcessor` gửi `inputs[0][0]` qua `port.postMessage`), `useGeminiLive.ts` theo quy tắc chốt.
 - [ ] **Step 4: Chạy** `npm test` → PASS; `npx tsc --noEmit` và `npx eslint src/lib` sạch.
-- [ ] **Step 5: Kiểm tra thủ công** với một nút tạm trên trang `/dev` (xoá ở Task 6): nói "thuê phòng trọ Bình Thạnh" → nghe KiGi trả lời; bấm bắt đầu hai lần liên tiếp → chỉ một phiên (Network: một lần `POST /api/voice/session`); điều hướng sang trang khác giữa phiên → đèn micro tắt, không còn tiếng.
+- [ ] **Step 5: Kiểm tra thủ công** với một nút tạm trên trang `/dev` (xoá ở Task 6): bắt đầu → nghe KiGi chào; chạm micro, nói "thuê phòng trọ Bình Thạnh", im lặng → lượt tự kết thúc, nghe "Để mình xem nhé" rồi câu trả lời; chạm micro khi KiGi đang nói → KiGi dừng ngay; bấm bắt đầu hai lần liên tiếp → chỉ một phiên (Network: một lần `POST /api/voice/session`); điều hướng sang trang khác giữa phiên → đèn micro tắt, không còn tiếng.
 - [ ] **Step 6: Commit.**
 
 ```bash
@@ -264,7 +272,7 @@ git commit -m "feat(giong-noi): hook Gemini Live — micro, loa, trạng thái, 
 - Produces: `export function KiGiMascot(props: { state: VoiceState; level: number; size?: number }): JSX.Element` (mặc định `size` 160).
 
 Quy tắc chốt: ngôi nhà nhỏ có mái, hai mắt, miệng; màu theo token thương hiệu hiện có (`--primary`). Sáu trạng thái:
-- `idle`: thở nhẹ (scale 1 → 1,02, 3 giây);
+- `idle` và `ready`: thở nhẹ (scale 1 → 1,02, 3 giây); `ready` thêm micro nhỏ nhấp nháy gợi ý "chạm để nói";
 - `connecting`: mắt nhìn quanh;
 - `listening`: vòng sóng quanh mascot, bán kính theo `level`;
 - `thinking`: mắt nhìn lên, ba chấm;
@@ -299,7 +307,7 @@ git commit -m "feat(giong-noi): mascot KiGi 2D với sáu trạng thái"
 Quy tắc chốt:
 - `VoiceAssistant` trả `null` khi `voiceApi.status()` lỗi hoặc `enabled = false`, hoặc thiếu `navigator.mediaDevices`, `window.isSecureContext`, `AudioWorkletNode`.
 - Giao diện:
-  - Nút micro cạnh ô gõ hiện có, dưới nút là dòng "Giọng nói được xử lý bởi Google Gemini".
+  - Nút "Nói với KiGi" cạnh ô gõ hiện có, dưới nút là dòng "Giọng nói được xử lý bởi Google Gemini". Trong phiên, nút micro lớn gọi `talk()`, nhãn theo trạng thái ("Chạm để nói" / "Đang nghe… chạm để gửi" / "Chạm để ngắt lời").
   - Khi đang có phiên, hiện khung gồm `KiGiMascot`, hai dòng bản ghi chữ (`userText`, `agentText`), hàng thẻ `dieu_kien_da_hieu` và nút "Xem N căn" (N = `so_can`, có tiền tố "khoảng" khi `uoc_tinh`).
 - `onToolCall`:
   - `cap_nhat_nhu_cau` → `runCapNhatNhuCau(args.mo_ta, ketQuaGanNhat, { searchIntent: assistantApi.searchIntent, count: f => listingsApi.search(f).then(p => p.totalCount) })`, lưu `result` làm `ketQuaGanNhat`, trả `payload` (hoặc `{ loi }`).
