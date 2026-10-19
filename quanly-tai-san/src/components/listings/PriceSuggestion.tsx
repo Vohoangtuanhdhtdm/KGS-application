@@ -3,6 +3,7 @@ import { Loader2, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { valuationApi, type ValuationRequest } from "@/lib/api/valuation";
 import { formatCurrency } from "@/lib/format";
 import { comparePriceToBand } from "@/lib/priceBand";
+import { confidenceLabel } from "@/lib/confidenceLabel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -93,8 +94,7 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
 
       {!ready && (
         <p className="text-xs text-muted-foreground">
-          Điền diện tích và địa chỉ (tỉnh/thành, quận/huyện) để xem mức giá thị trường của
-          khu vực.
+          Điền diện tích và địa chỉ (tỉnh/thành, quận/huyện) để xem mức giá thị trường của khu vực.
         </p>
       )}
 
@@ -118,7 +118,7 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
               variant="outline"
               className={`font-normal ${CONFIDENCE_TONE[r.confidence] ?? ""}`}
             >
-              Độ tin cậy {r.confidence}
+              Độ tin cậy {confidenceLabel(r.confidence)}
             </Badge>
           </div>
 
@@ -126,8 +126,8 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
             Khoảng {formatCurrency(r.pricePerM2, { compact: true })}/m².
             {r.areaMedianPricePerM2 != null && r.areaSampleSize > 0 && (
               <>
-                {" "}Mặt bằng khu vực:{" "}
-                {formatCurrency(r.areaMedianPricePerM2, { compact: true })}/m² (
+                {" "}
+                Mặt bằng khu vực: {formatCurrency(r.areaMedianPricePerM2, { compact: true })}/m² (
                 {r.areaSampleSize.toLocaleString("vi-VN")} tin).
               </>
             )}
@@ -136,9 +136,7 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
           {doLech && (
             <div
               className={`rounded-md border px-2.5 py-2 text-xs ${
-                doLech.manh
-                  ? "border-warning/40 bg-warning/10"
-                  : "border-border bg-muted/40"
+                doLech.manh ? "border-warning/40 bg-warning/10" : "border-border bg-muted/40"
               }`}
             >
               <p className="inline-flex items-start gap-1.5 font-medium">
@@ -159,7 +157,7 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
                   ? doLech.huong === "cao"
                     ? "Lệch khá xa mặt bằng. Tin đặt giá cao hơn hẳn khu vực thường ít người liên hệ, và có thể bị trả về khi duyệt."
                     : "Thấp hơn hẳn mặt bằng. Nếu không cố ý thì nên kiểm lại đơn vị — nhầm triệu với nghìn là lỗi hay gặp."
-                  : "Vẫn có thể hợp lý nếu căn nhà có điểm mô hình chưa biết. Nếu vậy, hãy nói rõ điểm đó trong phần mô tả."}
+                  : "Vẫn có thể hợp lý nếu căn nhà có điểm đặc biệt mà KGS chưa biết. Nếu vậy, hãy nói rõ điểm đó trong phần mô tả."}
               </p>
             </div>
           )}
@@ -172,8 +170,8 @@ export function PriceSuggestion({ input, currentPrice }: Props) {
 
           {info.data.mdape != null && (
             <p className="text-[11px] text-muted-foreground border-t pt-2">
-              Ước tính từ mô hình học máy huấn luyện trên tin rao bán thực tế. Sai số điển
-              hình khoảng {Math.round(info.data.mdape)}% — hãy dùng làm mốc tham khảo, không
+              AI của KGS học từ hơn 600.000 tin rao bán, thường lệch khoảng{" "}
+              {Math.round(info.data.mdape)}% so với giá thật — hãy dùng làm mốc tham khảo, không
               phải giá thẩm định.
             </p>
           )}

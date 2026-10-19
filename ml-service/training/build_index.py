@@ -291,12 +291,14 @@ def main() -> None:
         "mix_shift_gap": {"mean_points": round(mean_gap, 2), "max_points": round(max_gap, 2)},
         "districts": districts,
         "caveats": [
-            "Dữ liệu chỉ trải 19 tuần (06–09/2025) nên KHÔNG mô hình hoá tính mùa vụ.",
-            "Số tin từ tháng 9 giảm còn khoảng một phần tư so với tháng 6–8; đó là dấu vết "
-            "thu thập dữ liệu, không phải tín hiệu thị trường.",
-            "Chỉ số dựa trên giá RAO, không phải giá giao dịch.",
-            f"Chỉ số toàn quốc chỉ tính các tuần có từ {MIN_WEEK_SAMPLE:,} tin trở lên; "
-            f"chỉ số cấp quận dùng ngưỡng {MIN_WEEK_SAMPLE_DISTRICT} tin/tuần.",
+            "Số liệu mới có 19 tuần (tháng 6–9/2025), chưa đủ để biết giá có lên xuống theo mùa "
+            "trong năm hay không.",
+            "Từ tháng 9 số tin KGS thu được ít hơn hẳn (khoảng một phần tư so với tháng 6–8) — "
+            "do cách thu thập tin, không phải thị trường đổi.",
+            "Đây là giá người bán đưa ra, chưa phải giá chốt mua bán.",
+            f"Cả nước: chỉ tính những tuần có từ {MIN_WEEK_SAMPLE // 1000}.000 tin trở lên; từng quận: từ "
+            f"{MIN_WEEK_SAMPLE_DISTRICT} tin mỗi tuần trở lên, để vài tin lẻ không kéo lệch "
+            "con số.",
         ],
     }
 

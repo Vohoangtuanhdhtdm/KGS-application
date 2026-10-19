@@ -198,10 +198,8 @@ export function NearbyAmenities({
           <p className="text-xs text-muted-foreground">
             Trong khoảng {formatDistance(data.coveredMeters)} quanh nhà. Khoảng cách theo đường chim
             bay, phút đi bộ là ước tính
-            {walkMinutes != null &&
-              "; riêng vùng đi bộ trên bản đồ tính theo đường đi thật (Mapbox Isochrone)"}
-            . Dữ liệu từ bản đồ Mapbox / OpenStreetMap, có thể thiếu những điểm chưa ai đưa lên bản
-            đồ.
+            {walkMinutes != null && "; riêng vùng đi bộ trên bản đồ tính theo đường đi thật"}. Dữ
+            liệu từ bản đồ Mapbox / OpenStreetMap, có thể thiếu những điểm chưa ai đưa lên bản đồ.
           </p>
         </>
       )}

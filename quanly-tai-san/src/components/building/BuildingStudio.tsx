@@ -183,7 +183,7 @@ function Studio({ data }: { data: BuildingModel }) {
             <CardTitle className="text-sm">1 · Khung toà nhà</CardTitle>
             <CardDescription className="text-xs">
               {ring.length >= 3
-                ? `${ring.length} đỉnh · khoảng ${Math.round(area)} m² mặt sàn`
+                ? `Khung ${ring.length} góc · diện tích sàn khoảng ${Math.round(area)} m²`
                 : "Chưa có khung"}
             </CardDescription>
           </CardHeader>

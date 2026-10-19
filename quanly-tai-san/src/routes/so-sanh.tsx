@@ -332,8 +332,8 @@ function CompareTable({
       </table>
       {showValuation && items.some((it) => it.type === 1) && (
         <p className="border-t px-3 py-2 text-xs text-muted-foreground">
-          Giá tham khảo AI ước tính từ mô hình học máy, chỉ áp dụng cho tin rao bán — dùng làm mốc
-          tham khảo, không phải giá thẩm định. Ô trống là tin thiếu dữ liệu để mô hình ước tính.
+          Giá tham khảo do AI của KGS ước tính, chỉ có cho tin rao bán — dùng làm mốc tham khảo,
+          không phải giá thẩm định. Ô trống là tin chưa đủ thông tin để ước tính.
         </p>
       )}
       {!showValuation && items.some((it) => it.type === 1) && (

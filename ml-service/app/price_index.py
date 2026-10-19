@@ -167,11 +167,11 @@ def forecast(points: list[dict]) -> ForecastResult | None:
 
     if scored[0][0].startswith("Ngây thơ"):
         note = (
-            "Mô hình ngây thơ cho sai số thấp nhất — với chuỗi 19 tuần, đó là kết quả bình "
-            "thường và có nghĩa là chưa đủ dữ liệu để dự báo tốt hơn phép đoán 'giữ nguyên'."
+            "Đoán 'tuần tới giữ nguyên như tuần này' lại sát nhất — với số liệu 19 tuần, điều đó "
+            "bình thường và có nghĩa là chưa đủ dữ liệu để dự đoán tốt hơn."
         )
     else:
-        note = f"Chọn theo kiểm tra lùi {_HOLDOUT} tuần cuối."
+        note = f"Chọn cách đoán sát nhất khi thử đoán lại {_HOLDOUT} tuần gần đây."
 
     return ForecastResult(
         method=name,

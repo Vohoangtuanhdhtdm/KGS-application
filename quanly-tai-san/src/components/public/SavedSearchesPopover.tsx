@@ -168,7 +168,7 @@ export function SavedSearchesPopover({
             </>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Chọn ít nhất một tiêu chí (khu vực, khoảng giá, số phòng ngủ...) rồi mới lưu được.
+              Chọn ít nhất một điều kiện (khu vực, khoảng giá, số phòng ngủ...) rồi mới lưu được.
             </p>
           )}
         </div>

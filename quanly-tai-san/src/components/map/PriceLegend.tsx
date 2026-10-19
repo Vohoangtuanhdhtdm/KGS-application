@@ -59,7 +59,7 @@ export function PriceLegend({
   return (
     <div className="w-[214px] rounded-lg border bg-card/95 p-2.5 text-[11px] shadow-md backdrop-blur">
       <p className="flex items-center justify-between gap-2 font-semibold text-xs">
-        <span>{listingType === 2 ? "Giá thuê trung vị / m²" : "Giá bán trung vị / m²"}</span>
+        <span>{listingType === 2 ? "Giá thuê phổ biến / m²" : "Giá bán phổ biến / m²"}</span>
         {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
       </p>
       <p className="text-muted-foreground">Đơn vị: {unit}</p>

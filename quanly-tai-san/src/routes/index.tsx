@@ -773,7 +773,7 @@ function WhyKgs() {
           to="/dinh-gia"
           icon={Calculator}
           title="Định giá một căn nhà"
-          body="Mô hình học trên hơn 600.000 tin rao — không cần tài khoản."
+          body="AI của KGS học từ hơn 600.000 tin rao bán — không cần tài khoản."
         />
         <ToolLink
           to="/chi-so-gia"

@@ -103,9 +103,9 @@ function PriceIndexPage() {
           className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
         />
         <p className="mt-3 max-w-[64ch] text-muted-foreground">
-          Chỉ số so sánh <em>cùng một kiểu căn nhà</em> qua từng tuần: đã loại trừ ảnh hưởng của vị
-          trí, diện tích, loại hình và số phòng, nên nó đo giá thay đổi — không phải danh mục tin
-          đăng thay đổi. Tuần gốc bằng 100.
+          Chỉ số giá KGS so <em>cùng một kiểu căn nhà</em> — cùng khu vực, diện tích, loại nhà và số
+          phòng — qua từng tuần, nên chỉ lên khi giá thật sự lên. Tuần đầu tiên được lấy làm mốc
+          100.
         </p>
 
         <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -129,14 +129,14 @@ function PriceIndexPage() {
               </Select>
               {areasQ.isSuccess && (
                 <span className="text-xs text-muted-foreground">
-                  {rows.length} quận đủ dữ liệu để dựng chuỗi riêng
+                  {rows.length} quận đủ tin để có chỉ số riêng
                 </span>
               )}
             </div>
 
             {fellBack && (
               <p className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm">
-                {district} chưa đủ tin mỗi tuần để dựng chuỗi riêng — biểu đồ dưới đây là{" "}
+                {district} chưa đủ tin mỗi tuần để có chỉ số riêng — biểu đồ dưới đây là{" "}
                 <span className="font-medium">toàn quốc</span>.
               </p>
             )}
@@ -156,21 +156,22 @@ function PriceIndexPage() {
                 <div>
                   <dt className="font-medium">106 nghĩa là gì?</dt>
                   <dd className="text-muted-foreground">
-                    Cùng một kiểu căn, tuần đó đắt hơn tuần gốc khoảng 6%. Không phải giá mỗi m².
+                    Cùng một kiểu căn, tuần đó đắt hơn tuần đầu khoảng 6%. Đây không phải giá mỗi
+                    m².
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-medium">Vì sao không lấy giá trung vị?</dt>
+                  <dt className="font-medium">Sao không lấy giá trung bình của các tin?</dt>
                   <dd className="text-muted-foreground">
-                    Tuần nào nhiều tin ở quận đắt thì trung vị tự nhảy lên dù không căn nào đổi giá.
-                    Bấm "Xem cách tính" trên biểu đồ để thấy hai đường lệch nhau thế nào.
+                    Tuần nào nhiều tin ở khu đắt thì con số đó tự tăng dù không căn nào đổi giá. Mở
+                    mục "Cách KGS tính" dưới biểu đồ để xem hai cách khác nhau thế nào.
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-medium">Dự báo có tin được không?</dt>
+                  <dt className="font-medium">Có dự đoán giá tuần tới không?</dt>
                   <dd className="text-muted-foreground">
-                    Dữ liệu mới có vài tháng. Khi kiểm tra lùi cho sai số lớn, trang nói thẳng là
-                    chưa đáng tin thay vì đưa ra một con số trông chắc chắn.
+                    Số liệu mới có vài tháng. Khi chưa đủ chắc, trang nói thẳng là chưa dự đoán được
+                    thay vì đưa ra một con số trông có vẻ chắc chắn.
                   </dd>
                 </div>
               </dl>
@@ -200,9 +201,9 @@ function PriceIndexPage() {
             So sánh các quận
           </h2>
           <p className="mt-1 max-w-[70ch] text-sm text-muted-foreground">
-            Xếp theo mức thay đổi từ tuần gốc tới tuần gần nhất. Cột <em>dao động</em> cho biết
-            chuỗi rung lắc tới đâu mỗi tuần — dao động cao thì mức thay đổi nên đọc như một tín hiệu
-            cần xem thêm, chưa phải kết luận.
+            Xếp theo mức giá thay đổi từ tuần đầu tới tuần gần nhất. Cột <em>lên xuống mỗi tuần</em>{" "}
+            cho biết giá ở quận đó thất thường tới đâu — càng lớn thì mức thay đổi càng nên xem là
+            tín hiệu tham khảo, chưa phải kết luận.
           </p>
 
           <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
@@ -214,7 +215,7 @@ function PriceIndexPage() {
               </div>
             ) : rows.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">
-                Chưa có dữ liệu chỉ số theo quận. Dịch vụ chỉ số giá có thể đang tạm dừng.
+                Chưa có chỉ số theo quận. Tính năng này có thể đang tạm dừng, bạn quay lại sau nhé.
               </p>
             ) : (
               <table className="w-full min-w-[640px] text-sm">
@@ -224,7 +225,7 @@ function PriceIndexPage() {
                     <th className="px-4 py-2.5 font-medium">Quận</th>
                     <th className="px-4 py-2.5 text-right font-medium">Thay đổi</th>
                     <th className="px-4 py-2.5 text-right font-medium">Chỉ số gần nhất</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Dao động/tuần</th>
+                    <th className="px-4 py-2.5 text-right font-medium">Lên xuống mỗi tuần</th>
                     <th className="px-4 py-2.5 text-right font-medium">Số tin</th>
                   </tr>
                 </thead>
@@ -260,7 +261,7 @@ function PriceIndexPage() {
                               <TrendingDown className="h-3.5 w-3.5" />
                             )}
                             {up ? "+" : ""}
-                            {r.changePoints.toFixed(1).replace(".", ",")}
+                            {r.changePoints.toFixed(1).replace(".", ",")}%
                           </span>
                         </td>
                         <td className="px-4 py-2.5 text-right tabular-nums">

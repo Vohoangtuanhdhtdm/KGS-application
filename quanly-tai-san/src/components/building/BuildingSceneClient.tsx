@@ -21,7 +21,7 @@ export function BuildingSceneClient(props: Omit<BuildingSceneProps, "onFatalErro
         style={{ height: h }}
       >
         <Box className="h-8 w-8" />
-        Trình duyệt hoặc thiết bị này không dựng được bản đồ 3D (cần WebGL2).
+        Thiết bị này chưa hiển thị được 3D — hãy thử mở bằng Chrome hoặc Edge bản mới.
         <br />
         Danh sách tầng và căn bên cạnh vẫn dùng bình thường.
       </div>

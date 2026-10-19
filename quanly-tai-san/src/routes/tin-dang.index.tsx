@@ -836,7 +836,9 @@ function PublicListingsPage() {
       return;
     }
     if (mapEngine !== "gl") {
-      toast.info(`Tìm quanh “${a.text}” cần bản đồ Mapbox — đang dùng bản đồ dự phòng nên bỏ qua.`);
+      toast.info(
+        `Tìm quanh “${a.text}” cần bản đồ đầy đủ — bạn đang dùng bản đồ đơn giản nên chưa tìm được.`,
+      );
       return;
     }
     const prox = searchCenter ?? { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
