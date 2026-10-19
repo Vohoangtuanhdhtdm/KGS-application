@@ -366,7 +366,7 @@ function ListingAnalyticsPage() {
                     ) : (
                       <>
                         <p className="text-sm">
-                          Trung vị khu vực:{" "}
+                          Giá phổ biến khu vực:{" "}
                           <span className="font-medium">
                             {formatCurrency(d.areaMedianPrice, { compact: true })}
                           </span>{" "}

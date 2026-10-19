@@ -918,7 +918,7 @@ export default function GlPropertyMap({
           title={
             priceOn
               ? "Tắt lớp giá, xem lại từng tin"
-              : "Lớp giá/m²: gom tin theo khu, tô màu theo giá trung vị mỗi m²"
+              : "Lớp giá/m²: tô màu từng khu theo giá phổ biến mỗi m²"
           }
           className={`absolute right-2 top-[152px] z-10 rounded-md md:top-[42px] border px-2.5 py-1.5 text-xs font-semibold shadow-sm ${
             priceOn

@@ -164,22 +164,22 @@ class Model:
 
         if area_n == 0:
             notes.append(
-                "Khu vực này chưa từng xuất hiện trong dữ liệu huấn luyện — con số chỉ mang "
-                "tính tham khảo rất thô."
+                "KGS chưa có tin đăng nào ở khu vực này để so — con số chỉ để tham khảo rất "
+                "sơ bộ."
             )
             return "thấp", notes
 
         if area_n < _MIN_AREA_SAMPLE:
             notes.append(
-                f"Khu vực này chỉ có {area_n} tin trong dữ liệu huấn luyện, chưa đủ để mô hình "
-                "nắm được mặt bằng giá."
+                f"KGS mới thấy {area_n} tin ở khu vực này, chưa đủ để biết rõ mặt bằng giá ở "
+                "đây."
             )
             return "thấp", notes
 
         if filled <= 1:
             notes.append(
-                "Mới khai rất ít thông số. Bổ sung số phòng ngủ, số tầng và mặt tiền sẽ thu hẹp "
-                "khoảng ước tính."
+                "Bạn mới nhập rất ít thông tin. Thêm số phòng ngủ, số tầng và mặt tiền để khoảng "
+                "giá hẹp và sát hơn."
             )
             return "trung bình", notes
 

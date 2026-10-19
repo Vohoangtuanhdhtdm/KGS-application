@@ -127,7 +127,7 @@ function OverviewPage() {
               icon={Flag}
               label="Báo vi phạm chờ xử lý"
               value={d.kpis.pendingReports}
-              hint={`Trung vị xử lý ${hours(d.reports.medianHoursToHandle)}`}
+              hint={`Thường xử lý trong ${hours(d.reports.medianHoursToHandle)}`}
               to="/admin/reports"
               alert={d.kpis.pendingReports > 0}
             />
@@ -164,7 +164,7 @@ function OverviewPage() {
                   hint="Phần còn lại bị trả về hoặc từ chối ở lần đầu"
                 />
                 <Stat
-                  label="Thời gian duyệt (trung vị)"
+                  label="Thời gian duyệt thường gặp"
                   value={hours(d.moderation.medianHoursToDecision)}
                   hint={`90% xong trong ${hours(d.moderation.p90HoursToDecision)}`}
                 />

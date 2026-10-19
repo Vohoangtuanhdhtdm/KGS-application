@@ -59,8 +59,8 @@ function ResetPasswordPage() {
           {missing ? (
             <div className="space-y-3">
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-                Liên kết không hợp lệ hoặc thiếu tham số. Vui lòng yêu cầu lại email đặt lại mật
-                khẩu.
+                Liên kết không hợp lệ hoặc đã bị cắt mất một phần. Vui lòng yêu cầu lại email đặt
+                lại mật khẩu.
               </div>
               <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                 Yêu cầu lại

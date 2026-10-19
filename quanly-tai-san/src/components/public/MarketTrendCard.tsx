@@ -10,9 +10,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Info, TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { priceIndexApi } from "@/lib/api/priceIndex";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HowCalculated } from "@/components/common/HowCalculated";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -106,12 +107,12 @@ export function MarketTrendCard({
           >
             {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
             {up ? "+" : ""}
-            {change.toFixed(1)} điểm
+            {change.toFixed(1).replace(".", ",")}%
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground">
-          Tuần {d.baseWeek ? shortWeek(d.baseWeek) : ""} = 100. Đã loại trừ ảnh hưởng của
-          quận, diện tích, loại hình và số phòng.
+          Giá so với tuần {d.baseWeek ? shortWeek(d.baseWeek) : "đầu"} (mốc 100), đã so cùng loại
+          nhà, cùng diện tích và cùng khu vực.
         </p>
       </CardHeader>
 
@@ -159,7 +160,7 @@ export function MarketTrendCard({
               itemStyle={{ color: "var(--color-popover-foreground)" }}
               formatter={(v: number, name: string) => [
                 v?.toFixed(2),
-                name === "hedonic" ? "Chỉ số hedonic" : "Trung vị thô",
+                name === "hedonic" ? "Chỉ số giá KGS" : "Giá phổ biến (chưa so cùng loại)",
               ]}
               labelFormatter={(l) => `Tuần ${l}`}
             />
@@ -189,58 +190,63 @@ export function MarketTrendCard({
           <div className="text-xs text-muted-foreground border-t pt-2.5">
             {d.forecast.reliable ? (
               <>
-                Dự báo tuần tới: <span className="font-medium">{d.forecast.nextIndex}</span> (
+                Dự đoán tuần tới: <span className="font-medium">{d.forecast.nextIndex}</span> (
                 {d.forecast.changePercent > 0 ? "+" : ""}
-                {d.forecast.changePercent}%), theo phương pháp {d.forecast.method.toLowerCase()}.
+                {d.forecast.changePercent}%).
               </>
             ) : (
               <>
-                Chuỗi mới có {d.points.length} tuần nên chưa dự báo được đáng tin — sai số khi
-                kiểm tra lùi là {d.forecast.backtestMape}%. Biểu đồ trên là số liệu đã xảy ra,
-                không phải dự đoán.
+                Mới có số liệu {d.points.length} tuần nên KGS chưa dự đoán giá tuần tới. Biểu đồ
+                trên là giá đã xảy ra, không phải dự đoán.
               </>
             )}
           </div>
         )}
 
-        {d.naivePoints.length > 0 && (
-          <div className="border-t pt-2.5 space-y-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs text-muted-foreground gap-1.5"
-              onClick={() => setShowNaive((v) => !v)}
-            >
-              <Info className="h-3.5 w-3.5" />
-              {showNaive ? "Ẩn cách tính" : "Vì sao không dùng giá trung bình?"}
-            </Button>
-
-            {showNaive && (
-              <p className="text-xs text-muted-foreground">
-                Đường đứt nét là giá trung vị mỗi m² từng tuần — cách tính hiển nhiên nhưng
-                sai. Nó lên xuống theo việc tuần đó tình cờ có nhiều tin ở quận đắt hay quận
-                rẻ, chứ không theo giá thị trường.
+        <HowCalculated className="border-t pt-2">
+          <p>
+            Chỉ số giá KGS so các căn <strong>cùng loại, cùng diện tích, cùng khu vực</strong> qua
+            từng tuần, nên chỉ lên khi giá thật sự lên.
+          </p>
+          {d.naivePoints.length > 0 && (
+            <>
+              <p>
+                Nếu chỉ lấy mức giá ở giữa của mọi tin mỗi tuần (đường đứt nét), con số sẽ nhảy lên
+                xuống theo việc tuần đó tình cờ có nhiều tin ở khu đắt hay khu rẻ — dù chẳng căn nào
+                đổi giá.
                 {d.mixShiftMaxPoints != null && (
                   <>
-                    {" "}Ở đây hai đường lệch nhau tới {d.mixShiftMaxPoints} điểm — toàn bộ
-                    phần lệch đó là biến động giả do đổi cơ cấu tin đăng.
+                    {" "}
+                    Ở đây hai đường có lúc chênh nhau tới{" "}
+                    {d.mixShiftMaxPoints.toFixed(1).replace(".", ",")}% vì lý do đó.
                   </>
                 )}
               </p>
-            )}
-          </div>
-        )}
-
-        {d.caveats.length > 0 && (
-          <details className="text-xs text-muted-foreground">
-            <summary className="cursor-pointer select-none">Giới hạn của số liệu</summary>
-            <ul className="mt-1.5 space-y-1 list-disc pl-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setShowNaive((v) => !v)}
+              >
+                {showNaive ? "Ẩn đường giá chưa so cùng loại" : "Hiện đường giá chưa so cùng loại"}
+              </Button>
+            </>
+          )}
+          {d.forecast && !d.forecast.reliable && (
+            <p>
+              Thử dùng cách dự đoán này đoán lại các tuần đã qua thì lệch khoảng{" "}
+              {d.forecast.backtestMape.toFixed(1).replace(".", ",")}% — chưa đủ chắc để đưa ra con
+              số cho tuần tới.
+            </p>
+          )}
+          {d.caveats.length > 0 && (
+            <ul className="list-disc space-y-1 pl-4">
               {d.caveats.map((c) => (
                 <li key={c}>{c}</li>
               ))}
             </ul>
-          </details>
-        )}
+          )}
+        </HowCalculated>
       </CardContent>
     </Card>
   );

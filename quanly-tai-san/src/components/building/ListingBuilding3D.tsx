@@ -195,7 +195,7 @@ export function ListingBuilding3D({
             <DialogDescription>
               {model
                 ? "Chọn tầng ở thanh bên trái mô hình, bấm vào một căn để xem tình trạng và tin đăng. Bật Nắng & bóng đổ để xem nắng theo giờ."
-                : "Khối nhà 3D từ dữ liệu bản đồ Mapbox; toà nhà tại vị trí tin được tô màu xanh (nếu bản đồ có dữ liệu toà nhà đó). Bật Nắng & bóng đổ để xem nắng theo giờ."}
+                : "Khối nhà 3D lấy từ bản đồ; toà nhà tại vị trí tin được tô màu xanh (nếu bản đồ có dữ liệu toà nhà đó). Bật Nắng & bóng đổ để xem nắng theo giờ."}
             </DialogDescription>
           </DialogHeader>
           {open &&

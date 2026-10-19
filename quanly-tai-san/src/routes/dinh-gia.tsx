@@ -14,6 +14,8 @@ import { valuationApi, type ValuationRequest, type ValuationResult } from "@/lib
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatCurrency } from "@/lib/format";
 import { comparePriceToBand } from "@/lib/priceBand";
+import { confidenceLabel } from "@/lib/confidenceLabel";
+import { HowCalculated } from "@/components/common/HowCalculated";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { VietnamAddressPicker } from "@/components/assets/VietnamAddressPicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
@@ -119,16 +121,16 @@ function ValuationPage() {
           className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
         />
         <p className="mt-3 max-w-[62ch] text-muted-foreground">
-          Nhập vị trí và vài thông số, mô hình trả về một khoảng giá kèm mức tin cậy.
+          Nhập vị trí và vài thông số, AI của KGS cho bạn một khoảng giá và cho biết nó chắc chắn
+          tới đâu.
           {mdape != null && (
             <>
               {" "}
-              Sai số điển hình khoảng{" "}
+              Thường lệch khoảng{" "}
               <span className="font-medium text-foreground tabular-nums">
-                {mdape.toFixed(1).replace(".", ",")}%
+                {Math.round(mdape)}%
               </span>{" "}
-              trên {info.data?.rowsFit?.toLocaleString("vi-VN")} tin đã học — đủ làm mốc so sánh,
-              không thay được thẩm định.
+              so với giá thật — đủ làm mốc so sánh, không thay được thẩm định.
             </>
           )}
         </p>
@@ -352,12 +354,12 @@ function EmptyResult() {
           <span className="font-medium text-foreground">Giá ước tính</span> — điểm giữa của khoảng.
         </li>
         <li>
-          <span className="font-medium text-foreground">Khoảng tham khảo</span> — hẹp khi mô hình
-          chắc chắn, rộng khi khu vực ít dữ liệu hoặc bạn khai ít thông số.
+          <span className="font-medium text-foreground">Khoảng tham khảo</span> — hẹp khi KGS chắc
+          chắn, rộng khi khu vực ít tin đăng hoặc bạn nhập ít thông tin.
         </li>
         <li>
-          <span className="font-medium text-foreground">Mặt bằng khu vực</span> — giá trung vị mỗi
-          m² của quận trong dữ liệu, để đối chiếu độc lập với mô hình.
+          <span className="font-medium text-foreground">Mặt bằng khu vực</span> — giá phổ biến mỗi
+          m² ở quận đó, để bạn tự đối chiếu.
         </li>
       </ul>
     </div>
@@ -404,7 +406,7 @@ function ResultCard({
           <span
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${CONFIDENCE_TONE[r.confidence] ?? ""}`}
           >
-            Độ tin cậy {r.confidence}
+            Độ tin cậy {confidenceLabel(r.confidence)}
           </span>
         </div>
         <CountUp
@@ -478,7 +480,7 @@ function ResultCard({
             <p className="mt-1 text-muted-foreground">
               {dev.huong === "cao"
                 ? dev.manh
-                  ? "Lệch khá xa mặt bằng khu vực. Nếu đây là giá rao bạn đang cân nhắc mua, có dư địa để thương lượng — hoặc căn nhà có điểm đặc biệt mà mô hình không thấy được."
+                  ? "Lệch khá xa mặt bằng khu vực. Nếu đây là giá rao bạn đang cân nhắc mua, có dư địa để thương lượng — hoặc căn nhà có điểm đặc biệt mà KGS chưa biết."
                   : "Nhỉnh hơn khoảng tham khảo một chút — chưa đủ để kết luận là đắt."
                 : dev.manh
                   ? "Thấp hơn hẳn mặt bằng. Đáng kiểm tra kỹ pháp lý và hiện trạng trước khi coi đây là món hời — hoặc kiểm tra lại đơn vị giá."
@@ -487,8 +489,8 @@ function ResultCard({
           </div>
         ) : r.confidence === "thấp" ? (
           <p className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
-            Mô hình tự nhận độ tin cậy thấp ở khu vực này, nên không so sánh mức giá bạn nhập — kết
-            luận dựa trên một ước tính không chắc chắn còn tệ hơn không kết luận.
+            Ở khu vực này KGS chưa đủ chắc chắn, nên chưa so mức giá bạn nhập — kết luận dựa trên
+            một ước tính không chắc chắn còn tệ hơn không kết luận.
           </p>
         ) : (
           <p className="rounded-lg bg-success/10 p-3 text-sm">
@@ -502,7 +504,7 @@ function ResultCard({
           <span className="font-medium text-foreground tabular-nums">
             {formatCurrency(r.areaMedianPricePerM2, { compact: true })}/m²
           </span>{" "}
-          (trung vị của {r.areaSampleSize.toLocaleString("vi-VN")} tin).
+          (giá phổ biến của {r.areaSampleSize.toLocaleString("vi-VN")} tin).
         </p>
       )}
 
@@ -528,10 +530,30 @@ function ResultCard({
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <p className="text-xs text-muted-foreground">
-          Ước tính từ mô hình học máy trên giá RAO bán, không phải giá giao dịch.
-          {mdape != null && ` Sai số trung vị khoảng ${mdape.toFixed(1).replace(".", ",")}%.`} Dùng
-          làm mốc tham khảo, không phải giá thẩm định.
+          Đây là giá người bán đưa ra, chưa phải giá chốt mua bán. Dùng làm mốc tham khảo, không
+          phải giá thẩm định.
         </p>
+        <HowCalculated>
+          <p>
+            AI của KGS đã học từ hơn 600.000 tin rao bán: nó xem những căn giống căn của bạn — cùng
+            khu vực, diện tích, loại nhà, số phòng — được rao bao nhiêu, rồi suy ra khoảng giá.
+          </p>
+          {mdape != null && (
+            <p>
+              Khi thử đoán giá những tin KGS chưa từng thấy, kết quả thường lệch khoảng{" "}
+              {Math.round(mdape)}% so với giá rao thật: một nửa số lần lệch ít hơn, một nửa lệch
+              nhiều hơn.
+            </p>
+          )}
+          <p>
+            Độ tin cậy cao nghĩa là quanh đó có nhiều căn tương tự để so; thấp nghĩa là khu vực ít
+            tin hoặc căn nhà khá khác thường, nên khoảng giá sẽ rộng hơn.
+          </p>
+          <p>
+            "Giá phổ biến mỗi m²" là mức giá ở giữa: một nửa số tin trong quận rẻ hơn, một nửa đắt
+            hơn.
+          </p>
+        </HowCalculated>
       </div>
     </div>
   );
