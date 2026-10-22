@@ -17,6 +17,7 @@ import { Route as DangTinRouteImport } from './routes/dang-tin'
 import { Route as DinhGiaRouteImport } from './routes/dinh-gia'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NhuCauRouteImport } from './routes/nhu-cau'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -76,6 +77,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NhuCauRoute = NhuCauRouteImport.update({
+  id: '/nhu-cau',
+  path: '/nhu-cau',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/dinh-gia': typeof DinhGiaRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/nhu-cau': typeof NhuCauRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/dinh-gia': typeof DinhGiaRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/nhu-cau': typeof NhuCauRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/dinh-gia': typeof DinhGiaRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/nhu-cau': typeof NhuCauRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/dinh-gia'
     | '/forgot-password'
     | '/login'
+    | '/nhu-cau'
     | '/profile'
     | '/register'
     | '/reset-password'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/dinh-gia'
     | '/forgot-password'
     | '/login'
+    | '/nhu-cau'
     | '/profile'
     | '/register'
     | '/reset-password'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/dinh-gia'
     | '/forgot-password'
     | '/login'
+    | '/nhu-cau'
     | '/profile'
     | '/register'
     | '/reset-password'
@@ -372,6 +384,7 @@ export interface RootRouteChildren {
   DinhGiaRoute: typeof DinhGiaRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  NhuCauRoute: typeof NhuCauRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -450,6 +463,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nhu-cau': {
+      id: '/nhu-cau'
+      path: '/nhu-cau'
+      fullPath: '/nhu-cau'
+      preLoaderRoute: typeof NhuCauRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -604,6 +624,7 @@ const rootRouteChildren: RootRouteChildren = {
   DinhGiaRoute: DinhGiaRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  NhuCauRoute: NhuCauRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
