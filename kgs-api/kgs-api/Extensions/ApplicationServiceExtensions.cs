@@ -80,6 +80,7 @@ namespace kgs_api.Extensions
             services.AddScoped<IListingRetrievalService, ListingRetrievalService>();
             services.AddScoped<ISavedSearchService, SavedSearchService>();
             services.AddScoped<IMatchmakingService, MatchmakingService>();
+            services.AddScoped<IDemandPulseService, DemandPulseService>();
             services.AddScoped<BuildingModelService>();
             services.AddMemoryCache();
             services.AddSingleton<kgs_api.Services.Admin.UserAccessGuard>();
