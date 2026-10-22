@@ -35,6 +35,19 @@ namespace kgs_api.Services.Seeding
             new("kho", "kinhdoanh.demo@kgs.test", "Công ty TNHH Kho vận Sài Gòn", "0283822468", 40), // văn phòng, kho, mặt bằng
             new("mai", "timnha.giadinh@kgs.test", "Võ Thị Mai", "0978123456", 3),           // gia đình đi mua nhà
             new("huy", "timnha.sinhvien@kgs.test", "Huỳnh Gia Huy", "0966234567", 2),       // sinh viên ĐH Thủ Dầu Một
+            // Người đang tìm nhà — đủ đông để Nhịp cầu vượt ngưỡng 3 người ở nhiều khu vực.
+            new("lan", "lan.timnha@kgs.test", "Nguyễn Thị Lan", "0971203344", 2),          // nhân viên văn phòng
+            new("tuan", "tuan.timnha@kgs.test", "Trần Anh Tuấn", "0962314455", 1),         // kỹ sư mới ra trường
+            new("nhi", "nhi.timnha@kgs.test", "Phạm Yến Nhi", "0933425566", 3),            // sinh viên
+            new("phong", "phong.timnha@kgs.test", "Lý Thanh Phong", "0944536677", 4),      // cặp vợ chồng trẻ
+            new("vy", "vy.timnha@kgs.test", "Đỗ Tường Vy", "0355647788", 1),               // sinh viên Hà Nội
+            new("dat", "dat.timnha@kgs.test", "Bùi Tiến Đạt", "0366758899", 2),            // nhân viên công nghệ
+            new("trang", "trang.timnha@kgs.test", "Hoàng Thu Trang", "0377869900", 5),     // giáo viên
+            new("quan", "quan.timnha@kgs.test", "Ngô Minh Quân", "0388970011", 2),         // nhân viên bán hàng
+            new("thao", "thao.timnha@kgs.test", "Vũ Phương Thảo", "0399081122", 6),        // gia đình mua nhà
+            new("long", "long.timnha@kgs.test", "Đinh Hoàng Long", "0868192233", 1),       // công nhân KCN
+            new("my", "my.timnha@kgs.test", "Trịnh Diễm My", "0879203344", 3),             // nhân viên ngân hàng
+            new("son", "son.timnha@kgs.test", "Cao Văn Sơn", "0889314455", 2),             // kỹ thuật viên
             // Tài khoản đăng tin lừa đảo đã bị quản trị khoá — để khu quản trị có ca thật: báo vi
             // phạm đã xử lý, tin bị gỡ, tài khoản bị khoá kèm lý do.
             new("spam", "vipham.demo@kgs.test", "Trương Văn Tâm", "0901000999", 1),
@@ -331,7 +344,28 @@ namespace kgs_api.Services.Seeding
         public sealed record Demand(
             string Person, string Name, ListingType Type, string City, string? District,
             decimal? PriceMin, decimal? PriceMax, int? BedroomsMin, AssetDomainType[]? Types,
-            bool Has3D, bool Discoverable, string? Note, string[]? Legal = null);
+            bool Has3D, bool Discoverable, string? Note, string[]? Legal = null, int? Occupants = null);
+
+        private static readonly AssetDomainType[] RoomOnly = { AssetDomainType.Room };
+        private static readonly AssetDomainType[] Flat = { AssetDomainType.Apartment };
+        private static readonly AssetDomainType[] House = { AssetDomainType.PrivateHouse };
+        private const string BinhThanh = "Quận Bình Thạnh", GoVap = "Quận Gò Vấp", ThuDuc = "Thành phố Thủ Đức",
+            Q7 = "Quận 7", Q10 = "Quận 10", CauGiay = "Quận Cầu Giấy", HaiBaTrung = "Quận Hai Bà Trưng",
+            HaiChau = "Quận Hải Châu", Tdm = "Thành phố Thủ Dầu Một";
+
+        /// <summary>Nhu cầu "gần khớp theo giá" — seeder đặt trần ngân sách theo giá THẬT của một
+        /// tin đã duyệt (giá tin sinh ngẫu nhiên nên không ghi cứng được ở đây). Tên cố định để
+        /// lần chạy lại dọn được.</summary>
+        public static readonly (string Person, string Name, string Note)[] NearPriceDemands =
+        {
+            ("quan", "Phòng trọ ngân sách vừa phải", "Đi làm ca, cần phòng sạch, có chỗ phơi đồ. Giá sát ngân sách thì vẫn xem."),
+            ("son", "Phòng có gác, giá mềm", "Ở một mình, ít nấu ăn, cần chỗ để xe máy an toàn."),
+        };
+
+        /// <summary>Trần ngân sách thấp hơn giá tin khoảng 5%, làm tròn xuống 100 nghìn — vừa
+        /// lọt nhóm "gần khớp theo giá" (vượt không quá 10%).</summary>
+        public static decimal NearPriceBudget(decimal listingPrice)
+            => Math.Floor(listingPrice / 1.05m / 100_000m) * 100_000m;
 
         public static readonly Demand[] Demands =
         {
@@ -347,6 +381,94 @@ namespace kgs_api.Services.Seeding
             new("huy", "Phòng gần ĐH Thủ Dầu Một dưới 3 triệu", ListingType.Rent, Bd, "Thành phố Thủ Dầu Một",
                 null, 3_000_000, null, new[] { AssetDomainType.Room }, false, true,
                 "Sinh viên năm 3, ở một mình, cần wifi ổn định để học online."),
+
+            // ---- Bình Thạnh: khu đông người tìm phòng nhất ----
+            new("lan", "Phòng gần Hàng Xanh dưới 4,5 triệu", ListingType.Rent, Hcm, BinhThanh, null, 4_500_000, null, RoomOnly, false, true,
+                "Làm ở Quận 1, cần phòng có cửa sổ, giờ giấc tự do.", Occupants: 1),
+            new("tuan", "Phòng Bình Thạnh cho 2 người", ListingType.Rent, Hcm, BinhThanh, null, 5_000_000, null, RoomOnly, false, true,
+                "Hai anh em đi làm, cần phòng có gác, để được 2 xe máy.", Occupants: 2),
+            new("my", "Phòng trọ Bình Thạnh 4 triệu", ListingType.Rent, Hcm, BinhThanh, null, 4_000_000, null, RoomOnly, false, true,
+                "Nữ, đi làm giờ hành chính, cần khu an ninh.", Occupants: 1),
+            new("dat", "Căn hộ 1 phòng ngủ Bình Thạnh", ListingType.Rent, Hcm, BinhThanh, null, 9_000_000, 1, Flat, false, true,
+                "Làm việc ở nhà nhiều, cần căn yên tĩnh, internet tốt.", Occupants: 1),
+            new("phong", "Căn hộ Bình Thạnh cho vợ chồng", ListingType.Rent, Hcm, BinhThanh, null, 12_000_000, 2, Flat, false, true,
+                "Vợ chồng trẻ, có một bé mèo, muốn ở lâu dài.", Occupants: 2),
+
+            // ---- Gò Vấp ----
+            new("quan", "Phòng Gò Vấp dưới 3,5 triệu", ListingType.Rent, Hcm, GoVap, null, 3_500_000, null, RoomOnly, false, true,
+                "Đi làm ca tối, cần nơi giờ giấc thoải mái.", Occupants: 1),
+            new("long", "Phòng trọ Gò Vấp giá rẻ", ListingType.Rent, Hcm, GoVap, null, 3_000_000, null, RoomOnly, false, true,
+                "Ở cùng một người bạn, cần chỗ nấu ăn.", Occupants: 2),
+            new("nhi", "Phòng Gò Vấp gần trường", ListingType.Rent, Hcm, GoVap, null, 3_500_000, null, RoomOnly, false, true,
+                "Sinh viên năm 2, cần phòng sạch, gần trạm xe buýt."),
+            new("son", "Phòng Gò Vấp có gác", ListingType.Rent, Hcm, GoVap, null, 4_000_000, null, RoomOnly, false, true,
+                "Kỹ thuật viên, đi làm sớm, cần chỗ để xe an toàn.", Occupants: 1),
+
+            // ---- Thủ Đức (thuê) ----
+            new("nhi", "Phòng gần làng đại học Thủ Đức", ListingType.Rent, Hcm, ThuDuc, null, 3_000_000, null, RoomOnly, false, true,
+                "Ở ghép với một bạn cùng lớp.", Occupants: 2),
+            new("tuan", "Phòng Thủ Đức gần khu công nghệ cao", ListingType.Rent, Hcm, ThuDuc, null, 4_000_000, null, RoomOnly, false, true,
+                "Kỹ sư mới đi làm, cần wifi mạnh."),
+            new("long", "Phòng trọ Linh Trung", ListingType.Rent, Hcm, ThuDuc, null, 2_800_000, null, RoomOnly, false, true,
+                "Làm ở khu chế xuất Linh Trung, đi ca.", Occupants: 1),
+            new("dat", "Căn hộ Thủ Đức gần metro", ListingType.Rent, Hcm, ThuDuc, null, 10_000_000, 2, Flat, false, true,
+                "Muốn đi metro đi làm, cần căn 2 phòng ngủ để làm việc ở nhà.", Occupants: 2),
+
+            // ---- Quận 7 ----
+            new("my", "Căn hộ Quận 7 gần Phú Mỹ Hưng", ListingType.Rent, Hcm, Q7, null, 13_000_000, 1, Flat, false, true,
+                "Làm ở ngân hàng gần đó, cần căn có hồ bơi càng tốt.", Occupants: 1),
+            new("phong", "Căn hộ 2 phòng ngủ Quận 7", ListingType.Rent, Hcm, Q7, null, 15_000_000, 2, Flat, false, true,
+                "Gia đình nhỏ, cần gần trường mầm non.", Occupants: 3),
+            new("trang", "Căn hộ Quận 7 yên tĩnh", ListingType.Rent, Hcm, Q7, null, 11_000_000, 1, Flat, false, true,
+                "Giáo viên, cần căn yên tĩnh để soạn bài.", Occupants: 1),
+
+            // ---- Quận 10 ----
+            new("lan", "Phòng Quận 10 gần chợ", ListingType.Rent, Hcm, Q10, null, 5_000_000, null, RoomOnly, false, true,
+                "Muốn gần chỗ làm ở Quận 10 để đi bộ được."),
+            new("quan", "Phòng Quận 10 có máy lạnh", ListingType.Rent, Hcm, Q10, null, 5_500_000, null, RoomOnly, false, true,
+                "Cần máy lạnh và máy giặt chung.", Occupants: 1),
+            new("trang", "Phòng Quận 10 cho giáo viên", ListingType.Rent, Hcm, Q10, null, 6_000_000, null, RoomOnly, false, true,
+                "Dạy ở trường gần đây, cần phòng sạch, chủ nhà dễ tính."),
+
+            // ---- Thủ Đức (mua) ----
+            new("thao", "Nhà phố Thủ Đức dưới 9 tỷ", ListingType.Sale, Hcm, ThuDuc, 4_000_000_000, 9_000_000_000, 3, House, false, true,
+                "Gia đình 5 người, cần nhà có sổ, gần chợ.", new[] { "Sổ hồng riêng", "Sổ đỏ" }),
+            new("phong", "Nhà Thủ Đức cho gia đình trẻ", ListingType.Sale, Hcm, ThuDuc, 3_000_000_000, 7_000_000_000, 2, House, false, true,
+                "Mua lần đầu, cần nhà pháp lý rõ ràng.", new[] { "Sổ hồng riêng" }),
+
+            // ---- Hà Nội: Cầu Giấy ----
+            new("vy", "Phòng Cầu Giấy gần ĐH Quốc gia", ListingType.Rent, Hn, CauGiay, null, 3_500_000, null, RoomOnly, false, true,
+                "Sinh viên năm cuối, cần phòng yên tĩnh để làm luận văn.", Occupants: 1),
+            new("dat", "Phòng Cầu Giấy cho người đi làm", ListingType.Rent, Hn, CauGiay, null, 5_000_000, null, RoomOnly, false, true,
+                "Chuyển công tác ra Hà Nội nửa năm."),
+            new("trang", "Căn hộ mini Cầu Giấy", ListingType.Rent, Hn, CauGiay, null, 6_500_000, null, Flat, false, true,
+                "Cần căn có bếp riêng, thang máy.", Occupants: 1),
+            new("my", "Phòng Cầu Giấy gần Duy Tân", ListingType.Rent, Hn, CauGiay, null, 4_500_000, null, RoomOnly, false, true,
+                "Làm ở toà văn phòng phố Duy Tân."),
+
+            // ---- Hà Nội: Hai Bà Trưng ----
+            new("vy", "Phòng gần Bách Khoa dưới 3 triệu", ListingType.Rent, Hn, HaiBaTrung, null, 3_000_000, null, RoomOnly, false, true,
+                "Ở ghép với bạn cùng lớp.", Occupants: 2),
+            new("nhi", "Phòng Hai Bà Trưng cho sinh viên", ListingType.Rent, Hn, HaiBaTrung, null, 3_200_000, null, RoomOnly, false, true,
+                "Sinh viên trao đổi một học kỳ ở Hà Nội."),
+            new("tuan", "Phòng Hai Bà Trưng gần hồ", ListingType.Rent, Hn, HaiBaTrung, null, 4_500_000, null, RoomOnly, false, true,
+                "Làm dự án ngắn hạn 6 tháng ở Hà Nội.", Occupants: 1),
+
+            // ---- Đà Nẵng: Hải Châu ----
+            new("son", "Phòng Hải Châu gần sông Hàn", ListingType.Rent, Dn, HaiChau, null, 3_500_000, null, RoomOnly, false, true,
+                "Chuyển vào Đà Nẵng làm việc, cần phòng gần trung tâm."),
+            new("lan", "Căn hộ Hải Châu cho người làm từ xa", ListingType.Rent, Dn, HaiChau, null, 8_000_000, 1, Flat, false, true,
+                "Làm việc từ xa, cần internet ổn định, view thoáng.", Occupants: 1),
+            new("thao", "Phòng Hải Châu cho mẹ và con", ListingType.Rent, Dn, HaiChau, null, 5_000_000, null, RoomOnly, false, true,
+                "Hai mẹ con, con học tiểu học gần đó.", Occupants: 2),
+
+            // ---- Bình Dương: Thủ Dầu Một ----
+            new("long", "Phòng Thủ Dầu Một gần khu công nghiệp", ListingType.Rent, Bd, Tdm, null, 2_500_000, null, RoomOnly, false, true,
+                "Công nhân, đi ca, cần phòng có chỗ nấu ăn.", Occupants: 2),
+            new("quan", "Phòng Thủ Dầu Một có gác", ListingType.Rent, Bd, Tdm, null, 3_000_000, null, RoomOnly, false, true,
+                "Ở một mình, cần chỗ để xe."),
+            new("nhi", "Phòng gần ĐH Thủ Dầu Một cho 2 người", ListingType.Rent, Bd, Tdm, null, 3_000_000, null, RoomOnly, false, true,
+                "Ở cùng em gái đang học năm nhất.", Occupants: 2),
         };
     }
 }
