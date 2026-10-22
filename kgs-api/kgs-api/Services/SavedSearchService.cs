@@ -68,6 +68,7 @@ namespace kgs_api.Services
             // người dùng đang đứng ở trang 2.
             var criteria = Sanitize(request.Criteria);
 
+            var now = DateTime.UtcNow;
             var entity = new SavedSearch
             {
                 UserId = userId,
@@ -75,8 +76,12 @@ namespace kgs_api.Services
                 CriteriaJson = JsonSerializer.Serialize(criteria),
                 NotifyEnabled = request.NotifyEnabled,
                 // "Tin mới" tính từ lúc lưu — những tin đã có sẵn thì người dùng vừa xem xong.
-                LastCheckedAt = DateTime.UtcNow
+                LastCheckedAt = now,
+                DemandNote = string.IsNullOrWhiteSpace(request.DemandNote) ? null : request.DemandNote.Trim(),
             };
+            // "Đăng nhu cầu" = lưu bộ lọc và mở cho chủ nhà trong cùng một lần gọi, để người
+            // tìm không phải đi qua hai bước mới bật được.
+            if (request.Discoverable) Open(entity, now);
 
             await _searches.AddAsync(entity, ct);
             await _uow.SaveChangesAsync(ct);
@@ -96,10 +101,23 @@ namespace kgs_api.Services
             Guid id, SetDiscoverableRequest request, CancellationToken ct = default)
         {
             var entity = await GetOwnedAsync(id, ct);
-            if (request.Enabled && !entity.DiscoverableByOwners)
-                entity.DiscoverableSince = DateTime.UtcNow;
-            entity.DiscoverableByOwners = request.Enabled;
+            if (request.Enabled)
+                Open(entity, DateTime.UtcNow);
+            else
+            {
+                entity.DiscoverableByOwners = false;
+                // Tự tắt khác hết hạn: xoá hạn để giao diện không ghi "Đã hết hạn".
+                entity.DiscoverableUntil = null;
+            }
             entity.DemandNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
+            await _uow.SaveChangesAsync(ct);
+            return await ToDtoAsync(entity, ct);
+        }
+
+        public async Task<SavedSearchDto> RenewAsync(Guid id, CancellationToken ct = default)
+        {
+            var entity = await GetOwnedAsync(id, ct);
+            Open(entity, DateTime.UtcNow);
             await _uow.SaveChangesAsync(ct);
             return await ToDtoAsync(entity, ct);
         }
@@ -134,17 +152,32 @@ namespace kgs_api.Services
             return entity;
         }
 
+        /// <summary>Bật (hoặc gia hạn) chế độ mở: hạn mới tính từ bây giờ, và được nhắc lại
+        /// một lần trước khi hết hạn mới này.</summary>
+        private static void Open(SavedSearch s, DateTime now)
+        {
+            if (!s.DiscoverableByOwners) s.DiscoverableSince = now;
+            s.DiscoverableByOwners = true;
+            s.DiscoverableUntil = DemandExpiry.UntilFrom(now);
+            s.ExpiryRemindedAt = null;
+        }
+
         private async Task<SavedSearchDto> ToDtoAsync(SavedSearch s, CancellationToken ct)
         {
             var criteria = Deserialize(s.CriteriaJson);
+            var matches = BuildMatchQuery(_listings.Query().AsNoTracking(), criteria, _geometryFactory);
 
-            var newCount = await BuildMatchQuery(_listings.Query().AsNoTracking(), criteria, _geometryFactory)
+            var newCount = await matches
                 .Where(l => (l.PublishedAt ?? l.CreatedAt) > s.LastCheckedAt)
                 .CountAsync(ct);
+            // "Đang khớp N căn của M chủ nhà": cho người tìm thấy nhu cầu của mình có đất để
+            // chủ nhà mời — hoặc biết nên nới điều kiện.
+            var listings = await matches.CountAsync(ct);
+            var owners = listings == 0 ? 0 : await matches.Select(l => l.Asset.UserId).Distinct().CountAsync(ct);
 
             return new SavedSearchDto(
                 s.Id, s.Name, criteria, s.NotifyEnabled, s.CreatedAt, s.LastNotifiedAt, newCount,
-                s.DiscoverableByOwners, s.DemandNote);
+                s.DiscoverableByOwners, s.DemandNote, s.DiscoverableUntil, listings, owners);
         }
 
         /// <summary>Dựng truy vấn "tin khớp bộ lọc này". Dùng chung với job đối chiếu để hai

@@ -7,7 +7,10 @@ namespace kgs_api.Dtos
     public sealed record CreateSavedSearchRequest(
         [Required, MaxLength(120)] string Name,
         [Required] PublicListingSearchQuery Criteria,
-        bool NotifyEnabled = true);
+        bool NotifyEnabled = true,
+        /// <summary>Mở luôn cho chủ nhà phù hợp mời — "Đăng nhu cầu".</summary>
+        bool Discoverable = false,
+        [MaxLength(300)] string? DemandNote = null);
 
     public sealed record SavedSearchDto(
         Guid Id,
@@ -21,5 +24,10 @@ namespace kgs_api.Dtos
         int NewCount,
         /// <summary>Đang cho chủ tin phù hợp thấy nhu cầu này (ẩn danh).</summary>
         bool DiscoverableByOwners,
-        string? DemandNote);
+        string? DemandNote,
+        /// <summary>Hạn của chế độ mở. Cờ tắt mà hạn đã qua = "Đã hết hạn".</summary>
+        DateTime? DiscoverableUntil,
+        /// <summary>Số tin đang hiển thị khớp nhu cầu, và số chủ nhà khác nhau của chúng.</summary>
+        int MatchingListings,
+        int MatchingOwners);
 }

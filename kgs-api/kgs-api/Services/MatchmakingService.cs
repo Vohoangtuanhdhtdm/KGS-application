@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using kgs_api.Domain.Entity;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Domain.Rules;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
@@ -232,7 +233,8 @@ namespace kgs_api.Services
 
         private Task<List<SavedSearch>> LoadDemandsAsync(string ownerId, CancellationToken ct)
             => _searches.Query().AsNoTracking()
-                .Where(s => s.DiscoverableByOwners && s.UserId != ownerId)
+                .Where(DemandExpiry.OpenAt(DateTime.UtcNow))
+                .Where(s => s.UserId != ownerId)
                 .OrderByDescending(s => s.DiscoverableSince)
                 .Take(MaxDemandsScanned)
                 .ToListAsync(ct);

@@ -46,6 +46,11 @@ namespace kgs_api.Controllers
             Guid id, [FromBody] SetDiscoverableRequest request, CancellationToken ct)
             => Ok(await _service.SetDiscoverableAsync(id, request, ct));
 
+        /// <summary>Gia hạn chế độ mở cho chủ nhà thêm 30 ngày.</summary>
+        [HttpPost("{id:guid}/renew")]
+        public async Task<ActionResult<SavedSearchDto>> Renew(Guid id, CancellationToken ct)
+            => Ok(await _service.RenewAsync(id, ct));
+
         /// <summary>Đánh dấu đã xem hết tin mới của bộ lọc này — huy hiệu về 0.</summary>
         [HttpPost("{id:guid}/seen")]
         public async Task<IActionResult> MarkSeen(Guid id, CancellationToken ct)
