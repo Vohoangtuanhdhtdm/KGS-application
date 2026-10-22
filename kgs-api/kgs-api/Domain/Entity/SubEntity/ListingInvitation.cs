@@ -30,6 +30,13 @@ namespace kgs_api.Domain.Entity.SubEntity
         public InvitationStatus Status { get; set; } = InvitationStatus.Pending;
         public DateTime? RespondedAt { get; set; }
 
+        /// <summary>Giá ưu đãi riêng cho người được mời — phải thấp hơn giá niêm yết (xem
+        /// InvitationOffer). Null = mời không kèm giá ưu đãi.</summary>
+        public decimal? OfferPrice { get; set; }
+
+        /// <summary>Dòng ưu đãi ngắn ("miễn phí gửi xe 3 tháng").</summary>
+        [MaxLength(120)] public string? OfferNote { get; set; }
+
         /// <summary>Yêu cầu xem nhà sinh ra khi người tìm nhận lời.</summary>
         public Guid? InquiryId { get; set; }
         public ListingInquiry? Inquiry { get; set; }

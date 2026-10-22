@@ -84,6 +84,10 @@ namespace kgs_api.Domain.Rules
 
             // Chỉ khớp khi chủ tin đã KHAI tường minh — tin bỏ trống không được coi là "có".
             if (query.PetsAllowed is not null) q = q.Where(l => l.Terms.PetsAllowed == query.PetsAllowed);
+            // Khác các điều kiện trên: tin bỏ trống số người tối đa vẫn KHỚP, vì đa số tin không
+            // khai ô này — loại chúng thì hầu như không còn tin nào cho người đi ở ghép.
+            if (query.Occupants is not null)
+                q = q.Where(l => l.Terms.MaxOccupants == null || l.Terms.MaxOccupants >= query.Occupants);
             if (query.CurfewFree is not null) q = q.Where(l => l.Terms.CurfewFree == query.CurfewFree);
             if (query.SharedWithOwner is not null) q = q.Where(l => l.Terms.SharedWithOwner == query.SharedWithOwner);
 

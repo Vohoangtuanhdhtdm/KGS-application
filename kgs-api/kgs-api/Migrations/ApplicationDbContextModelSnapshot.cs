@@ -618,6 +618,13 @@ namespace kgs_api.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("OfferNote")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<decimal?>("OfferPrice")
+                        .HasColumnType("numeric");
+
                     b.Property<DateTime?>("PreferredViewingAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -669,6 +676,13 @@ namespace kgs_api.Migrations
                     b.Property<string>("Message")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OfferNote")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<decimal?>("OfferPrice")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("OwnerUserId")
                         .IsRequired()
@@ -946,6 +960,12 @@ namespace kgs_api.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("DiscoverableSince")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DiscoverableUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpiryRemindedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("LastCheckedAt")

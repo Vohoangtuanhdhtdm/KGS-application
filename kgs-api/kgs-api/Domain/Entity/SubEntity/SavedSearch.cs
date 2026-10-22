@@ -52,5 +52,13 @@ namespace kgs_api.Domain.Entity.SubEntity
 
         /// <summary>Lúc bật cho chủ tin thấy — "đang tìm từ 3 ngày trước".</summary>
         public DateTime? DiscoverableSince { get; set; }
+
+        /// <summary>Hạn của chế độ mở cho chủ tin (30 ngày, gia hạn được). Hết hạn thì job hằng
+        /// ngày chỉ tắt chế độ mở — bộ lọc và báo tin mới giữ nguyên. Giữ lại giá trị sau khi
+        /// tắt vì hết hạn để giao diện phân biệt "Đã hết hạn" với "tự tắt". Xem DemandExpiry.</summary>
+        public DateTime? DiscoverableUntil { get; set; }
+
+        /// <summary>Lúc đã nhắc "sắp hết hạn" — mỗi kỳ hạn chỉ nhắc một lần.</summary>
+        public DateTime? ExpiryRemindedAt { get; set; }
     }
 }
