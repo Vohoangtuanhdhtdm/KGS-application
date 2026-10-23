@@ -2,9 +2,13 @@ using System.Text;
 
 namespace kgs_api.Services.Email
 {
-    /// <summary>Một dòng thông tin trong khung chi tiết của email ("📞 Số điện thoại: 0901…").
+    /// <summary>Biểu tượng nét mảnh của một dòng chi tiết — ảnh PNG nhúng vào thư (cid:icon-…),
+    /// sinh bằng kgs-api/tools/email_icons.py. Không dùng emoji: mỗi máy vẽ emoji một kiểu.</summary>
+    public enum EmailIcon { None, User, Phone, Calendar, Message }
+
+    /// <summary>Một dòng thông tin trong khung chi tiết của email ("Số điện thoại: 0901…").
     /// <paramref name="Href"/> = liên kết khi bấm vào giá trị (tel:, mailto:, https:).</summary>
-    public sealed record EmailDetail(string Icon, string Label, string Value, string? Href = null);
+    public sealed record EmailDetail(EmailIcon Icon, string Label, string Value, string? Href = null);
 
     /// <summary>Nội dung một email, chưa có định dạng. <paramref name="Preheader"/> là câu hiện cạnh
     /// tiêu đề trong hộp thư (Gmail, Outlook) trước khi mở thư.</summary>
@@ -28,6 +32,26 @@ namespace kgs_api.Services.Email
     public static class EmailLayout
     {
         public const string KiGiContentId = "kigi";
+        private const string TipIconId = "icon-tip";
+
+        private static string? IconId(EmailIcon icon) => icon switch
+        {
+            EmailIcon.User => "icon-user",
+            EmailIcon.Phone => "icon-phone",
+            EmailIcon.Calendar => "icon-calendar",
+            EmailIcon.Message => "icon-message",
+            _ => null,
+        };
+
+        private static string Img(string cid, int size) =>
+            $@"<img src=""cid:{cid}"" width=""{size}"" height=""{size}"" alt="""" style=""display:inline-block;border:0;width:{size}px;height:{size}px;vertical-align:-4px;"">";
+
+        /// <summary>Các ảnh nhúng mà thư tham chiếu (cid:…) — bộ gửi đính kèm đúng những ảnh này.</summary>
+        public static IReadOnlyList<string> ContentIds(string html)
+            => System.Text.RegularExpressions.Regex.Matches(html, @"cid:([a-z0-9-]+)")
+                .Select(m => m.Groups[1].Value)
+                .Distinct()
+                .ToList();
 
         private const string Primary = "#1E2761";
         private const string Font = "'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
@@ -118,7 +142,7 @@ namespace kgs_api.Services.Email
                         : $@"<a href=""{E(d.Href)}"" style=""color:{Primary};font-weight:600;text-decoration:none;"">{E(d.Value)}</a>";
                     sb.Append($@"
     <tr>
-      <td width=""38%"" valign=""top"" style=""padding:{top}px 8px {bottom}px 16px;font-size:13px;color:#6b7280;"">{E(d.Icon)}&nbsp; {E(d.Label)}</td>
+      <td width=""38%"" valign=""top"" style=""padding:{top}px 8px {bottom}px 16px;font-size:13px;color:#6b7280;"">{(IconId(d.Icon) is { } icon ? Img(icon, 18) + "&nbsp;&nbsp;" : "")}{E(d.Label)}</td>
       <td valign=""top"" style=""padding:{top}px 16px {bottom}px 8px;font-size:14px;line-height:1.5;color:#111827;font-weight:500;"">{value}</td>
     </tr>");
                 }
@@ -141,7 +165,7 @@ namespace kgs_api.Services.Email
                 sb.Append($@"
 <tr><td style=""padding:18px 24px 0;"">
   <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0""><tr>
-    <td style=""border-left:3px solid #f5b544;background:#fffaf0;border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;line-height:1.55;color:#5b4a2a;"">💡&nbsp; <b>KiGi mách bạn:</b> {E(c.Tip)}</td>
+    <td style=""border-left:3px solid #f5b544;background:#fffaf0;border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;line-height:1.55;color:#5b4a2a;"">{Img(TipIconId, 18)}&nbsp; <b>KiGi mách bạn:</b> {E(c.Tip)}</td>
   </tr></table>
 </td></tr>");
 

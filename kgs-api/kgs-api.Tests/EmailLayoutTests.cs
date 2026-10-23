@@ -13,8 +13,8 @@ public class EmailLayoutTests
         Paragraphs: new[] { "Nguyễn Văn Test vừa gửi yêu cầu xem nhà." },
         Details: new[]
         {
-            new EmailDetail("📞", "Số điện thoại", "0901234567", "tel:0901234567"),
-            new EmailDetail("💬", "Lời nhắn", "Cho mình xem <b>chiều nay</b>"),
+            new EmailDetail(EmailIcon.Phone, "Số điện thoại", "0901234567", "tel:0901234567"),
+            new EmailDetail(EmailIcon.Message, "Lời nhắn", "Cho mình xem <b>chiều nay</b>"),
         },
         CtaLabel: "Xem yêu cầu",
         CtaUrl: "https://kgs.vn/yeu-cau",
@@ -38,6 +38,20 @@ public class EmailLayoutTests
         Assert.Contains("Xem yêu cầu", html);
         Assert.Contains("href=\"tel:0901234567\"", html);
         Assert.Contains("Nguyễn Văn Test muốn xem nhà", html); // dòng xem trước
+    }
+
+    /// <summary>Biểu tượng là ảnh nét mảnh nhúng vào thư, không phải emoji (mỗi máy vẽ một kiểu).</summary>
+    [Fact]
+    public void BieuTuong_LaAnhNhung_KhongDungEmoji()
+    {
+        var (html, _) = EmailLayout.Render(Sample());
+        Assert.Contains("cid:icon-phone", html);
+        Assert.Contains("cid:icon-message", html);
+        Assert.Contains("cid:icon-tip", html);
+        Assert.DoesNotContain("📞", html);
+        Assert.DoesNotContain("💡", html);
+        Assert.Equal(new[] { "icon-message", "icon-phone", "icon-tip", "kigi" },
+            EmailLayout.ContentIds(html).OrderBy(x => x));
     }
 
     [Fact]

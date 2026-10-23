@@ -162,14 +162,14 @@ namespace kgs_api.Services
                 .FirstOrDefaultAsync(ct);
 
             var ten = nguoiHoi?.Name ?? "Một người dùng";
-            var chiTiet = new List<EmailDetail> { new("👤", "Người gửi", ten) };
+            var chiTiet = new List<EmailDetail> { new(EmailIcon.User, "Người gửi", ten) };
             if (!string.IsNullOrWhiteSpace(nguoiHoi?.PhoneNumber))
-                chiTiet.Add(new("📞", "Số điện thoại", nguoiHoi!.PhoneNumber!, $"tel:{nguoiHoi.PhoneNumber}"));
+                chiTiet.Add(new(EmailIcon.Phone, "Số điện thoại", nguoiHoi!.PhoneNumber!, $"tel:{nguoiHoi.PhoneNumber}"));
             if (inquiry.PreferredViewingAt is { } luc)
                 // Lưu theo UTC; người đọc ở Việt Nam. Trước đây in thẳng giờ UTC — 09:30 thành 02:30.
-                chiTiet.Add(new("📅", "Muốn xem nhà", $"{luc.AddHours(7):HH:mm, dd/MM/yyyy}"));
+                chiTiet.Add(new(EmailIcon.Calendar, "Muốn xem nhà", $"{luc.AddHours(7):HH:mm, dd/MM/yyyy}"));
             if (!string.IsNullOrWhiteSpace(inquiry.Message))
-                chiTiet.Add(new("💬", "Lời nhắn", $"“{inquiry.Message}”"));
+                chiTiet.Add(new(EmailIcon.Message, "Lời nhắn", $"“{inquiry.Message}”"));
 
             await BaoAsync(
                 listing.OwnerId,

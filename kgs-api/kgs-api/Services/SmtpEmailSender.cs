@@ -63,16 +63,23 @@ namespace kgs_api.Services
             string? textBody = null)
             => SendCoreAsync(toEmail, subject, htmlBody, textBody, ct);
 
-        /// <summary>KiGi động nhúng vào thư khi HTML có cid:kigi (xem EmailLayout). Đọc một lần.</summary>
-        private static readonly Lazy<byte[]?> KiGiGif = new(() =>
+        /// <summary>Ảnh nhúng vào thư (KiGi động, biểu tượng) — EmbeddedResource trong Assets/Email.
+        /// Tên ảnh = content-id + đuôi (kigi.gif, icon-phone.png). Đọc một lần rồi giữ.</summary>
+        private static readonly Lazy<Dictionary<string, (byte[] Data, ContentType Type)>> EmailAssets = new(() =>
         {
             var asm = typeof(SmtpEmailSender).Assembly;
-            var name = asm.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("kigi.gif", StringComparison.Ordinal));
-            if (name is null) return null;
-            using var s = asm.GetManifestResourceStream(name)!;
-            using var ms = new MemoryStream();
-            s.CopyTo(ms);
-            return ms.ToArray();
+            var map = new Dictionary<string, (byte[], ContentType)>();
+            foreach (var name in asm.GetManifestResourceNames().Where(n => n.Contains(".Assets.Email.")))
+            {
+                var file = name[(name.IndexOf(".Assets.Email.", StringComparison.Ordinal) + ".Assets.Email.".Length)..];
+                var ext = Path.GetExtension(file).TrimStart('.').ToLowerInvariant();
+                if (ext is not ("gif" or "png")) continue;
+                using var s = asm.GetManifestResourceStream(name)!;
+                using var ms = new MemoryStream();
+                s.CopyTo(ms);
+                map[Path.GetFileNameWithoutExtension(file)] = (ms.ToArray(), new ContentType("image", ext));
+            }
+            return map;
         });
 
         // ---- Lõi dùng chung cho cả 3 method public ----
@@ -91,10 +98,11 @@ namespace kgs_api.Services
             message.To.Add(MailboxAddress.Parse(toEmail));
             message.Subject = subject;
             var builder = new BodyBuilder { HtmlBody = htmlBody, TextBody = textBody };
-            if (htmlBody.Contains($"cid:{EmailLayout.KiGiContentId}") && KiGiGif.Value is { } gif)
+            foreach (var cid in EmailLayout.ContentIds(htmlBody))
             {
-                var kigi = builder.LinkedResources.Add("kigi.gif", gif, new ContentType("image", "gif"));
-                kigi.ContentId = EmailLayout.KiGiContentId;
+                if (!EmailAssets.Value.TryGetValue(cid, out var asset)) continue;
+                var part = builder.LinkedResources.Add($"{cid}.{asset.Type.MediaSubtype}", asset.Data, asset.Type);
+                part.ContentId = cid;
             }
             message.Body = builder.ToMessageBody();
             using var client = new SmtpClient();
