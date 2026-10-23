@@ -2,6 +2,17 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "kgs-api",
+      "cwd": "kgs-api/kgs-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--launch-profile",
+        "https"
+      ],
+      "port": 5247
+    },
+    {
       "name": "kgs-web",
       "cwd": "quanly-tai-san",
       "runtimeExecutable": "npm",

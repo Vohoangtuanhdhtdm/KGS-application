@@ -16,7 +16,8 @@ namespace kgs_api.Services
     /// cầu nhỏ, và mọi lượt hỏi trong 10 phút dùng chung một lần tính.</summary>
     public sealed class DemandPulseService : IDemandPulseService
     {
-        private const string CacheKey = "demand-pulse";
+        /// <summary>Công khai để dựng lại dữ liệu trình diễn xoá được bộ đệm (SeedShowcaseController).</summary>
+        public const string CacheKey = "demand-pulse";
         private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(10);
 
         private readonly IRepository<SavedSearch> _searches;

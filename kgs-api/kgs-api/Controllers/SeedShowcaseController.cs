@@ -1,4 +1,6 @@
+using kgs_api.Services;
 using kgs_api.Services.Seeding;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,10 +19,11 @@ namespace kgs_api.Controllers
     {
         private readonly ShowcaseSeeder _seeder;
         private readonly IWebHostEnvironment _env;
+        private readonly IMemoryCache _cache;
 
-        public SeedShowcaseController(ShowcaseSeeder seeder, IWebHostEnvironment env)
+        public SeedShowcaseController(ShowcaseSeeder seeder, IWebHostEnvironment env, IMemoryCache cache)
         {
-            _seeder = seeder; _env = env;
+            _seeder = seeder; _env = env; _cache = cache;
         }
 
         [HttpPost]
@@ -28,14 +31,19 @@ namespace kgs_api.Controllers
             [FromQuery] bool replaceLegacy = false, [FromQuery] bool purgeUntagged = false, CancellationToken ct = default)
         {
             if (!_env.IsDevelopment()) return NotFound();
-            return Ok(await _seeder.SeedAsync(replaceLegacy, ct, purgeUntagged));
+            var result = await _seeder.SeedAsync(replaceLegacy, ct, purgeUntagged);
+            // Nhịp cầu đệm 10 phút: không xoá thì trang chủ vẫn hiện con số của bộ dữ liệu cũ.
+            _cache.Remove(DemandPulseService.CacheKey);
+            return Ok(result);
         }
 
         [HttpPost("clear")]
         public async Task<IActionResult> Clear([FromQuery] bool replaceLegacy = false, CancellationToken ct = default)
         {
             if (!_env.IsDevelopment()) return NotFound();
-            return Ok(new { removedAssets = await _seeder.ClearAsync(replaceLegacy, ct) });
+            var removed = await _seeder.ClearAsync(replaceLegacy, ct);
+            _cache.Remove(DemandPulseService.CacheKey);
+            return Ok(new { removedAssets = removed });
         }
     }
 }
