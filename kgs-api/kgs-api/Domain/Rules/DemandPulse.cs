@@ -51,6 +51,8 @@ namespace kgs_api.Domain.Rules
 
         public static IReadOnlyList<PulseGroup> Compute(IEnumerable<PulseInput> demands)
         {
+            // Chỉ nhóm THEO loại tin. Không có nhóm "mọi loại": lấy nó trừ nhóm "thuê" là lộ đúng số
+            // người tìm mua ở đó — có thể là 1 hay 2, đúng thứ ngưỡng 3 người đang che.
             var people = new Dictionary<(ListingType?, string, string?), HashSet<string>>();
             var bandPeople = new Dictionary<(ListingType, string, string?, int), HashSet<string>>();
 
@@ -62,16 +64,14 @@ namespace kgs_api.Domain.Rules
 
             foreach (var d in demands)
             {
-                if (string.IsNullOrWhiteSpace(d.City)) continue;
+                if (string.IsNullOrWhiteSpace(d.City) || d.Type is not { } type) continue;
                 var districts = string.IsNullOrWhiteSpace(d.District)
                     ? new string?[] { null }
                     : new string?[] { null, d.District };
-                int? band = d.Type is { } t && d.Budget is { } b ? BandIndex(t, b) : null;
+                int? band = d.Budget is { } b ? BandIndex(type, b) : null;
 
                 foreach (var district in districts)
                 {
-                    Add(people, ((ListingType?)null, d.City, district), d.UserId);
-                    if (d.Type is not { } type) continue;
                     Add(people, ((ListingType?)type, d.City, district), d.UserId);
                     if (band is { } i) Add(bandPeople, (type, d.City, district, i), d.UserId);
                 }

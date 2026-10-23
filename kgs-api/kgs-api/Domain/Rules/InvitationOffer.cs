@@ -9,6 +9,12 @@ namespace kgs_api.Domain.Rules
     {
         public const int MaxNoteLength = 120;
 
+        /// <summary>Giá ưu đãi còn đúng là ưu đãi so với giá tin HIỆN TẠI không. Chủ nhà hạ giá tin
+        /// xuống bằng hoặc dưới mức đã mời thì giá ưu đãi mất nghĩa: không ghi cứng nó khi nhận lời,
+        /// không hiện nó như một món hời.</summary>
+        public static decimal? Effective(decimal? offerPrice, decimal currentPrice)
+            => offerPrice is { } p && p < currentPrice ? p : null;
+
         /// <summary>Câu lỗi cho người dùng, hoặc null khi hợp lệ. Cả hai trường đều tuỳ chọn.</summary>
         public static string? Validate(decimal? offerPrice, string? offerNote, decimal listedPrice)
         {

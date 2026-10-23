@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 import {
+  hasPostDemandFlag,
+  withPostDemandFlag,
   DEMAND_DRAFT_KEY,
   saveDemandDraft,
   takeDemandDraft,
@@ -65,4 +67,25 @@ test("trình duyệt chặn bộ nhớ thì trả null, không ném lỗi", () =
   };
   expect(() => saveDemandDraft(draft, blocked)).not.toThrow();
   expect(takeDemandDraft(blocked)).toBeNull();
+});
+
+test("gắn cờ mở lại hộp vào đường dẫn quay về, giữ nguyên tham số cũ", () => {
+  expect(withPostDemandFlag("/")).toBe("/?dang_nhu_cau=1");
+  expect(withPostDemandFlag("/tin-dang?type=2&city=HCM")).toBe(
+    "/tin-dang?type=2&city=HCM&dang_nhu_cau=1",
+  );
+  expect(withPostDemandFlag("/nhu-cau?dang_nhu_cau=1")).toBe("/nhu-cau?dang_nhu_cau=1");
+});
+
+test("nhận ra cờ kể cả khi mất bản nháp", () => {
+  expect(hasPostDemandFlag("?dang_nhu_cau=1")).toBe(true);
+  expect(hasPostDemandFlag("?type=2&dang_nhu_cau=1")).toBe(true);
+  expect(hasPostDemandFlag("?type=2")).toBe(false);
+  expect(hasPostDemandFlag("")).toBe(false);
+});
+
+test("bản nháp sai kiểu (tên không phải chuỗi) không được coi là bản nháp", () => {
+  const s = new MemoryStorage();
+  s.setItem(DEMAND_DRAFT_KEY, JSON.stringify({ name: 5, criteria: {}, note: "", notify: true }));
+  expect(takeDemandDraft(s)).toBeNull();
 });

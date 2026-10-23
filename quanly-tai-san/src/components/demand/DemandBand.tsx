@@ -14,14 +14,14 @@ import { useDemandDraftResume } from "./useDemandDraftResume";
  */
 export function DemandBand({ type }: { type: ListingTypeCode }) {
   const [open, setOpen] = useState(false);
-  const [draft, clearDraft] = useDemandDraftResume();
+  const [draft, resume, clearDraft] = useDemandDraftResume();
   const top = useQuery({
     queryKey: ["demand-pulse-top", type],
     queryFn: () => demandPulseApi.top(type),
     staleTime: 5 * 60_000,
   });
   const pulses = top.data ?? [];
-  const isOpen = open || draft !== null;
+  const isOpen = open || resume;
 
   return (
     <section className="rounded-2xl border bg-card p-6 lg:p-8">
@@ -34,8 +34,8 @@ export function DemandBand({ type }: { type: ListingTypeCode }) {
             Không muốn tự lục tìm?
           </h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Đăng nhu cầu một lần: khu vực, giá, số người ở. Chủ nhà có căn phù hợp sẽ gửi lời mời
-            xem nhà — họ không thấy tên hay số điện thoại của bạn cho tới khi bạn nhận lời.
+            Đăng nhu cầu một lần: khu vực, giá tối đa, số người ở. Chủ nhà có căn phù hợp sẽ gửi lời
+            mời xem nhà — họ không thấy tên hay số điện thoại của bạn cho tới khi bạn nhận lời.
           </p>
         </div>
         <Button size="lg" className="w-fit" onClick={() => setOpen(true)}>

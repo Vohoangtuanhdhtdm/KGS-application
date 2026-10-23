@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Handshake, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getErrorMessage } from "@/lib/api/errors";
 import { savedSearchesApi, type SavedSearchCriteria } from "@/lib/api/savedSearches";
-import { saveDemandDraft, type DemandDraft } from "@/lib/demandDraft";
+import { saveDemandDraft, withPostDemandFlag, type DemandDraft } from "@/lib/demandDraft";
+import { listingsApi } from "@/lib/api/listings";
+import { CurrencyInput } from "@/components/CurrencyInput";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { ListingTypeCode } from "@/constants/enums";
 
 const NOTE_MAX = 300;
 
@@ -56,6 +66,30 @@ export function PostDemandDialog({
   const [note, setNote] = useState("");
   const [notify, setNotify] = useState(true);
 
+  // Nhu cầu mở cho chủ nhà phải có khu vực — không có thì nó khớp mọi tin cả nước (máy chủ cũng
+  // chặn). Mở từ trang chủ hay khi chưa lọc khu vực thì hỏi luôn tỉnh/thành, quận và giá tối đa.
+  const needsArea =
+    !base.city?.trim() &&
+    !base.newProvinceCode &&
+    !(base.latitude != null && base.longitude != null && base.radiusMeters != null);
+  const [areaCity, setAreaCity] = useState("");
+  const [areaDistrict, setAreaDistrict] = useState("");
+  const [areaPriceMax, setAreaPriceMax] = useState<number | null>(null);
+  const areas = useQuery({
+    queryKey: ["listing-areas", base.type ?? null],
+    queryFn: () => listingsApi.areas((base.type ?? undefined) as ListingTypeCode | undefined),
+    enabled: open && needsArea,
+    staleTime: 10 * 60_000,
+  });
+  const cityOptions = [...new Set((areas.data ?? []).map((a) => a.city))].sort((a, b) =>
+    a.localeCompare(b, "vi"),
+  );
+  const districtOptions = [
+    ...new Set(
+      (areas.data ?? []).filter((a) => a.city === areaCity && a.district).map((a) => a.district),
+    ),
+  ].sort((a, b) => a.localeCompare(b, "vi"));
+
   // Điền lại mỗi lần mở: hộp dùng chung, lần trước có thể mở với bộ lọc khác.
   useEffect(() => {
     if (!open) return;
@@ -65,6 +99,9 @@ export function PostDemandDialog({
     setPets(base.petsAllowed === true);
     setNote(draft?.note ?? "");
     setNotify(draft?.notify ?? true);
+    setAreaCity("");
+    setAreaDistrict("");
+    setAreaPriceMax(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -75,6 +112,9 @@ export function PostDemandDialog({
 
   const fullCriteria = (): SavedSearchCriteria => ({
     ...base,
+    ...(needsArea
+      ? { city: areaCity || null, district: areaDistrict || null, priceMax: areaPriceMax }
+      : {}),
     occupants: occupantsNum,
     availableBy: availableBy || null,
     petsAllowed: pets ? true : null,
@@ -99,13 +139,15 @@ export function PostDemandDialog({
     if (!isAuthenticated) {
       saveDemandDraft({ name: name.trim(), criteria: fullCriteria(), note: note.trim(), notify });
       onOpenChange(false);
-      void navigate({ to: "/login", search: { redirect: href } });
+      // Cờ trên đường quay về: bản nháp có mất thì trang vẫn mở lại hộp.
+      void navigate({ to: "/login", search: { redirect: withPostDemandFlag(href) } });
       return;
     }
     post.mutate();
   };
 
-  const canSubmit = name.trim().length > 0 && occupantsValid && !post.isPending;
+  const canSubmit =
+    name.trim().length > 0 && occupantsValid && (!needsArea || !!areaCity) && !post.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,6 +172,52 @@ export function PostDemandDialog({
               onChange={(e) => setName(e.target.value)}
             />
           </div>
+
+          {needsArea && (
+            <div className="space-y-3 rounded-md border border-dashed p-3">
+              <p className="text-sm font-medium">Bạn muốn tìm ở đâu?</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  value={areaCity}
+                  onValueChange={(v) => {
+                    setAreaCity(v);
+                    setAreaDistrict("");
+                  }}
+                >
+                  <SelectTrigger aria-label="Tỉnh/thành">
+                    <SelectValue placeholder="Tỉnh/thành *" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cityOptions.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={areaDistrict} onValueChange={setAreaDistrict} disabled={!areaCity}>
+                  <SelectTrigger aria-label="Quận/huyện">
+                    <SelectValue placeholder="Quận/huyện" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districtOptions.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Giá tối đa</Label>
+                <CurrencyInput
+                  value={areaPriceMax}
+                  onChange={setAreaPriceMax}
+                  placeholder="Không bắt buộc"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

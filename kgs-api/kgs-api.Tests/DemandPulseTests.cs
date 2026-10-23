@@ -39,12 +39,17 @@ public class DemandPulseTests
         Assert.DoesNotContain(groups, g => g.District != null);
     }
 
+    /// <summary>Không công bố nhóm "mọi loại tin": lấy nó trừ nhóm "thuê" là ra đúng số người
+    /// tìm mua — có thể là 1 hay 2, thứ ngưỡng 3 người đang che.</summary>
     [Fact]
-    public void KhongGhiLoai_ChiVaoNhomMoiLoai()
+    public void KhongCoNhomMoiLoai_TranhLayHieuRaNhomNho()
     {
-        var groups = DemandPulse.Compute(new[] { P("a", type: null), P("b", type: null), P("c", type: null) });
-        Assert.Equal(3, Find(groups, null, Bt)!.People);
-        Assert.DoesNotContain(groups, g => g.Type != null);
+        var groups = DemandPulse.Compute(new[]
+        {
+            P("a"), P("b"), P("c"), P("d", type: ListingType.Sale), P("e", type: null),
+        });
+        Assert.DoesNotContain(groups, g => g.Type == null);
+        Assert.Equal(3, Find(groups, ListingType.Rent, Bt)!.People);
     }
 
     [Fact]

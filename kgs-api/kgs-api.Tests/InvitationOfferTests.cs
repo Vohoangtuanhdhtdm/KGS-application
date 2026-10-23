@@ -31,3 +31,20 @@ public class InvitationOfferTests
     [Fact]
     public void DongUuDai120KyTu_HopLe() => Assert.Null(InvitationOffer.Validate(null, new string('a', 120), Listed));
 }
+
+/// <summary>Chủ nhà hạ giá tin xuống bằng hoặc dưới mức "ưu đãi" sau khi mời: nhận lời không được
+/// ghi cứng một "giá ưu đãi" cao hơn giá ai cũng thấy.</summary>
+public class InvitationOfferEffectiveTests
+{
+    [Fact]
+    public void ConThapHonGiaTin_GiuNguyen() => Assert.Equal(4_500_000m, InvitationOffer.Effective(4_500_000, 4_700_000));
+
+    [Fact]
+    public void TinDaHaGiaXuongDuoiUuDai_Bo() => Assert.Null(InvitationOffer.Effective(5_000_000, 4_800_000));
+
+    [Fact]
+    public void TinBangGiaUuDai_Bo() => Assert.Null(InvitationOffer.Effective(4_800_000, 4_800_000));
+
+    [Fact]
+    public void KhongCoGiaUuDai_Null() => Assert.Null(InvitationOffer.Effective(null, 4_800_000));
+}

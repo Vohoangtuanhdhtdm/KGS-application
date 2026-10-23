@@ -416,10 +416,10 @@ function PublicListingsPage() {
   const [demandSheetOpen, setDemandSheetOpen] = useState(false);
   // "Đăng nhu cầu": khách vừa đăng nhập xong thì mở lại hộp với bản nháp đã điền.
   const [postDemandOpen, setPostDemandOpen] = useState(false);
-  const [demandDraft, clearDemandDraft] = useDemandDraftResume();
+  const [demandDraft, resumeDemand, clearDemandDraft] = useDemandDraftResume();
   useEffect(() => {
-    if (demandDraft) setPostDemandOpen(true);
-  }, [demandDraft]);
+    if (resumeDemand) setPostDemandOpen(true);
+  }, [resumeDemand]);
 
   // Áp toàn bộ lựa chọn từ form "Tìm theo nhu cầu" vào bộ lọc hiện có — tái sử dụng
   // đúng state/logic sẵn có (ô địa chỉ, city/district, luồng xin quyền vị trí), không

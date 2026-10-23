@@ -251,7 +251,7 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
       return (
         <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
           <Users className="h-3.5 w-3.5" />
-          Chưa có ai — nhu cầu mới sẽ được báo cho bạn
+          Chưa có ai — khi có người đăng nhu cầu khớp, con số sẽ hiện ở đây
         </span>
       );
     return (

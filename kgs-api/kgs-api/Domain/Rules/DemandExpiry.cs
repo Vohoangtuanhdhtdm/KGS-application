@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Dtos;
 
 namespace kgs_api.Domain.Rules
 {
@@ -28,6 +29,14 @@ namespace kgs_api.Domain.Rules
         /// trong lúc chờ thì cờ vẫn bật dù đã quá hạn.</summary>
         public static Expression<Func<SavedSearch, bool>> OpenAt(DateTime now)
             => s => s.DiscoverableByOwners && (s.DiscoverableUntil == null || s.DiscoverableUntil > now);
+
+        /// <summary>Nhu cầu chỉ được mở cho chủ nhà khi có KHU VỰC (tỉnh/thành, mã tỉnh mới, hoặc
+        /// vòng bán kính quanh một điểm). Không có thì nó khớp mọi tin cả nước: mọi chủ nhà đều thấy
+        /// và được báo về một người không hề tìm ở chỗ họ.</summary>
+        public static bool HasArea(PublicListingSearchQuery q)
+            => !string.IsNullOrWhiteSpace(q.City)
+               || !string.IsNullOrWhiteSpace(q.NewProvinceCode)
+               || (q.Latitude is not null && q.Longitude is not null && q.RadiusMeters is not null);
 
         public static ExpiryAction Decide(bool discoverable, DateTime? until, DateTime? remindedAt, DateTime now)
         {

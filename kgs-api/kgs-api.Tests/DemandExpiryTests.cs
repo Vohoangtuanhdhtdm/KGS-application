@@ -1,5 +1,6 @@
 using kgs_api.Domain.Entity.SubEntity;
 using kgs_api.Domain.Rules;
+using kgs_api.Dtos;
 
 namespace kgs_api.Tests;
 
@@ -39,6 +40,24 @@ public class DemandExpiryTests
     [Fact]
     public void Decide_TatSan_KhongLamGi()
         => Assert.Equal(ExpiryAction.None, DemandExpiry.Decide(false, Now.AddDays(-1), null, Now));
+
+    private static readonly PublicListingSearchQuery Empty = new(
+        Type: null, City: null, District: null, PriceMin: null, PriceMax: null,
+        BedroomsMin: null, Keyword: null, Latitude: null, Longitude: null,
+        RadiusMeters: null, TotalCostMax: null, PetsAllowed: null, CurfewFree: null,
+        SharedWithOwner: null, AvailableBy: null, Amenities: null, SortBy: null);
+
+    /// <summary>Nhu cầu mở cho chủ nhà mà không có khu vực thì khớp MỌI tin cả nước — mọi chủ
+    /// nhà đều thấy và được báo, đúng thứ làm phiền mà hạn 30 ngày muốn tránh.</summary>
+    [Fact]
+    public void KhongCoKhuVuc_KhongMoChoChuNhaDuoc()
+    {
+        Assert.False(DemandExpiry.HasArea(Empty with { Type = kgs_api.Domain.Enums.ListingType.Rent }));
+        Assert.True(DemandExpiry.HasArea(Empty with { City = "Thành phố Hồ Chí Minh" }));
+        Assert.True(DemandExpiry.HasArea(Empty with { NewProvinceCode = "79" }));
+        Assert.True(DemandExpiry.HasArea(Empty with { Latitude = 10.8, Longitude = 106.7, RadiusMeters = 3000 }));
+        Assert.False(DemandExpiry.HasArea(Empty with { City = "  " }));
+    }
 
     [Fact]
     public void OpenAt_LocDungTrenDanhSach()

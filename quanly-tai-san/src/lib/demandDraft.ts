@@ -17,6 +17,21 @@ export interface DemandDraft {
   notify: boolean;
 }
 
+/**
+ * Cờ trên đường dẫn quay về sau đăng nhập: trang thấy cờ thì mở lại hộp Đăng nhu cầu, KỂ CẢ khi
+ * bản nháp mất (trình duyệt chặn bộ nhớ, đăng nhập ở tab khác) — người dùng không phải tìm lại nút.
+ */
+export const POST_DEMAND_FLAG = "dang_nhu_cau";
+
+export function withPostDemandFlag(href: string): string {
+  if (hasPostDemandFlag(href.includes("?") ? href.slice(href.indexOf("?")) : "")) return href;
+  return `${href}${href.includes("?") ? "&" : "?"}${POST_DEMAND_FLAG}=1`;
+}
+
+export function hasPostDemandFlag(search: string): boolean {
+  return new URLSearchParams(search).get(POST_DEMAND_FLAG) === "1";
+}
+
 const defaultStorage = (): Storage | undefined => {
   try {
     return globalThis.sessionStorage;
@@ -41,7 +56,14 @@ export function takeDemandDraft(
     storage?.removeItem(DEMAND_DRAFT_KEY);
     if (!raw) return null;
     const d = JSON.parse(raw) as DemandDraft;
-    return d && typeof d === "object" && d.criteria && typeof d.criteria === "object" ? d : null;
+    return d &&
+      typeof d === "object" &&
+      d.criteria &&
+      typeof d.criteria === "object" &&
+      typeof d.name === "string" &&
+      typeof d.note === "string"
+      ? d
+      : null;
   } catch {
     try {
       storage?.removeItem(DEMAND_DRAFT_KEY);

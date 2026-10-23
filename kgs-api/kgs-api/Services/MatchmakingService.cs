@@ -256,12 +256,14 @@ namespace kgs_api.Services
 
                 // Ghi cứng ưu đãi vào yêu cầu xem nhà: cả hai bên cùng thấy đúng con số đã hứa
                 // trong hộp thư, kể cả khi tin đổi giá sau đó.
-                if (inv.OfferPrice is not null || inv.OfferNote is not null)
+                // Giá ưu đãi chỉ ghi khi còn thấp hơn giá tin lúc nhận lời (xem InvitationOffer.Effective).
+                var offerPrice = InvitationOffer.Effective(inv.OfferPrice, inv.Listing.Price);
+                if (offerPrice is not null || inv.OfferNote is not null)
                 {
                     var inquiry = await _inquiries.Query().FirstAsync(i => i.Id == inquiryId, ct);
                     if (inquiry.OfferPrice is null && inquiry.OfferNote is null)
                     {
-                        inquiry.OfferPrice = inv.OfferPrice;
+                        inquiry.OfferPrice = offerPrice;
                         inquiry.OfferNote = inv.OfferNote;
                     }
                 }
@@ -412,7 +414,10 @@ namespace kgs_api.Services
                 i.Status,
                 i.Status == InvitationStatus.Pending && i.CreatedAt < cutoff,
                 i.CreatedAt, i.RespondedAt,
-                i.OfferPrice, i.OfferNote));
+                // Cùng quy tắc InvitationOffer.Effective, viết dạng EF dịch được: tin đã hạ giá
+                // xuống bằng/dưới mức ưu đãi thì không còn "giá cho riêng bạn" để hiện.
+                i.OfferPrice < i.Listing.Price ? i.OfferPrice : null,
+                i.OfferNote));
         }
 
         private async Task NotifyAsync(

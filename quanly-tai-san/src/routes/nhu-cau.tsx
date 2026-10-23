@@ -29,7 +29,7 @@ const ORDER = { open: 0, expired: 1, alerts: 2 } as const;
  */
 function MyDemandsPage() {
   const [open, setOpen] = useState(false);
-  const [draft, clearDraft] = useDemandDraftResume();
+  const [draft, resume, clearDraft] = useDemandDraftResume();
   const list = useQuery({ queryKey: ["saved-searches"], queryFn: savedSearchesApi.list });
   const searches = [...(list.data ?? [])].sort(
     (a, b) => ORDER[demandState(a)] - ORDER[demandState(b)],
@@ -76,7 +76,7 @@ function MyDemandsPage() {
       </section>
 
       <PostDemandDialog
-        open={open || draft !== null}
+        open={open || resume}
         onOpenChange={(v) => {
           setOpen(v);
           if (!v) clearDraft();

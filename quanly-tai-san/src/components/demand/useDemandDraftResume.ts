@@ -1,22 +1,44 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { takeDemandDraft, type DemandDraft } from "@/lib/demandDraft";
+import {
+  POST_DEMAND_FLAG,
+  hasPostDemandFlag,
+  takeDemandDraft,
+  type DemandDraft,
+} from "@/lib/demandDraft";
 
 /**
- * Khách bấm "Đăng nhu cầu" → đăng nhập → quay lại trang: trả bản nháp họ đã điền để trang mở lại
- * hộp. Chỉ đọc (và xoá) bản nháp khi đã đăng nhập, đúng một lần. `clear` để trang bỏ bản nháp
- * sau khi hộp đóng — lần mở sau dùng bộ lọc hiện tại.
+ * Khách bấm "Đăng nhu cầu" → đăng nhập → quay lại trang: trả bản nháp họ đã điền và cho biết có
+ * cần mở lại hộp không. Mở lại khi có bản nháp HOẶC đường dẫn mang cờ `dang_nhu_cau=1` — cờ giữ
+ * cho hộp vẫn mở (trống) khi bản nháp mất. Chỉ đọc khi đã đăng nhập, đúng một lần; cờ được gỡ khỏi
+ * thanh địa chỉ để tải lại trang không mở hộp lần nữa. `clear` gọi khi hộp đóng.
  */
-export function useDemandDraftResume(): [DemandDraft | null, () => void] {
+export function useDemandDraftResume(): [DemandDraft | null, boolean, () => void] {
   const { isAuthenticated, isLoading } = useAuth();
   const [draft, setDraft] = useState<DemandDraft | null>(null);
+  const [resume, setResume] = useState(false);
   const taken = useRef(false);
 
   useEffect(() => {
     if (isLoading || !isAuthenticated || taken.current) return;
     taken.current = true;
-    setDraft(takeDemandDraft());
+    const d = takeDemandDraft();
+    const flagged = hasPostDemandFlag(window.location.search);
+    if (flagged) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete(POST_DEMAND_FLAG);
+      window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    }
+    setDraft(d);
+    setResume(d !== null || flagged);
   }, [isAuthenticated, isLoading]);
 
-  return [draft, () => setDraft(null)];
+  return [
+    draft,
+    resume,
+    () => {
+      setDraft(null);
+      setResume(false);
+    },
+  ];
 }

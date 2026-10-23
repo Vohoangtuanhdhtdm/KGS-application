@@ -81,7 +81,11 @@ namespace kgs_api.Services
             };
             // "Đăng nhu cầu" = lưu bộ lọc và mở cho chủ nhà trong cùng một lần gọi, để người
             // tìm không phải đi qua hai bước mới bật được.
-            if (request.Discoverable) Open(entity, now);
+            if (request.Discoverable)
+            {
+                RequireArea(criteria);
+                Open(entity, now);
+            }
 
             await _searches.AddAsync(entity, ct);
             await _uow.SaveChangesAsync(ct);
@@ -102,7 +106,10 @@ namespace kgs_api.Services
         {
             var entity = await GetOwnedAsync(id, ct);
             if (request.Enabled)
+            {
+                RequireArea(Deserialize(entity.CriteriaJson));
                 Open(entity, DateTime.UtcNow);
+            }
             else
             {
                 entity.DiscoverableByOwners = false;
@@ -117,6 +124,7 @@ namespace kgs_api.Services
         public async Task<SavedSearchDto> RenewAsync(Guid id, CancellationToken ct = default)
         {
             var entity = await GetOwnedAsync(id, ct);
+            RequireArea(Deserialize(entity.CriteriaJson));
             Open(entity, DateTime.UtcNow);
             await _uow.SaveChangesAsync(ct);
             return await ToDtoAsync(entity, ct);
@@ -150,6 +158,13 @@ namespace kgs_api.Services
                 throw new KeyNotFoundException("Không tìm thấy bộ lọc đã lưu.");
 
             return entity;
+        }
+
+        private static void RequireArea(PublicListingSearchQuery c)
+        {
+            if (!DemandExpiry.HasArea(c))
+                throw new ValidationFailedException(
+                    "Hãy chọn tỉnh/thành bạn muốn tìm — chủ nhà ở đúng khu vực đó mới mời được bạn.");
         }
 
         /// <summary>Bật (hoặc gia hạn) chế độ mở: hạn mới tính từ bây giờ, và được nhắc lại
