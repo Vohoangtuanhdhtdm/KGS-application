@@ -224,6 +224,7 @@ namespace kgs_api.Extensions
             services.AddScoped<FileCleanupJob>();
             services.AddScoped<ListingExpiryJob>();
             services.AddScoped<SavedSearchAlertJob>();
+            services.AddScoped<DemandMatchNotifyJob>();
 
            
 

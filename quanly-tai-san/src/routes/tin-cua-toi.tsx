@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,10 @@ const STATUS_TABS: { value: number | "all"; label: string }[] = [
 
 export const Route = createFileRoute("/tin-cua-toi")({
   head: () => ({ meta: [{ title: "Tin đăng của tôi — KGS" }] }),
+  // `nhu_cau` = mã tin cần mở ngay danh sách người đang tìm — từ thông báo "Tin vừa duyệt khớp
+  // N người đang tìm" (DemandMatchNotifyJob).
+  validateSearch: (s: Record<string, unknown>): { nhu_cau?: string } =>
+    typeof s.nhu_cau === "string" && s.nhu_cau ? { nhu_cau: s.nhu_cau } : {},
   component: MyListingsPage,
 });
 
@@ -229,6 +233,15 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
     [demandQ.data],
   );
   const [demandListing, setDemandListing] = useState<OwnerListingDto | null>(null);
+  const { nhu_cau: openDemandsFor } = Route.useSearch();
+  const openedFromLink = useRef(false);
+  useEffect(() => {
+    if (!openDemandsFor || openedFromLink.current) return;
+    const target = all.find((l) => l.id === openDemandsFor);
+    if (!target) return;
+    openedFromLink.current = true;
+    setDemandListing(target);
+  }, [openDemandsFor, all]);
 
   const demandBadge = (l: OwnerListingDto) => {
     const n = demandCount.get(l.id) ?? 0;
