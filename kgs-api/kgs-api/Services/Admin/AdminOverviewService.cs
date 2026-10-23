@@ -34,7 +34,9 @@ namespace kgs_api.Services.Admin
         IReadOnlyList<CountDto> LiveByType, IReadOnlyList<CountDto> LiveByCity,
         AdminBuildingStatsDto? Buildings = null,
         /// <summary>Kết quả các tin đóng trong kỳ — tỷ lệ có khách nhờ KGS (ListingClosing).</summary>
-        CloseOutcomeStatsDto? Closes = null);
+        CloseOutcomeStatsDto? Closes = null,
+        /// <summary>Ghép đôi hai chiều: nhu cầu đang mở, lời mời trong kỳ (MatchmakingStats).</summary>
+        MatchmakingStatsDto? Matchmaking = null);
 
     /// <summary>Toà nhà nhiều căn và mô hình 3D: bao nhiêu toà, bao nhiêu đã công khai 3D, bao
     /// nhiêu căn còn trống chưa đăng tin (việc chủ nhà còn có thể làm), tỉ lệ tin xem được 3D.</summary>
@@ -161,7 +163,16 @@ namespace kgs_api.Services.Admin
                 .Select(l => l.CloseReason)
                 .ToListAsync(ct));
 
-            return new AdminOverviewDto(days, kpis, daily, moderation, reportStats, byType, byCity, buildings, closes);
+            // ---- Ghép đôi: số nhu cầu mở là ảnh chụp hiện tại; lời mời tính trong kỳ ----
+            var invitations = _db.ListingInvitations.AsNoTracking().Where(i => i.CreatedAt >= since);
+            var matchmaking = MatchmakingStats.From(
+                await _db.SavedSearches.AsNoTracking().CountAsync(DemandExpiry.OpenAt(nowUtc), ct),
+                await invitations.CountAsync(ct),
+                await invitations.CountAsync(i => i.Status == InvitationStatus.Accepted, ct),
+                await invitations.CountAsync(i => i.OfferPrice != null || i.OfferNote != null, ct));
+
+            return new AdminOverviewDto(days, kpis, daily, moderation, reportStats, byType, byCity, buildings, closes,
+                matchmaking);
         }
 
         /// <summary>Phân vị theo cách "gần nhất" — đủ cho số liệu hiển thị; null khi rỗng.</summary>
