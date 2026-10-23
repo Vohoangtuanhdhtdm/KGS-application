@@ -2,11 +2,22 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Handshake, ImageIcon, Loader2, X } from "lucide-react";
-import { matchmakingApi, type SeekerInvitation } from "@/lib/api/matchmaking";
-import { formatListingPrice } from "@/lib/api/listings";
+import { Check, Flag, Gift, Handshake, ImageIcon, Loader2, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { INVITATIONS_KEY, matchmakingApi, type SeekerInvitation } from "@/lib/api/matchmaking";
+import { formatListingPrice, listingsApi } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
-import { formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,8 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-
-const INVITATIONS_KEY = ["my-invitations"];
 
 /**
  * Hộp lời mời xem nhà của người tìm — phía nhận của ghép đôi hai chiều.
@@ -55,8 +64,8 @@ export function InvitationsList() {
           <Handshake className="mx-auto h-10 w-10 text-muted-foreground/40" />
           <p>Chưa có lời mời nào.</p>
           <p className="mx-auto max-w-md">
-            Ở trang Tìm nhà, mở <strong>Bộ lọc đã lưu</strong> và bật “Cho chủ nhà phù hợp mời tôi”
-            — chủ nhà có nhà khớp nhu cầu sẽ mời bạn xem nhà, không cần bạn đi hỏi từng tin.
+            Đăng một nhu cầu — chủ nhà có căn khớp sẽ mời bạn xem nhà, không cần bạn đi hỏi từng
+            tin.
           </p>
         </CardContent>
       </Card>
@@ -67,6 +76,80 @@ export function InvitationsList() {
       {rows.map((inv) => (
         <InvitationCard key={inv.id} inv={inv} />
       ))}
+    </div>
+  );
+}
+
+/**
+ * Ưu đãi riêng chủ nhà hứa trong lời mời: đặt giá niêm yết cạnh giá cho riêng người này. Nhận lời
+ * thì ưu đãi được ghi cứng vào yêu cầu xem nhà. Ưu đãi sai sự thật báo qua đúng luồng báo vi phạm
+ * tin (lý do "Thông tin sai").
+ */
+function OfferBox({ inv }: { inv: SeekerInvitation }) {
+  const report = useMutation({
+    mutationFn: () =>
+      listingsApi.report(
+        inv.listingSlug,
+        2,
+        `Ưu đãi trong lời mời xem nhà không đúng sự thật: ${[
+          inv.offerPrice != null ? `giá ưu đãi ${formatCurrency(inv.offerPrice)}` : null,
+          inv.offerNote,
+        ]
+          .filter(Boolean)
+          .join(" · ")}`,
+      ),
+    onSuccess: () => toast.success("Đã gửi báo cáo. Quản trị viên sẽ xem xét tin này."),
+    onError: (e) => toast.error(getErrorMessage(e, "Chưa gửi được báo cáo")),
+  });
+
+  return (
+    <div className="space-y-1.5 rounded-md border border-primary/40 bg-primary/[0.05] p-3 text-sm">
+      <p className="flex items-center gap-1.5 font-medium text-primary">
+        <Gift className="h-4 w-4" /> Ưu đãi riêng cho bạn
+      </p>
+      {inv.offerPrice != null && (
+        <p>
+          Giá đang đăng{" "}
+          <span className="text-muted-foreground line-through">
+            {formatListingPrice(inv.price, inv.type, inv.rentPaymentCycle)}
+          </span>{" "}
+          → giá cho bạn{" "}
+          <span className="font-semibold">
+            {formatListingPrice(inv.offerPrice, inv.type, inv.rentPaymentCycle)}
+          </span>
+        </p>
+      )}
+      {inv.offerNote && <p>{inv.offerNote}</p>}
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <p className="text-xs text-muted-foreground">
+          Nhận lời thì ưu đãi này được ghi vào yêu cầu xem nhà, cả hai bên cùng thấy.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 px-2 text-xs text-muted-foreground"
+              disabled={report.isPending || report.isSuccess}
+            >
+              <Flag className="mr-1 h-3 w-3" />
+              {report.isSuccess ? "Đã báo" : "Báo ưu đãi sai"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Báo ưu đãi không đúng sự thật?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Quản trị viên sẽ kiểm tra tin này. Chủ nhà không biết ai đã báo.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Thôi</AlertDialogCancel>
+              <AlertDialogAction onClick={() => report.mutate()}>Gửi báo cáo</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }
@@ -154,6 +237,8 @@ function InvitationCard({ inv }: { inv: SeekerInvitation }) {
           </p>
           {inv.message && <p className="mt-1 italic text-muted-foreground">“{inv.message}”</p>}
         </div>
+
+        {(inv.offerPrice != null || inv.offerNote) && <OfferBox inv={inv} />}
 
         {pending && !accepting && (
           <div className="flex flex-wrap items-center justify-end gap-2">

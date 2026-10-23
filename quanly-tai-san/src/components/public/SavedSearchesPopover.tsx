@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Bell, BellOff, BookmarkPlus, Handshake, Loader2, Search, Trash2 } from "lucide-react";
 import {
   savedSearchesApi,
@@ -40,6 +41,8 @@ export function SavedSearchesPopover({
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  // Mở luôn cho chủ nhà khi lưu — trước đây phải lưu xong rồi tìm biểu tượng bắt tay mới bật được.
+  const [openToOwners, setOpenToOwners] = useState(false);
 
   const list = useQuery({
     queryKey: QUERY_KEY,
@@ -57,11 +60,21 @@ export function SavedSearchesPopover({
       savedSearchesApi.create(
         (name.trim() || suggestedName).slice(0, 120),
         toCriteria(currentFilters),
+        true,
+        openToOwners,
       ),
-    onSuccess: () => {
+    onSuccess: (s) => {
       setName("");
+      setOpenToOwners(false);
       invalidate();
-      toast.success("Đã lưu bộ lọc. Có tin mới khớp, hệ thống sẽ báo cho bạn.");
+      toast.success(
+        s.discoverableByOwners
+          ? "Đã lưu và mở cho chủ nhà phù hợp mời bạn."
+          : "Đã lưu bộ lọc. Có tin mới khớp, hệ thống sẽ báo cho bạn.",
+        s.discoverableByOwners
+          ? { description: "Lời mời sẽ đến email và trang “Nhu cầu của tôi”." }
+          : undefined,
+      );
     },
     onError: (e) => toast.error(getErrorMessage(e, "Không lưu được bộ lọc")),
   });
@@ -87,7 +100,7 @@ export function SavedSearchesPopover({
           ? "Đã mở cho chủ nhà phù hợp mời bạn xem nhà."
           : "Đã tắt — chủ nhà không còn thấy nhu cầu này.",
         s.discoverableByOwners
-          ? { description: "Lời mời sẽ đến email và mục “Lời mời xem nhà”." }
+          ? { description: "Lời mời sẽ đến email và trang “Nhu cầu của tôi”." }
           : undefined,
       );
     },
@@ -152,6 +165,19 @@ export function SavedSearchesPopover({
                 placeholder={suggestedName}
                 maxLength={120}
               />
+              <label className="flex items-start gap-2 text-xs">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={openToOwners}
+                  onCheckedChange={(v) => setOpenToOwners(v === true)}
+                />
+                <span>
+                  <span className="font-medium">Cho chủ nhà phù hợp mời tôi</span>
+                  <span className="block text-muted-foreground">
+                    Chủ nhà không thấy tên hay số điện thoại của bạn.
+                  </span>
+                </span>
+              </label>
               <Button
                 size="sm"
                 className="w-full gap-1.5"

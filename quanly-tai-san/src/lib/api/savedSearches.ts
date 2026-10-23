@@ -38,6 +38,8 @@ export interface SavedSearchCriteria {
   furnitureStates?: string[] | null;
   has3D?: boolean | null;
   ownerOnly?: boolean | null;
+  /** Số người sẽ ở (1–20). Tin khớp khi chủ cho ở đủ số người hoặc không ghi giới hạn. */
+  occupants?: number | null;
 }
 
 export interface SavedSearchDto {
@@ -52,6 +54,11 @@ export interface SavedSearchDto {
   /** Đang cho chủ tin phù hợp thấy nhu cầu này (ẩn danh) và mời xem nhà. */
   discoverableByOwners: boolean;
   demandNote: string | null;
+  /** Hạn của chế độ mở. Đang tắt mà hạn đã qua = "Đã hết hạn". */
+  discoverableUntil: string | null;
+  /** "Đang khớp N căn của M chủ nhà". */
+  matchingListings: number;
+  matchingOwners: number;
 }
 
 /** Đổi bộ lọc của trang tìm kiếm thành tiêu chí lưu được: `""` thành `null`. */
@@ -94,11 +101,21 @@ export function toCriteria(f: PublicListingFilters): SavedSearchCriteria {
 export const savedSearchesApi = {
   list: () => api<SavedSearchDto[]>("/saved-searches"),
 
-  create: (name: string, criteria: SavedSearchCriteria, notifyEnabled = true) =>
+  /** `discoverable = true` là "Đăng nhu cầu": lưu và mở cho chủ nhà trong một lần gọi. */
+  create: (
+    name: string,
+    criteria: SavedSearchCriteria,
+    notifyEnabled = true,
+    discoverable = false,
+    demandNote: string | null = null,
+  ) =>
     api<SavedSearchDto>("/saved-searches", {
       method: "POST",
-      body: { name, criteria, notifyEnabled },
+      body: { name, criteria, notifyEnabled, discoverable, demandNote },
     }),
+
+  /** Gia hạn chế độ mở thêm 30 ngày kể từ bây giờ. */
+  renew: (id: string) => api<SavedSearchDto>(`/saved-searches/${id}/renew`, { method: "POST" }),
 
   setNotify: (id: string, enabled: boolean) =>
     api<SavedSearchDto>(`/saved-searches/${id}/notify?enabled=${enabled}`, { method: "PATCH" }),

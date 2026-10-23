@@ -15,7 +15,7 @@ import { notificationsApi, type NotificationItem } from "@/lib/api/notifications
 /** Biểu tượng theo nơi thông báo dẫn tới — đủ để liếc là biết loại việc. */
 export function notificationIcon(n: Pick<NotificationItem, "linkPath" | "title">): LucideIcon {
   const p = n.linkPath ?? "";
-  if (p.startsWith("/yeu-cau?tab=invites")) return MailOpen;
+  if (p.startsWith("/nhu-cau") || p.startsWith("/yeu-cau?tab=invites")) return MailOpen;
   if (p.startsWith("/yeu-cau")) return Inbox;
   if (p.startsWith("/tin-cua-toi"))
     return n.title.includes("gỡ") || n.title.includes("từ chối") ? ShieldAlert : FileText;

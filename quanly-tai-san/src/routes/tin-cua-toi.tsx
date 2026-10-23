@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,10 @@ const STATUS_TABS: { value: number | "all"; label: string }[] = [
 
 export const Route = createFileRoute("/tin-cua-toi")({
   head: () => ({ meta: [{ title: "Tin đăng của tôi — KGS" }] }),
+  // `nhu_cau` = mã tin cần mở ngay danh sách người đang tìm — từ thông báo "Tin vừa duyệt khớp
+  // N người đang tìm" (DemandMatchNotifyJob).
+  validateSearch: (s: Record<string, unknown>): { nhu_cau?: string } =>
+    typeof s.nhu_cau === "string" && s.nhu_cau ? { nhu_cau: s.nhu_cau } : {},
   component: MyListingsPage,
 });
 
@@ -229,10 +233,27 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
     [demandQ.data],
   );
   const [demandListing, setDemandListing] = useState<OwnerListingDto | null>(null);
+  const { nhu_cau: openDemandsFor } = Route.useSearch();
+  const openedFromLink = useRef(false);
+  useEffect(() => {
+    if (!openDemandsFor || openedFromLink.current) return;
+    const target = all.find((l) => l.id === openDemandsFor);
+    if (!target) return;
+    openedFromLink.current = true;
+    setDemandListing(target);
+  }, [openDemandsFor, all]);
 
   const demandBadge = (l: OwnerListingDto) => {
     const n = demandCount.get(l.id) ?? 0;
-    if (l.status !== 2 || n === 0) return null;
+    if (l.status !== 2) return null;
+    // Luôn hiện, kể cả khi chưa có ai: chủ tin biết chức năng có tồn tại, và biết sẽ được báo.
+    if (n === 0)
+      return (
+        <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Users className="h-3.5 w-3.5" />
+          Chưa có ai — khi có người đăng nhu cầu khớp, con số sẽ hiện ở đây
+        </span>
+      );
     return (
       <button
         type="button"
@@ -243,7 +264,7 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/15"
       >
         <Users className="h-3.5 w-3.5" />
-        {n} người đang tìm nhà như tin này
+        {n} người đang tìm căn như thế này
       </button>
     );
   };

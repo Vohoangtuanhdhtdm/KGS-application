@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Mic, PhoneOff } from "lucide-react";
+import { Handshake, Mic, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,14 @@ export function VoiceAssistant({ focusTyping }: { focusTyping: () => void }) {
     if (last.current) saveHandoff(last.current);
     voice.stop();
     void navigate({ to: "/tin-dang", search: { tro_ly: 1 } });
+  };
+
+  // Đăng đúng bộ lọc KiGi vừa dựng thành nhu cầu: sang trang Tìm nhà (áp bộ lọc như "Xem N căn")
+  // rồi mở hộp Đăng nhu cầu ở đó — một hộp dùng chung, không dựng lại tiêu chí ở đây.
+  const postDemand = () => {
+    if (last.current) saveHandoff(last.current);
+    voice.stop();
+    void navigate({ to: "/tin-dang", search: { tro_ly: 1, dang_nhu_cau: 1 } });
   };
 
   const voice = useGeminiLive({
@@ -143,6 +151,11 @@ export function VoiceAssistant({ focusTyping }: { focusTyping: () => void }) {
             <Button type="button" variant="outline" className="h-10" onClick={openResults}>
               Xem {payload.uoc_tinh ? "khoảng " : ""}
               {payload.so_can} căn
+            </Button>
+          )}
+          {payload && (
+            <Button type="button" variant="outline" className="h-10" onClick={postDemand}>
+              <Handshake className="mr-1.5 h-4 w-4 text-primary" /> Đăng nhu cầu này
             </Button>
           )}
           {active ? (

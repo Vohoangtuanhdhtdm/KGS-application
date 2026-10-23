@@ -43,6 +43,7 @@ import { formatDateTime } from "@/lib/format";
 import { ListingTermsFields } from "@/components/listings/ListingTermsFields";
 import { VietnamAddressPicker } from "@/components/assets/VietnamAddressPicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { DemandPulseLine } from "@/components/demand/DemandPulseLine";
 import { PriceSuggestion } from "@/components/listings/PriceSuggestion";
 import { LocationPinField, type LatLngValue } from "@/components/listings/LocationPinField";
 import { PropertyListCard } from "@/components/public/PropertyListCard";
@@ -1004,6 +1005,7 @@ function CreateListingPage() {
                       </Field>
                     )}
                   </div>
+                  <DemandPulseLine type={type} city={city} district={district} variant="owner" />
                   {/* Chỉ tin BÁN: mô hình định giá học trên giá rao bán. */}
                   {type === 1 && (
                     <PriceSuggestion

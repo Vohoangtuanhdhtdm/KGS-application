@@ -197,7 +197,7 @@ namespace kgs_api.Services.Seeding
             _db.Assets.RemoveRange(assets);
 
             var emails = People.Select(p => p.Email.ToUpperInvariant()).ToList();
-            var names = Demands.Select(d => d.Name).ToList();
+            var names = Demands.Select(d => d.Name).Concat(NearPriceDemands.Select(d => d.Name)).ToList();
             var searches = await _db.Set<SavedSearch>()
                 .Where(s => names.Contains(s.Name) && emails.Contains(s.User.NormalizedEmail!))
                 .ToListAsync(ct);
@@ -791,14 +791,32 @@ namespace kgs_api.Services.Seeding
             List<Listing> listings, Dictionary<string, string> people, DateTime now, CancellationToken ct)
         {
             var searches = new List<(Demand D, SavedSearch S, PublicListingSearchQuery Q)>();
-            foreach (var d in Demands)
+
+            // Hai nhu cầu "gần khớp theo giá": trần ngân sách đặt thấp hơn giá THẬT của một phòng
+            // trọ đã duyệt chừng 5%, ở hai quận khác nhau — để chủ nhà có ca thật mời kèm ưu đãi.
+            var nearTargets = listings
+                .Where(l => l.Status == ListingStatus.Approved && l.Type == ListingType.Rent
+                            && l.AssetUnit == null && l.Asset.TypeProperty == AssetDomainType.Room)
+                .GroupBy(l => l.Asset.Address.District)
+                .Select(g => g.OrderBy(l => l.Price).First())
+                .OrderBy(l => l.Asset.Address.District)
+                .Take(NearPriceDemands.Length)
+                .ToList();
+            var nearDemands = nearTargets.Select((l, i) => new Demand(
+                NearPriceDemands[i].Person, NearPriceDemands[i].Name, ListingType.Rent,
+                l.Asset.Address.City, l.Asset.Address.District, null, NearPriceBudget(l.Price), null,
+                new[] { AssetDomainType.Room }, false, true, NearPriceDemands[i].Note, Occupants: 1));
+
+            var index = 0;
+            foreach (var d in Demands.Concat(nearDemands))
             {
                 var q = new PublicListingSearchQuery(
                     Type: d.Type, City: d.City, District: d.District, PriceMin: d.PriceMin, PriceMax: d.PriceMax,
                     BedroomsMin: d.BedroomsMin, Keyword: null, Latitude: null, Longitude: null, RadiusMeters: null,
                     TotalCostMax: null, PetsAllowed: null, CurfewFree: null, SharedWithOwner: null, AvailableBy: null,
                     Amenities: null, SortBy: null,
-                    PropertyTypes: d.Types?.ToList(), LegalStatuses: d.Legal?.ToList(), Has3D: d.Has3D ? true : null);
+                    PropertyTypes: d.Types?.ToList(), LegalStatuses: d.Legal?.ToList(), Has3D: d.Has3D ? true : null,
+                    Occupants: d.Occupants);
                 var s = new SavedSearch
                 {
                     UserId = people[d.Person],
@@ -811,7 +829,10 @@ namespace kgs_api.Services.Seeding
                     DiscoverableByOwners = d.Discoverable,
                     DemandNote = d.Note,
                     DiscoverableSince = d.Discoverable ? now.AddDays(-10) : null,
+                    // Hạn rải từ 2 đến 28 ngày: có vài nhu cầu sắp hết hạn để trình diễn nút Gia hạn.
+                    DiscoverableUntil = d.Discoverable ? now.AddDays(2 + index * 7 % 27) : null,
                 };
+                index++;
                 searches.Add((d, s, q));
             }
             _db.Set<SavedSearch>().AddRange(searches.Select(x => x.S));
@@ -868,7 +889,7 @@ namespace kgs_api.Services.Seeding
                 Add(inv.SeekerUserId, $"Chủ nhà mời bạn xem nhà: {inv.Listing.Title}",
                     $"Tin này khớp nhu cầu \"{inv.SavedSearch?.Name}\" bạn đang tìm. Lời nhắn của chủ nhà: \"{inv.Message}\". " +
                     "Chủ nhà chưa biết bạn là ai — thông tin liên hệ chỉ được gửi đi khi bạn nhận lời.",
-                    "/yeu-cau?tab=invites", "Xem lời mời", 20);
+                    "/nhu-cau", "Xem lời mời", 20);
 
             foreach (var l in listings.Where(l => l.Status == ListingStatus.ChangesRequested))
                 Add(l.Asset.UserId, $"Tin đăng cần chỉnh sửa: {l.Title}", l.ModerationNote ?? "",

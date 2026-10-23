@@ -215,7 +215,11 @@ namespace kgs_api.Dtos
         [MaxLength(400)] string? Prefer = null,
 
         /// <summary>Chỉ tin thuộc toà nhà đã có mô hình 3D công khai (xem BuildingModelService).</summary>
-        bool? Has3D = null);
+        bool? Has3D = null,
+
+        /// <summary>Số người sẽ ở. Tin khớp khi chủ tin cho ở đủ số người này hoặc không khai
+        /// số người tối đa. Dùng chung cho tìm nhà, báo tin mới và ghép đôi.</summary>
+        [Range(1, 20)] int? Occupants = null);
 
     public sealed record PublicListingSummaryDto(
         Guid Id, string Slug, string Title, ListingType Type, decimal Price,

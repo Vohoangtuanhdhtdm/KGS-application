@@ -7,6 +7,10 @@ namespace kgs_api.Dtos
     // GHÉP ĐÔI HAI CHIỀU — chủ tin thấy nhu cầu ẩn danh và mời xem nhà
     // ============================================================
 
+    /// <summary>Nhu cầu khớp tin thế nào. Gần khớp = chỉ vượt trần ngân sách không quá 10%
+    /// (xem NearMatch). Số nhỏ đứng trước khi sắp xếp.</summary>
+    public enum DemandMatchKind { Exact = 1, NearPrice = 2 }
+
     /// <summary>Bật/tắt cho chủ tin phù hợp thấy một bộ lọc đã lưu.</summary>
     public sealed record SetDiscoverableRequest(
         bool Enabled,
@@ -33,11 +37,23 @@ namespace kgs_api.Dtos
         DateTime ActiveSince,
         InvitationStatus? InvitationStatus,
         DateTime? InvitedAt,
-        bool InvitationExpired);
+        bool InvitationExpired,
+        DemandMatchKind MatchKind,
+        /// <summary>Tin cao hơn ngân sách bao nhiêu % — chỉ có khi gần khớp theo giá.</summary>
+        int? OverBudgetPercent,
+        int? Occupants,
+        DateTime? AvailableBy,
+        bool? PetsAllowed,
+        /// <summary>Ưu đãi đã kèm lời mời (nếu đã mời).</summary>
+        decimal? OfferPrice,
+        string? OfferNote);
 
     public sealed record InviteRequest(
         Guid DemandId,
-        [MaxLength(500)] string? Message);
+        [MaxLength(500)] string? Message,
+        /// <summary>Giá cho riêng người được mời — phải thấp hơn giá niêm yết.</summary>
+        decimal? OfferPrice = null,
+        [MaxLength(120)] string? OfferNote = null);
 
     /// <summary>Lời mời trong hộp thư của người tìm.</summary>
     public sealed record SeekerInvitationDto(
@@ -59,7 +75,10 @@ namespace kgs_api.Dtos
         InvitationStatus Status,
         bool Expired,
         DateTime CreatedAt,
-        DateTime? RespondedAt);
+        DateTime? RespondedAt,
+        /// <summary>Ưu đãi riêng; <c>Price</c> ở trên là giá niêm yết để đặt cạnh nhau.</summary>
+        decimal? OfferPrice,
+        string? OfferNote);
 
     public sealed record RespondInvitationRequest(
         bool Accept,

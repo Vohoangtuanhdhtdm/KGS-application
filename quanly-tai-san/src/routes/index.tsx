@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { VoiceAssistant } from "@/components/voice/VoiceAssistant";
+import { DemandBand } from "@/components/demand/DemandBand";
 import { savedListingsApi } from "@/lib/api/engagement";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -98,6 +99,7 @@ function MarketplaceHome() {
         <LatestListings mode={mode} setMode={setMode} />
         <Showcase3D />
         <HotAreas mode={mode} />
+        <DemandBand type={mode === "rent" ? 2 : 1} />
         <WhyKgs />
       </div>
       {!isAdmin && <OwnerBand />}

@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   Box,
+  Handshake,
   ArrowRight,
   Gauge,
   type LucideIcon,
@@ -262,6 +263,8 @@ function OverviewPage() {
 
           {d.closes && <CloseOutcomesCard stats={d.closes} scope={`trong ${d.days} ngày qua`} />}
 
+          {d.matchmaking && <MatchmakingCard m={d.matchmaking} days={d.days} />}
+
           <p className="text-xs text-muted-foreground">
             <Inbox className="mr-1 inline h-3.5 w-3.5" />
             {d.kpis.inquiriesNew} yêu cầu xem nhà và {d.kpis.invitationsNew} lời mời xem nhà (ghép
@@ -443,6 +446,41 @@ function HBarChart({
  * được 3D trên tổng tin đang hiển thị, và số căn trống CHƯA đăng tin — nguồn cung chủ nhà còn
  * có thể đưa lên mà chưa đưa.
  */
+/** Ghép đôi hai chiều có ai dùng và có hiệu quả không. */
+function MatchmakingCard({
+  m,
+  days,
+}: {
+  m: NonNullable<AdminOverview["matchmaking"]>;
+  days: number;
+}) {
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  const items: [string, string, string][] = [
+    ["Nhu cầu đang mở", String(m.openDemands), "người tìm cho chủ nhà mời"],
+    ["Lời mời đã gửi", String(m.invitationsSent), `trong ${days} ngày qua`],
+    ["Tỉ lệ nhận lời", pct(m.acceptRate), `${m.accepted}/${m.invitationsSent} lời mời`],
+    ["Lời mời có ưu đãi", pct(m.offerRate), `${m.withOffer}/${m.invitationsSent} lời mời`],
+  ];
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Handshake className="h-4 w-4 text-muted-foreground" /> Ghép đôi người tìm và chủ nhà
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {items.map(([label, value, sub]) => (
+          <div key={label}>
+            <div className="text-xs text-muted-foreground">{label}</div>
+            <div className="text-2xl font-semibold tabular-nums">{value}</div>
+            <div className="text-xs text-muted-foreground">{sub}</div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 function BuildingsCard({ b }: { b: NonNullable<AdminOverview["buildings"]> }) {
   const share = b.liveListings ? Math.round((b.unitListingsLive / b.liveListings) * 100) : 0;
   const items: [string, string, string][] = [

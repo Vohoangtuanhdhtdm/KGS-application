@@ -3,6 +3,7 @@ using kgs_api.Domain.Entity;
 using kgs_api.Dtos.Auth;
 using kgs_api.Interfaces;
 using kgs_api.Services;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
@@ -27,15 +28,22 @@ namespace kgs_api.Controllers
         private readonly INotificationSender _notifier;
         private readonly ICurrentUserService _currentUser;
         private readonly ILogger<AdminListingsController> _logger;
+        private readonly IBackgroundJobClient _jobs;
 
         public AdminListingsController(
             ApplicationDbContext db,
             INotificationSender notifier,
             ICurrentUserService currentUser,
-            ILogger<AdminListingsController> logger)
+            ILogger<AdminListingsController> logger,
+            IBackgroundJobClient jobs)
         {
-            _db = db; _notifier = notifier; _currentUser = currentUser; _logger = logger;
+            _db = db; _notifier = notifier; _currentUser = currentUser; _logger = logger; _jobs = jobs;
         }
+
+        /// <summary>Tin vừa duyệt: đếm người đang tìm căn như thế này và báo chủ tin — chạy nền,
+        /// nút Duyệt không phải chờ. Xem DemandMatchNotifyJob.</summary>
+        private void EnqueueDemandMatch(Guid listingId)
+            => _jobs.Enqueue<DemandMatchNotifyJob>(j => j.RunAsync(listingId, CancellationToken.None));
 
         /// <summary>Hàng đợi chờ duyệt, lọc được theo loại tin, khu vực và người đăng.</summary>
         [HttpGet("pending")]
@@ -169,6 +177,7 @@ namespace kgs_api.Controllers
             await GhiLuuVetAsync(listing, ModerationAction.Approved, null, request.Note, ct);
             await _db.SaveChangesAsync(ct);
             await NotifyAsync(listing, approved: true, reason: null, ct);
+            EnqueueDemandMatch(listing.Id);
 
             return Ok(new { message = "Đã duyệt tin đăng.", listingId, status = listing.Status.ToString() });
         }
@@ -298,7 +307,10 @@ namespace kgs_api.Controllers
             // Gửi thông báo SAU khi lưu: nếu SaveChanges hỏng thì không có email nào báo
             // một quyết định chưa từng được ghi.
             foreach (var listing in handled)
+            {
                 await NotifyAsync(listing, request.Approve, request.Reason, ct);
+                if (request.Approve) EnqueueDemandMatch(listing.Id);
+            }
 
             return Ok(new BulkModerateResultDto(handled.Count, listings.Count - handled.Count, messages));
         }

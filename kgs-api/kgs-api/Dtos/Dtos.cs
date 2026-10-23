@@ -43,12 +43,15 @@ namespace kgs_api.Dtos
         Guid Id, Guid ListingId, string ListingSlug, string ListingTitle,
         string FromUserName, string? FromUserPhone, string? FromUserEmail,
         string? Message, DateTime? PreferredViewingAt,
-        InquiryStatus Status, DateTime CreatedAt);
+        InquiryStatus Status, DateTime CreatedAt,
+        /// <summary>Ưu đãi riêng chép từ lời mời mà người này đã nhận.</summary>
+        decimal? OfferPrice = null, string? OfferNote = null);
 
     /// <summary>Yêu cầu người tìm thuê ĐÃ GỬI. Không kèm liên hệ của chủ nhà —
     /// thông tin đó đã có sẵn trên trang chi tiết tin đăng.</summary>
     public sealed record SentInquiryDto(
         Guid Id, Guid ListingId, string ListingSlug, string ListingTitle,
         string? ThumbnailUrl, string? Message, DateTime? PreferredViewingAt,
-        InquiryStatus Status, DateTime CreatedAt);
+        InquiryStatus Status, DateTime CreatedAt,
+        decimal? OfferPrice = null, string? OfferNote = null);
 }

@@ -342,6 +342,15 @@ export interface AdminOverview {
   } | null;
   /** Kết quả các tin đóng trong kỳ. */
   closes?: CloseOutcomeStats | null;
+  /** Ghép đôi hai chiều: nhu cầu đang mở (hiện tại) và lời mời trong kỳ. Tỉ lệ 0–1. */
+  matchmaking?: {
+    openDemands: number;
+    invitationsSent: number;
+    accepted: number;
+    withOffer: number;
+    acceptRate: number;
+    offerRate: number;
+  } | null;
 }
 
 export const adminOverviewApi = {

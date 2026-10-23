@@ -11,7 +11,9 @@ import {
   User,
   X,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { INVITATIONS_KEY, matchmakingApi, pendingInvitations } from "@/lib/api/matchmaking";
 import { WORKSPACES } from "@/lib/workspace";
 import { WS_CLASS, useAvailableWorkspaces } from "@/components/workspace/wsStyles";
 import { useCurrentWorkspace } from "@/components/workspace/useCurrentWorkspace";
@@ -24,6 +26,8 @@ export interface AccountItem {
   path: string;
   search?: Record<string, string>;
   external?: boolean;
+  /** Số việc đang chờ (ví dụ lời mời chưa trả lời) — hiện thành huy hiệu khi > 0. */
+  badge?: number;
 }
 
 interface Group {
@@ -51,6 +55,12 @@ export function AccountSheet({
   const swipe = useSwipeToClose(onClose);
   const { isAuthenticated } = useAuth();
   const current = useCurrentWorkspace();
+  const invitations = useQuery({
+    queryKey: INVITATIONS_KEY,
+    queryFn: matchmakingApi.myInvitations,
+    enabled: isAuthenticated && current === "seeker",
+    staleTime: 60_000,
+  });
   const spaces = useAvailableWorkspaces();
 
   const groups: Group[] = [];
@@ -70,7 +80,12 @@ export function AccountSheet({
       items: [
         { label: "Tin đã lưu", icon: Heart, path: "/da-luu" },
         { label: "Yêu cầu xem nhà đã gửi", icon: Inbox, path: "/yeu-cau", search: { tab: "sent" } },
-        { label: "Lời mời xem nhà", icon: Handshake, path: "/yeu-cau", search: { tab: "invites" } },
+        {
+          label: "Nhu cầu của tôi",
+          icon: Handshake,
+          path: "/nhu-cau",
+          badge: pendingInvitations(invitations.data),
+        },
       ],
     });
   }
@@ -180,7 +195,12 @@ export function AccountSheet({
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-foreground">
                       <item.icon className="h-4 w-4" />
                     </div>
-                    <span className="text-sm">{item.label}</span>
+                    <span className="flex-1 text-sm">{item.label}</span>
+                    {!!item.badge && (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground tabular-nums">
+                        {item.badge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

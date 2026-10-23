@@ -24,5 +24,10 @@ namespace kgs_api.Domain.Entity.SubEntity
         public DateTime? PreferredViewingAt { get; set; }
         public InquiryStatus Status { get; set; } = InquiryStatus.New;
 
+        /// <summary>Ưu đãi riêng chép cứng từ lời mời khi người tìm nhận lời — cả hai bên cùng
+        /// thấy đúng con số đã hứa, kể cả khi tin đổi giá sau đó.</summary>
+        public decimal? OfferPrice { get; set; }
+        [MaxLength(120)] public string? OfferNote { get; set; }
+
     }
 }

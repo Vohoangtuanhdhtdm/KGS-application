@@ -59,4 +59,33 @@ public class ShowcaseCatalogTests
             Assert.All(d.Legal ?? Array.Empty<string>(), l => Assert.Contains(l, PropertyVocabulary.LegalStatuses));
         }
     }
+
+    private static IEnumerable<ShowcaseCatalog.Demand> OpenDemands
+        => ShowcaseCatalog.Demands.Where(d => d.Discoverable);
+
+    /// <summary>Nhịp cầu phải hiện được ở nhiều khu ngay trên dữ liệu trình diễn — nếu không,
+    /// trang chủ trống trơn và chức năng lại vô hình như trước.</summary>
+    [Fact]
+    public void NhuCau_NhipCauDatNguongItNhatBaQuan()
+    {
+        var groups = DemandPulse.Compute(OpenDemands.Select(d =>
+            new PulseInput(d.Person, d.Type, d.City, d.District, d.PriceMax)));
+        Assert.True(groups.Count(g => g.District != null && g.Type != null) >= 3);
+        Assert.Contains(groups, g => g.Type != null && g.Bands.Count > 0);
+    }
+
+    [Fact]
+    public void NhuCau_DuSoLuong()
+    {
+        Assert.InRange(OpenDemands.Count(), 35, 40);
+        Assert.True(OpenDemands.Select(d => d.Person).Distinct().Count() >= 12);
+        Assert.True(OpenDemands.Count(d => d.Occupants is not null) >= 10);
+    }
+
+    [Fact]
+    public void NearPriceBudget_VuotKhongQua10PhanTram()
+    {
+        Assert.Equal(5_200_000m, ShowcaseCatalog.NearPriceBudget(5_500_000m));
+        Assert.Equal(3_000_000m, ShowcaseCatalog.NearPriceBudget(3_200_000m));
+    }
 }

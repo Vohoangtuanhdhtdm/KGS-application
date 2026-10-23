@@ -254,12 +254,12 @@ namespace kgs_api.Services
             q.Select(i => new SentInquiryDto(
                 i.Id, i.ListingId, i.Listing.Slug!, i.Listing.Title,
                 i.Listing.Images.OrderBy(x => x.SortOrder).Select(x => x.File.Url).FirstOrDefault(),
-                i.Message, i.PreferredViewingAt, i.Status, i.CreatedAt));
+                i.Message, i.PreferredViewingAt, i.Status, i.CreatedAt, i.OfferPrice, i.OfferNote));
 
         private static IQueryable<ReceivedInquiryDto> ProjectReceived(IQueryable<ListingInquiry> q) =>
             q.Select(i => new ReceivedInquiryDto(
                 i.Id, i.ListingId, i.Listing.Slug!, i.Listing.Title,
                 i.FromUser.Name, i.FromUser.PhoneNumber, i.FromUser.Email,
-                i.Message, i.PreferredViewingAt, i.Status, i.CreatedAt));
+                i.Message, i.PreferredViewingAt, i.Status, i.CreatedAt, i.OfferPrice, i.OfferNote));
     }
 }

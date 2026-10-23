@@ -52,6 +52,9 @@ export interface SentInquiryDto {
   preferredViewingAt: string | null;
   status: InquiryStatusCode;
   createdAt: string;
+  /** Ưu đãi riêng chép từ lời mời mà người tìm đã nhận (null nếu không có). */
+  offerPrice?: number | null;
+  offerNote?: string | null;
 }
 
 export interface ReceivedInquiryDto {
@@ -66,6 +69,9 @@ export interface ReceivedInquiryDto {
   preferredViewingAt: string | null;
   status: InquiryStatusCode;
   createdAt: string;
+  /** Ưu đãi riêng chép từ lời mời mà người tìm đã nhận (null nếu không có). */
+  offerPrice?: number | null;
+  offerNote?: string | null;
 }
 
 export const savedListingsApi = {

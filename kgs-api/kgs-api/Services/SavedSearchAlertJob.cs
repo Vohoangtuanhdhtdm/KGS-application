@@ -1,6 +1,7 @@
 using kgs_api.Data;
 using kgs_api.Domain.Entity;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Domain.Rules;
 using kgs_api.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
@@ -37,8 +38,52 @@ namespace kgs_api.Services
             _geometryFactory = geometryFactory; _logger = logger;
         }
 
+        /// <summary>Hạn 30 ngày của nhu cầu mở cho chủ nhà: nhắc một lần khi còn 3 ngày, hết hạn
+        /// thì chỉ tắt chế độ mở. Xem DemandExpiry.</summary>
+        public async Task ProcessDemandExpiryAsync(DateTime now, CancellationToken ct)
+        {
+            var demands = await _db.Set<SavedSearch>()
+                .Where(s => s.DiscoverableByOwners && s.DiscoverableUntil != null)
+                .ToListAsync(ct);
+
+            int reminded = 0, closed = 0;
+            foreach (var s in demands)
+            {
+                switch (DemandExpiry.Decide(s.DiscoverableByOwners, s.DiscoverableUntil, s.ExpiryRemindedAt, now))
+                {
+                    case ExpiryAction.Close:
+                        // Giữ DiscoverableUntil: giao diện dựa vào nó để ghi "Đã hết hạn".
+                        s.DiscoverableByOwners = false;
+                        closed++;
+                        break;
+                    case ExpiryAction.Remind:
+                        var days = Math.Max(1, (int)Math.Ceiling((s.DiscoverableUntil!.Value - now).TotalDays));
+                        try
+                        {
+                            await _notifier.SendAsync(s.UserId, $"Nhu cầu “{s.Name}” sắp hết hạn",
+                                $"Còn {days} ngày nữa chủ nhà sẽ không mời được bạn. Gia hạn thêm 30 ngày nếu bạn vẫn đang tìm.",
+                                "/nhu-cau", "Gia hạn", ct);
+                            s.ExpiryRemindedAt = now;
+                            reminded++;
+                        }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            // Không đánh dấu đã nhắc: sáng mai thử lại.
+                            _logger.LogError(ex, "SavedSearchAlertJob: nhắc hết hạn nhu cầu {SearchId} thất bại.", s.Id);
+                        }
+                        break;
+                }
+            }
+
+            if (reminded + closed > 0) await _db.SaveChangesAsync(ct);
+            _logger.LogInformation(
+                "SavedSearchAlertJob: nhu cầu sắp hết hạn đã nhắc {Reminded}, đã tắt {Closed}.", reminded, closed);
+        }
+
         public async Task RunAsync(CancellationToken ct)
         {
+            await ProcessDemandExpiryAsync(DateTime.UtcNow, ct);
+
             var searches = await _db.Set<SavedSearch>()
                 .Where(s => s.NotifyEnabled)
                 .ToListAsync(ct);

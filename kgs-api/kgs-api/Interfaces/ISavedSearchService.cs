@@ -15,6 +15,9 @@ namespace kgs_api.Interfaces
         Task<SavedSearchDto> SetDiscoverableAsync(Guid id, SetDiscoverableRequest request, CancellationToken ct = default);
 
         /// <summary>Đánh dấu đã xem — đưa mốc "tin mới" về hiện tại, huy hiệu về 0.</summary>
+        /// <summary>Gia hạn chế độ mở thêm 30 ngày kể từ bây giờ (bật lại nếu đã hết hạn).</summary>
+        Task<SavedSearchDto> RenewAsync(Guid id, CancellationToken ct = default);
+
         Task MarkSeenAsync(Guid id, CancellationToken ct = default);
 
         Task DeleteAsync(Guid id, CancellationToken ct = default);
