@@ -9,13 +9,13 @@ import {
   type ReceivedInquiryDto,
 } from "@/lib/api/engagement";
 import { getErrorMessage } from "@/lib/api/errors";
-import { formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarClock, Inbox, Mail, Phone, Send } from "lucide-react";
+import { CalendarClock, Gift, Inbox, Mail, Phone, Send } from "lucide-react";
 
 export const Route = createFileRoute("/yeu-cau/")({
   head: () => ({ meta: [{ title: "Yêu cầu xem nhà — KGS" }] }),
@@ -41,8 +41,8 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
       <div>
         {!embedded && <h1 className="text-2xl font-semibold tracking-tight">Yêu cầu xem nhà</h1>}
         <p className="text-sm text-muted-foreground mt-1">
-          Nơi marketplace nối vào nghiệp vụ cho thuê: duyệt yêu cầu, chuyển người hỏi thành đối tác,
-          rồi ký hợp đồng mà không phải nhập lại thông tin.
+          Người quan tâm tin của bạn gửi yêu cầu xem nhà ở đây. Liên hệ, hẹn giờ xem và cập nhật
+          trạng thái để họ biết bạn đã nhận.
         </p>
       </div>
 
@@ -68,6 +68,28 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/** Ưu đãi riêng chủ nhà đã hứa trong lời mời — chép cứng vào yêu cầu khi người tìm nhận lời. */
+function OfferLine({
+  offerPrice,
+  offerNote,
+}: {
+  offerPrice?: number | null;
+  offerNote?: string | null;
+}) {
+  if (offerPrice == null && !offerNote) return null;
+  return (
+    <p className="inline-flex items-start gap-1.5 rounded-md bg-primary/[0.06] px-3 py-1.5 text-sm">
+      <Gift className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+      <span>
+        <span className="font-medium">Ưu đãi đã hứa:</span>{" "}
+        {[offerPrice != null ? `giá ${formatCurrency(offerPrice)}` : null, offerNote]
+          .filter(Boolean)
+          .join(" · ")}
+      </span>
+    </p>
   );
 }
 
@@ -198,6 +220,7 @@ function InquiryCard({
             {q.message}
           </p>
         )}
+        <OfferLine offerPrice={q.offerPrice} offerNote={q.offerNote} />
 
         {q.preferredViewingAt && (
           <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
@@ -291,6 +314,7 @@ function SentList() {
               {q.message && (
                 <p className="text-sm text-muted-foreground line-clamp-2">{q.message}</p>
               )}
+              <OfferLine offerPrice={q.offerPrice} offerNote={q.offerNote} />
               <p className="text-xs text-muted-foreground">Gửi lúc {formatDateTime(q.createdAt)}</p>
             </div>
             <Badge variant="outline" className={INQUIRY_STATUS_CLASS[q.status]}>

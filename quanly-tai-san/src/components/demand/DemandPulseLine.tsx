@@ -24,11 +24,14 @@ export function DemandPulseLine({
   type,
   city,
   district,
+  variant = "seeker",
   className = "",
 }: {
   type?: ListingTypeCode | null;
   city?: string | null;
   district?: string | null;
+  /** "owner" = câu cho người đăng tin (bước 2 Đăng tin): tin sẽ được giới thiệu tới họ. */
+  variant?: "seeker" | "owner";
   className?: string;
 }) {
   const q = useQuery({
@@ -40,6 +43,18 @@ export function DemandPulseLine({
   const p = q.data;
   if (!p) return null;
   const band = busiestBand(p);
+  const place = p.district ?? p.city;
+
+  if (variant === "owner")
+    return (
+      <p className={`flex items-start gap-1.5 text-sm ${className}`}>
+        <Users className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <span>
+          Có <span className="font-medium">{p.people} người</span> {seekingVerb(p.type)} ở {place} —
+          tin của bạn sẽ được giới thiệu tới họ sau khi duyệt.
+        </span>
+      </p>
+    );
 
   return (
     <p className={`flex items-center gap-1.5 text-sm text-muted-foreground ${className}`}>

@@ -50,6 +50,7 @@ export function describeDemand(
   else if (c.areaMin != null) out.push(`Từ ${c.areaMin} m²`);
   else if (c.areaMax != null) out.push(`Đến ${c.areaMax} m²`);
   if (c.bedroomsMin != null) out.push(`Từ ${c.bedroomsMin} phòng ngủ`);
+  if (c.occupants != null) out.push(`${c.occupants} người ở`);
   if (c.bathroomsMin != null) out.push(`Từ ${c.bathroomsMin} phòng tắm`);
   if (c.floorsMin != null) out.push(`Từ ${c.floorsMin} tầng`);
   if (c.frontageMin != null) out.push(`Mặt tiền từ ${c.frontageMin} m`);

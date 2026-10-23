@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Check, Clock, Loader2, Send, ShieldCheck, UserRound, X } from "lucide-react";
+import { Check, Clock, Gift, Loader2, Send, ShieldCheck, UserRound, X } from "lucide-react";
+import { CurrencyInput } from "@/components/CurrencyInput";
+import { Input } from "@/components/ui/input";
+import { formatCurrency } from "@/lib/format";
 import { matchmakingApi, type AnonymousDemand } from "@/lib/api/matchmaking";
 import { getErrorMessage } from "@/lib/api/errors";
 import { describeDemand } from "@/lib/demandSummary";
@@ -18,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 
 const MESSAGE_MAX = 500;
+const OFFER_NOTE_MAX = 120;
 
 function since(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
@@ -39,7 +43,7 @@ export function ListingDemandsSheet({
   open,
   onOpenChange,
 }: {
-  listing: { id: string; title: string };
+  listing: { id: string; title: string; price: number };
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -52,16 +56,41 @@ export function ListingDemandsSheet({
   });
   const [composing, setComposing] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [offerPrice, setOfferPrice] = useState<number | null>(null);
+  const [offerNote, setOfferNote] = useState("");
+
+  // Giá ưu đãi phải thấp hơn giá đang đăng — máy chủ cũng chặn, đây chỉ để báo sớm.
+  const offerError =
+    offerPrice != null && (offerPrice <= 0 || offerPrice >= listing.price)
+      ? `Giá ưu đãi phải thấp hơn giá đang đăng (${formatCurrency(listing.price, { compact: true })}).`
+      : null;
+
+  const startComposing = (d: AnonymousDemand) => {
+    setComposing(d.demandId);
+    setMessage("");
+    setOfferNote("");
+    // Gần khớp theo giá: gợi ý sẵn đúng mức ngân sách của người tìm.
+    const budget = d.criteria.priceMax ?? d.criteria.totalCostMax ?? null;
+    setOfferPrice(d.matchKind === 2 && budget != null && budget < listing.price ? budget : null);
+  };
 
   const invite = useMutation({
     mutationFn: (demandId: string) =>
-      matchmakingApi.invite(listing.id, demandId, message.trim() || null),
+      matchmakingApi.invite(
+        listing.id,
+        demandId,
+        message.trim() || null,
+        offerPrice,
+        offerNote.trim() || null,
+      ),
     onSuccess: (updated) => {
       qc.setQueryData<AnonymousDemand[]>(key, (old) =>
         old?.map((d) => (d.demandId === updated.demandId ? updated : d)),
       );
       setComposing(null);
       setMessage("");
+      setOfferPrice(null);
+      setOfferNote("");
       toast.success("Đã gửi lời mời", {
         description:
           "Họ nhận lời thì yêu cầu xem nhà sẽ hiện ở trang Yêu cầu, kèm thông tin liên hệ.",
@@ -72,6 +101,108 @@ export function ListingDemandsSheet({
 
   const rows = q.data ?? [];
   const waiting = rows.filter((d) => d.invitationStatus == null).length;
+  const exact = rows.filter((d) => d.matchKind !== 2);
+  const near = rows.filter((d) => d.matchKind === 2);
+
+  const card = (d: AnonymousDemand) => (
+    <article key={d.demandId} className="space-y-2.5 rounded-lg border p-3">
+      <header className="flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+          <UserRound className="h-4 w-4 text-muted-foreground" />
+          {d.alias}
+        </span>
+        <span className="text-xs text-muted-foreground">đang tìm từ {since(d.activeSince)}</span>
+      </header>
+
+      {d.matchKind === 2 && d.overBudgetPercent != null && (
+        <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+          Ngân sách thấp hơn giá tin {d.overBudgetPercent}% — một giá ưu đãi có thể chốt được.
+        </p>
+      )}
+
+      <ul className="flex flex-wrap gap-1" aria-label="Nhu cầu">
+        {describeDemand(d.criteria, d.centerDistanceMeters).map((t) => (
+          <li key={t}>
+            <Badge variant="secondary" className="font-normal">
+              {t}
+            </Badge>
+          </li>
+        ))}
+      </ul>
+
+      {d.note && (
+        <blockquote className="border-l-2 pl-2.5 text-sm italic text-muted-foreground">
+          “{d.note}”
+        </blockquote>
+      )}
+
+      {d.invitationStatus != null ? (
+        <div className="space-y-1">
+          <InvitationState demand={d} />
+          {(d.offerPrice != null || d.offerNote) && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Gift className="h-3.5 w-3.5 text-primary" />
+              Kèm ưu đãi:{" "}
+              {[d.offerPrice != null ? formatCurrency(d.offerPrice) : null, d.offerNote]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
+        </div>
+      ) : composing === d.demandId ? (
+        <div className="space-y-2">
+          <Textarea
+            rows={3}
+            value={message}
+            maxLength={MESSAGE_MAX}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Lời nhắn (không bắt buộc), ví dụ: Phòng còn trống từ đầu tháng, chiều nào bạn tiện xem nhà?"
+            aria-label="Lời nhắn kèm lời mời"
+          />
+          <div className="space-y-2 rounded-md border border-dashed p-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium">
+              <Gift className="h-3.5 w-3.5 text-primary" /> Ưu đãi riêng cho người này (không bắt
+              buộc)
+            </p>
+            <CurrencyInput
+              value={offerPrice}
+              onChange={setOfferPrice}
+              placeholder={`Giá cho riêng họ, thấp hơn ${formatCurrency(listing.price, { compact: true })}`}
+            />
+            {offerError && <p className="text-xs text-destructive">{offerError}</p>}
+            <Input
+              value={offerNote}
+              maxLength={OFFER_NOTE_MAX}
+              onChange={(e) => setOfferNote(e.target.value)}
+              placeholder="Dòng ưu đãi, ví dụ: miễn phí gửi xe 3 tháng"
+              aria-label="Dòng ưu đãi"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setComposing(null)}>
+              Huỷ
+            </Button>
+            <Button
+              size="sm"
+              disabled={invite.isPending || offerError != null}
+              onClick={() => invite.mutate(d.demandId)}
+            >
+              {invite.isPending ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Gửi lời mời
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button size="sm" variant="outline" className="w-full" onClick={() => startComposing(d)}>
+          <Send className="mr-1.5 h-3.5 w-3.5" /> Mời xem nhà
+        </Button>
+      )}
+    </article>
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -106,79 +237,21 @@ export function ListingDemandsSheet({
               <p className="text-xs text-muted-foreground">
                 {rows.length} người đang tìm · {waiting} người chưa được mời
               </p>
-              {rows.map((d) => (
-                <article key={d.demandId} className="space-y-2.5 rounded-lg border p-3">
-                  <header className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-sm font-medium">
-                      <UserRound className="h-4 w-4 text-muted-foreground" />
-                      {d.alias}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      đang tìm từ {since(d.activeSince)}
-                    </span>
-                  </header>
-
-                  <ul className="flex flex-wrap gap-1" aria-label="Nhu cầu">
-                    {describeDemand(d.criteria, d.centerDistanceMeters).map((t) => (
-                      <li key={t}>
-                        <Badge variant="secondary" className="font-normal">
-                          {t}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {d.note && (
-                    <blockquote className="border-l-2 pl-2.5 text-sm italic text-muted-foreground">
-                      “{d.note}”
-                    </blockquote>
-                  )}
-
-                  {d.invitationStatus != null ? (
-                    <InvitationState demand={d} />
-                  ) : composing === d.demandId ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        rows={3}
-                        value={message}
-                        maxLength={MESSAGE_MAX}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="Lời nhắn (không bắt buộc), ví dụ: Phòng còn trống từ đầu tháng, chiều nào bạn tiện xem nhà?"
-                        aria-label="Lời nhắn kèm lời mời"
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => setComposing(null)}>
-                          Huỷ
-                        </Button>
-                        <Button
-                          size="sm"
-                          disabled={invite.isPending}
-                          onClick={() => invite.mutate(d.demandId)}
-                        >
-                          {invite.isPending ? (
-                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Send className="mr-1.5 h-3.5 w-3.5" />
-                          )}
-                          Gửi lời mời
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setComposing(d.demandId);
-                        setMessage("");
-                      }}
-                    >
-                      <Send className="mr-1.5 h-3.5 w-3.5" /> Mời xem nhà
-                    </Button>
-                  )}
-                </article>
-              ))}
+              {exact.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold">Khớp hoàn toàn ({exact.length})</h3>
+                  {exact.map(card)}
+                </section>
+              )}
+              {near.length > 0 && (
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold">Gần khớp theo giá ({near.length})</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Mọi điều kiện khác đều khớp, chỉ có giá tin cao hơn ngân sách của họ một chút.
+                  </p>
+                  {near.map(card)}
+                </section>
+              )}
             </>
           )}
         </div>

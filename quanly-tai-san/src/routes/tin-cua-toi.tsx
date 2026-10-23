@@ -245,7 +245,15 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
 
   const demandBadge = (l: OwnerListingDto) => {
     const n = demandCount.get(l.id) ?? 0;
-    if (l.status !== 2 || n === 0) return null;
+    if (l.status !== 2) return null;
+    // Luôn hiện, kể cả khi chưa có ai: chủ tin biết chức năng có tồn tại, và biết sẽ được báo.
+    if (n === 0)
+      return (
+        <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Users className="h-3.5 w-3.5" />
+          Chưa có ai — nhu cầu mới sẽ được báo cho bạn
+        </span>
+      );
     return (
       <button
         type="button"
@@ -256,7 +264,7 @@ function MyListingsPage({ embedded = false }: { embedded?: boolean } = {}) {
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/15"
       >
         <Users className="h-3.5 w-3.5" />
-        {n} người đang tìm nhà như tin này
+        {n} người đang tìm căn như thế này
       </button>
     );
   };
