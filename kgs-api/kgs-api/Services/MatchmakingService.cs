@@ -68,15 +68,25 @@ namespace kgs_api.Services
         {
             var uid = _currentUser.UserId;
             var mine = _listings.Query().AsNoTracking().Where(l => l.Asset.UserId == uid);
-            if (!await mine.AnyAsync(l => l.Status == ListingStatus.Approved, ct))
+            var kinds = await mine.Where(l => l.Status == ListingStatus.Approved)
+                .Select(l => new { l.Type, l.Asset.Address.City })
+                .Distinct()
+                .ToListAsync(ct);
+            if (kinds.Count == 0)
                 return Array.Empty<ListingDemandCountDto>();
 
             var counts = new Dictionary<Guid, int>();
             foreach (var s in await LoadDemandsAsync(uid, ct))
             {
-                // Một truy vấn cho mỗi nhu cầu, trả về những tin CỦA TÔI lọt vào nhu cầu đó.
+                var c = SavedSearchService.Deserialize(s.CriteriaJson);
+                // Không tin nào của tôi cùng loại, cùng tỉnh với nhu cầu này thì khỏi hỏi CSDL.
+                if (!kinds.Any(k => PassesPrefilter(c, k.Type, k.City))) continue;
+
+                // Một truy vấn cho mỗi nhu cầu, trả về những tin CỦA TÔI lọt vào nhu cầu đó. Dùng
+                // bản nới giá (nếu có) vì nó bao cả khớp hoàn toàn lẫn gần khớp — đúng hai nhóm
+                // chủ tin thấy khi mở danh sách.
                 var ids = await SavedSearchService
-                    .BuildMatchQuery(mine, SavedSearchService.Deserialize(s.CriteriaJson), _geometryFactory)
+                    .BuildMatchQuery(mine, NearMatch.Relax(c) ?? c, _geometryFactory)
                     .Select(l => l.Id)
                     .ToListAsync(ct);
                 foreach (var id in ids) counts[id] = counts.GetValueOrDefault(id) + 1;
@@ -97,15 +107,30 @@ namespace kgs_api.Services
             var result = new List<AnonymousDemandDto>();
             foreach (var s in await LoadDemandsAsync(uid, ct))
             {
-                if (!await MatchesAsync(s, listingId, ct)) continue;
+                var c = SavedSearchService.Deserialize(s.CriteriaJson);
+                if (await ClassifyAsync(c, listing, ct) is not { } match) continue;
                 invited.TryGetValue(s.Id, out var inv);
-                result.Add(ToAnonymous(s, listing.Location, inv));
+                result.Add(ToAnonymous(s, c, listing.Location, inv, match));
             }
-            // Chưa mời lên trước, rồi nhu cầu mới bật trước — chủ tin nhìn vào là thấy việc cần làm.
+            // Chưa mời lên trước, rồi khớp hoàn toàn trước gần khớp, rồi nhu cầu mới bật trước —
+            // chủ tin nhìn vào là thấy việc cần làm.
             return result
                 .OrderBy(d => d.InvitationStatus is null ? 0 : 1)
+                .ThenBy(d => d.MatchKind)
                 .ThenByDescending(d => d.ActiveSince)
                 .ToList();
+        }
+
+        public async Task<int> CountMatchingDemandsAsync(Guid listingId, CancellationToken ct = default)
+        {
+            var listing = await LoadListingAsync(listingId, ownerId: null, ct);
+            if (listing.Status != ListingStatus.Approved) return 0;
+
+            var n = 0;
+            foreach (var s in await LoadDemandsAsync(listing.OwnerId, ct))
+                if (await ClassifyAsync(SavedSearchService.Deserialize(s.CriteriaJson), listing, ct) is not null)
+                    n++;
+            return n;
         }
 
         public async Task<AnonymousDemandDto> InviteAsync(
@@ -115,7 +140,8 @@ namespace kgs_api.Services
             var listing = await GetOwnedApprovedListingAsync(listingId, uid, ct);
 
             var demand = await _searches.Query().AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == request.DemandId && s.DiscoverableByOwners, ct)
+                .Where(DemandExpiry.OpenAt(DateTime.UtcNow))
+                .FirstOrDefaultAsync(s => s.Id == request.DemandId, ct)
                 ?? throw new NotFoundException("Nhu cầu này không còn mở cho chủ tin.");
 
             if (demand.UserId == uid)
@@ -123,8 +149,12 @@ namespace kgs_api.Services
 
             // Kiểm tra lại phía máy chủ: client có thể gửi bất kỳ mã nhu cầu nào, kể cả nhu cầu
             // mà tin này không hề khớp.
-            if (!await MatchesAsync(demand, listingId, ct))
+            var criteria = SavedSearchService.Deserialize(demand.CriteriaJson);
+            if (await ClassifyAsync(criteria, listing, ct) is not { } match)
                 throw new ValidationFailedException("Tin này không khớp nhu cầu đó nên không mời được.");
+
+            var offerError = InvitationOffer.Validate(request.OfferPrice, request.OfferNote, listing.Price);
+            if (offerError is not null) throw new ValidationFailedException(offerError);
 
             if (await _invitations.Query().AnyAsync(
                     i => i.ListingId == listingId && i.SavedSearchId == demand.Id, ct))
@@ -144,6 +174,8 @@ namespace kgs_api.Services
                 OwnerUserId = uid,
                 SeekerUserId = demand.UserId,
                 Message = string.IsNullOrWhiteSpace(request.Message) ? null : request.Message.Trim(),
+                OfferPrice = request.OfferPrice,
+                OfferNote = string.IsNullOrWhiteSpace(request.OfferNote) ? null : request.OfferNote.Trim(),
                 Status = InvitationStatus.Pending,
                 // Gán tường minh: hạn mức mỗi ngày và hạn 14 ngày đều tính từ cột này, không
                 // được phụ thuộc vào chuyện DbContext có tự điền CreatedAt hay không.
@@ -153,6 +185,11 @@ namespace kgs_api.Services
             await _uow.SaveChangesAsync(ct);
 
             var loiNhan = invitation.Message is null ? "" : $" Lời nhắn của chủ nhà: \"{invitation.Message}\".";
+            if (invitation.OfferPrice is not null || invitation.OfferNote is not null)
+                loiNhan += " Kèm ưu đãi riêng cho bạn"
+                           + (invitation.OfferPrice is { } op ? $": giá {op:#,0} đ thay vì {listing.Price:#,0} đ" : "")
+                           + (invitation.OfferNote is null ? "" : $" — {invitation.OfferNote}")
+                           + ".";
             await NotifyAsync(
                 demand.UserId,
                 $"Chủ nhà mời bạn xem nhà: {listing.Title}",
@@ -160,7 +197,7 @@ namespace kgs_api.Services
                 "Chủ nhà chưa biết bạn là ai — thông tin liên hệ chỉ được gửi đi khi bạn nhận lời.",
                 "/nhu-cau", "Xem lời mời", ct);
 
-            return ToAnonymous(demand, listing.Location, invitation);
+            return ToAnonymous(demand, criteria, listing.Location, invitation, match);
         }
 
         // ==================== PHÍA NGƯỜI TÌM ====================
@@ -191,8 +228,8 @@ namespace kgs_api.Services
                     throw new ConflictException("Tin này không còn hiển thị — chủ nhà có thể đã cho thuê.");
 
                 // Nhận lời = gửi một yêu cầu xem nhà bình thường. Nhờ vậy chủ tin nhận nó ở
-                // đúng hộp thư quen thuộc, kèm liên hệ của người tìm, và luồng xem nhà →
-                // chuyển thành khách thuê → hợp đồng chạy tiếp mà không cần đường riêng.
+                // đúng hộp thư quen thuộc, kèm liên hệ của người tìm, và luồng hẹn xem nhà chạy
+                // tiếp mà không cần đường riêng.
                 var message = "Nhận lời mời xem nhà của bạn."
                               + (string.IsNullOrWhiteSpace(request.Message) ? "" : " " + request.Message.Trim());
                 Guid inquiryId;
@@ -216,6 +253,18 @@ namespace kgs_api.Services
                 }
                 inv.Status = InvitationStatus.Accepted;
                 inv.InquiryId = inquiryId;
+
+                // Ghi cứng ưu đãi vào yêu cầu xem nhà: cả hai bên cùng thấy đúng con số đã hứa
+                // trong hộp thư, kể cả khi tin đổi giá sau đó.
+                if (inv.OfferPrice is not null || inv.OfferNote is not null)
+                {
+                    var inquiry = await _inquiries.Query().FirstAsync(i => i.Id == inquiryId, ct);
+                    if (inquiry.OfferPrice is null && inquiry.OfferNote is null)
+                    {
+                        inquiry.OfferPrice = inv.OfferPrice;
+                        inquiry.OfferNote = inv.OfferNote;
+                    }
+                }
             }
             else
             {
@@ -239,33 +288,69 @@ namespace kgs_api.Services
                 .Take(MaxDemandsScanned)
                 .ToListAsync(ct);
 
-        private Task<bool> MatchesAsync(SavedSearch s, Guid listingId, CancellationToken ct)
+        private Task<bool> MatchesAsync(PublicListingSearchQuery c, Guid listingId, CancellationToken ct)
             => SavedSearchService
-                .BuildMatchQuery(
-                    _listings.Query().AsNoTracking().Where(l => l.Id == listingId),
-                    SavedSearchService.Deserialize(s.CriteriaJson),
-                    _geometryFactory)
+                .BuildMatchQuery(_listings.Query().AsNoTracking().Where(l => l.Id == listingId), c, _geometryFactory)
                 .AnyAsync(ct);
 
-        private async Task<(string Title, Point? Location)> GetOwnedApprovedListingAsync(
-            Guid listingId, string uid, CancellationToken ct)
+        /// <summary>Lọc sơ TRONG BỘ NHỚ trước khi hỏi CSDL: nhu cầu ghi loại tin hay tỉnh/thành
+        /// khác với tin thì chắc chắn không khớp. Phần lớn nhu cầu rơi ở đây, nên số truy vấn
+        /// so khớp giảm theo số khu vực chứ không theo tổng số nhu cầu.</summary>
+        public static bool PassesPrefilter(PublicListingSearchQuery c, ListingType listingType, string listingCity)
+            => (c.Type is null || c.Type == listingType)
+               && (string.IsNullOrWhiteSpace(c.City)
+                   || AdministrativeNames.CanonicalCity(c.City) == AdministrativeNames.CanonicalCity(listingCity));
+
+        /// <summary>Nhu cầu khớp tin này thế nào: hoàn toàn, gần khớp theo giá (kèm % vượt ngân
+        /// sách), hay không khớp (null). Tối đa hai truy vấn, chỉ sau khi đã qua lọc sơ.</summary>
+        private async Task<(DemandMatchKind Kind, int? OverBudgetPercent)?> ClassifyAsync(
+            PublicListingSearchQuery c, ListingInfo l, CancellationToken ct)
+        {
+            if (!PassesPrefilter(c, l.Type, l.City)) return null;
+            if (await MatchesAsync(c, l.Id, ct)) return (DemandMatchKind.Exact, null);
+            if (NearMatch.Relax(c) is not { } relaxed || !await MatchesAsync(relaxed, l.Id, ct)) return null;
+
+            var over = Math.Max(
+                c.PriceMax is { } pm ? NearMatch.OverBudgetPercent(l.Price, pm) : 0,
+                c.TotalCostMax is { } tm ? NearMatch.OverBudgetPercent(l.MonthlyCost, tm) : 0);
+            return (DemandMatchKind.NearPrice, over);
+        }
+
+        private sealed record ListingInfo(
+            Guid Id, string OwnerId, string Title, ListingStatus Status, Point? Location,
+            ListingType Type, string City, decimal Price, decimal MonthlyCost);
+
+        /// <summary><paramref name="ownerId"/> null = không kiểm chủ sở hữu (tác vụ nền).</summary>
+        private async Task<ListingInfo> LoadListingAsync(Guid listingId, string? ownerId, CancellationToken ct)
         {
             var l = await _listings.Query().AsNoTracking()
-                .Where(x => x.Id == listingId && x.Asset.UserId == uid)
-                .Select(x => new { x.Title, x.Status, x.Asset.Location })
+                .Where(x => x.Id == listingId && (ownerId == null || x.Asset.UserId == ownerId))
+                .Select(x => new
+                {
+                    x.Id, x.Asset.UserId, x.Title, x.Status, x.Asset.Location, x.Type, x.Asset.Address.City,
+                    x.Price, x.Terms.ServiceFee, x.Terms.ParkingFee, x.Terms.InternetFee,
+                })
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException("Không tìm thấy tin đăng.");
+            return new ListingInfo(l.Id, l.UserId, l.Title, l.Status, l.Location, l.Type, l.City, l.Price,
+                l.Price + (l.ServiceFee ?? 0) + (l.ParkingFee ?? 0) + (l.InternetFee ?? 0));
+        }
+
+        private async Task<ListingInfo> GetOwnedApprovedListingAsync(Guid listingId, string uid, CancellationToken ct)
+        {
+            var l = await LoadListingAsync(listingId, uid, ct);
             if (l.Status != ListingStatus.Approved)
                 throw new ValidationFailedException("Chỉ tin đang hiển thị mới mời được người xem.");
-            return (l.Title, l.Location);
+            return l;
         }
 
         private static bool IsExpired(DateTime createdAt)
             => DateTime.UtcNow - createdAt > InvitationLifetime;
 
-        private static AnonymousDemandDto ToAnonymous(SavedSearch s, Point? listingLocation, ListingInvitation? inv)
+        private static AnonymousDemandDto ToAnonymous(
+            SavedSearch s, PublicListingSearchQuery c, Point? listingLocation, ListingInvitation? inv,
+            (DemandMatchKind Kind, int? OverBudgetPercent) match)
         {
-            var c = SavedSearchService.Deserialize(s.CriteriaJson);
 
             double? distance = null;
             if (c.Latitude is not null && c.Longitude is not null && listingLocation is not null)
@@ -279,7 +364,10 @@ namespace kgs_api.Services
                 s.Id, Alias(s.Id), safe, distance is null ? null : DistanceBand(distance.Value),
                 s.DemandNote, s.DiscoverableSince ?? s.CreatedAt,
                 inv?.Status, inv?.CreatedAt,
-                inv is { Status: InvitationStatus.Pending } && IsExpired(inv.CreatedAt));
+                inv is { Status: InvitationStatus.Pending } && IsExpired(inv.CreatedAt),
+                match.Kind, match.OverBudgetPercent,
+                c.Occupants, c.AvailableBy, c.PetsAllowed,
+                inv?.OfferPrice, inv?.OfferNote);
         }
 
         /// <summary>Khoảng cách THÔ: chỉ trả về cận trên của một trong vài dải (1 / 2 / 5 / 10 km).
@@ -323,7 +411,8 @@ namespace kgs_api.Services
                 i.SavedSearch != null ? i.SavedSearch.Name : null,
                 i.Status,
                 i.Status == InvitationStatus.Pending && i.CreatedAt < cutoff,
-                i.CreatedAt, i.RespondedAt));
+                i.CreatedAt, i.RespondedAt,
+                i.OfferPrice, i.OfferNote));
         }
 
         private async Task NotifyAsync(

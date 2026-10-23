@@ -8,6 +8,10 @@ namespace kgs_api.Interfaces
     {
         Task<IReadOnlyList<ListingDemandCountDto>> GetDemandCountsAsync(CancellationToken ct = default);
         Task<IReadOnlyList<AnonymousDemandDto>> GetDemandsForListingAsync(Guid listingId, CancellationToken ct = default);
+        /// <summary>Số nhu cầu đang mở khớp (hoặc gần khớp theo giá) một tin — cho tác vụ nền
+        /// báo chủ tin khi tin vừa được duyệt. Không kiểm người đang đăng nhập.</summary>
+        Task<int> CountMatchingDemandsAsync(Guid listingId, CancellationToken ct = default);
+
         Task<AnonymousDemandDto> InviteAsync(Guid listingId, InviteRequest request, CancellationToken ct = default);
 
         Task<IReadOnlyList<SeekerInvitationDto>> GetMyInvitationsAsync(CancellationToken ct = default);
