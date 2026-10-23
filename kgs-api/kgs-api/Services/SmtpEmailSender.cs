@@ -1,4 +1,5 @@
 ﻿using kgs_api.Interfaces;
+using kgs_api.Services.Email;
 using kgs_api.Utility;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -24,35 +25,58 @@ namespace kgs_api.Services
 
         public Task SendEmailConfirmationAsync(string toEmail, string userName, string confirmationLink, CancellationToken ct = default)
         {
-            var html = $@"
-                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                      <h2>Xác thực địa chỉ email</h2>
-                      <p>Xin chào {System.Net.WebUtility.HtmlEncode(userName)},</p>
-                      <p>Vui lòng bấm vào nút bên dưới để xác thực địa chỉ email của bạn:</p>
-                      <p><a href='{confirmationLink}' style='background:#1e3a8a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>Xác thực email</a></p>
-                      <p>Nếu nút không hoạt động, dán link sau vào trình duyệt:<br/>{confirmationLink}</p>
-                    </div>";
-            return SendCoreAsync(toEmail, "Xác thực địa chỉ email của bạn", html, ct);
+            var (html, text) = EmailLayout.Render(new EmailContent(
+                Title: "Chào mừng bạn đến với KGS!",
+                Preheader: "Còn một bước nữa: xác nhận email để bắt đầu tìm nhà cùng KiGi.",
+                Eyebrow: "Xác thực tài khoản",
+                Paragraphs: new[]
+                {
+                    $"Chào {userName},",
+                    "Cảm ơn bạn đã đăng ký. Bấm nút bên dưới để xác nhận đây đúng là email của bạn — xong là bạn lưu tin, đăng nhu cầu và nhận lời mời xem nhà được ngay.",
+                },
+                Details: Array.Empty<EmailDetail>(),
+                CtaLabel: "Xác nhận email",
+                CtaUrl: confirmationLink,
+                Tip: "Nếu bạn không tạo tài khoản KGS, cứ bỏ qua email này."));
+            return SendCoreAsync(toEmail, "Xác nhận email để bắt đầu dùng KGS", html, text, ct);
         }
 
         public Task SendPasswordResetAsync(string toEmail, string userName, string resetLink, CancellationToken ct = default)
         {
-            var html = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                  <h2>Đặt lại mật khẩu</h2>
-                  <p>Xin chào {System.Net.WebUtility.HtmlEncode(userName)},</p>
-                  <p>Bấm vào nút bên dưới để đặt lại mật khẩu (link có hiệu lực trong thời gian giới hạn):</p>
-                  <p><a href='{resetLink}' style='background:#1e3a8a;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>Đặt lại mật khẩu</a></p>
-                  <p>Nếu bạn không yêu cầu việc này, hãy bỏ qua email này.</p>
-                </div>";
-            return SendCoreAsync(toEmail, "Đặt lại mật khẩu", html, ct);
+            var (html, text) = EmailLayout.Render(new EmailContent(
+                Title: "Đặt lại mật khẩu",
+                Preheader: "Liên kết đặt lại mật khẩu KGS của bạn — chỉ dùng được trong thời gian ngắn.",
+                Eyebrow: "Bảo mật tài khoản",
+                Paragraphs: new[]
+                {
+                    $"Chào {userName},",
+                    "KiGi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Bấm nút bên dưới để chọn mật khẩu mới. Liên kết chỉ dùng được trong thời gian ngắn.",
+                },
+                Details: Array.Empty<EmailDetail>(),
+                CtaLabel: "Đặt mật khẩu mới",
+                CtaUrl: resetLink,
+                Tip: "Nếu bạn không yêu cầu việc này, hãy bỏ qua email — mật khẩu hiện tại vẫn giữ nguyên."));
+            return SendCoreAsync(toEmail, "Đặt lại mật khẩu KGS", html, text, ct);
         }
 
-        public Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct = default)
-            => SendCoreAsync(toEmail, subject, htmlBody, ct);
+        public Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct = default,
+            string? textBody = null)
+            => SendCoreAsync(toEmail, subject, htmlBody, textBody, ct);
+
+        /// <summary>KiGi động nhúng vào thư khi HTML có cid:kigi (xem EmailLayout). Đọc một lần.</summary>
+        private static readonly Lazy<byte[]?> KiGiGif = new(() =>
+        {
+            var asm = typeof(SmtpEmailSender).Assembly;
+            var name = asm.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith("kigi.gif", StringComparison.Ordinal));
+            if (name is null) return null;
+            using var s = asm.GetManifestResourceStream(name)!;
+            using var ms = new MemoryStream();
+            s.CopyTo(ms);
+            return ms.ToArray();
+        });
 
         // ---- Lõi dùng chung cho cả 3 method public ----
-        private async Task SendCoreAsync(string toEmail, string subject, string htmlBody, CancellationToken ct)
+        private async Task SendCoreAsync(string toEmail, string subject, string htmlBody, string? textBody, CancellationToken ct)
         {
 
             // ← THÊM — kiểm tra config có bị rỗng không TRƯỚC khi thử kết nối
@@ -66,7 +90,13 @@ namespace kgs_api.Services
             message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromEmail));
             message.To.Add(MailboxAddress.Parse(toEmail));
             message.Subject = subject;
-            message.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = htmlBody };
+            var builder = new BodyBuilder { HtmlBody = htmlBody, TextBody = textBody };
+            if (htmlBody.Contains($"cid:{EmailLayout.KiGiContentId}") && KiGiGif.Value is { } gif)
+            {
+                var kigi = builder.LinkedResources.Add("kigi.gif", gif, new ContentType("image", "gif"));
+                kigi.ContentId = EmailLayout.KiGiContentId;
+            }
+            message.Body = builder.ToMessageBody();
             using var client = new SmtpClient();
 
             // ← THÊM tạm — bỏ qua lỗi certificate để loại trừ khả năng server PA VN dùng

@@ -3,6 +3,7 @@ using kgs_api.Domain.Entity.SubEntity;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
+using kgs_api.Services.Email;
 using Microsoft.EntityFrameworkCore;
 using static kgs_api.Common.Common;
 using static kgs_api.Domain.Enums;
@@ -42,11 +43,12 @@ namespace kgs_api.Services
         /// người dùng thấy "gửi thất bại" trong khi yêu cầu vẫn nằm đó, và họ gửi lại — lúc
         /// đó ràng buộc một-yêu-cầu-đang-mở sẽ chặn, để lại đúng một tình huống không lối ra.</summary>
         private async Task BaoAsync(
-            string userId, string title, string body, string linkPath, string linkLabel, CancellationToken ct)
+            string userId, string title, string body, string linkPath, string linkLabel, CancellationToken ct,
+            IReadOnlyList<EmailDetail>? details = null)
         {
             try
             {
-                await _notifier.SendAsync(userId, title, body, linkPath, linkLabel, ct);
+                await _notifier.SendAsync(userId, title, body, linkPath, linkLabel, ct, details);
             }
             catch (Exception ex)
             {
@@ -159,21 +161,21 @@ namespace kgs_api.Services
                 .Select(u => new { u.Name, u.PhoneNumber })
                 .FirstOrDefaultAsync(ct);
 
-            var lienHe = string.IsNullOrWhiteSpace(nguoiHoi?.PhoneNumber)
-                ? ""
-                : $" Số điện thoại: {nguoiHoi!.PhoneNumber}.";
-            var lichXem = inquiry.PreferredViewingAt is null
-                ? ""
-                : $" Họ muốn xem nhà lúc {inquiry.PreferredViewingAt:HH:mm dd/MM/yyyy}.";
-            var loiNhan = string.IsNullOrWhiteSpace(inquiry.Message)
-                ? ""
-                : $" Lời nhắn: {inquiry.Message}";
+            var ten = nguoiHoi?.Name ?? "Một người dùng";
+            var chiTiet = new List<EmailDetail> { new("👤", "Người gửi", ten) };
+            if (!string.IsNullOrWhiteSpace(nguoiHoi?.PhoneNumber))
+                chiTiet.Add(new("📞", "Số điện thoại", nguoiHoi!.PhoneNumber!, $"tel:{nguoiHoi.PhoneNumber}"));
+            if (inquiry.PreferredViewingAt is { } luc)
+                // Lưu theo UTC; người đọc ở Việt Nam. Trước đây in thẳng giờ UTC — 09:30 thành 02:30.
+                chiTiet.Add(new("📅", "Muốn xem nhà", $"{luc.AddHours(7):HH:mm, dd/MM/yyyy}"));
+            if (!string.IsNullOrWhiteSpace(inquiry.Message))
+                chiTiet.Add(new("💬", "Lời nhắn", $"“{inquiry.Message}”"));
 
             await BaoAsync(
                 listing.OwnerId,
                 $"Có người hỏi thuê: {listing.Title}",
-                $"{nguoiHoi?.Name ?? "Một người dùng"} vừa gửi yêu cầu xem nhà.{lienHe}{lichXem}{loiNhan}",
-                "/yeu-cau", "Xem yêu cầu", ct);
+                $"{ten} vừa gửi yêu cầu xem nhà cho tin của bạn.",
+                "/yeu-cau", "Xem yêu cầu", ct, chiTiet);
 
             return await ProjectSent(_inquiries.Query().AsNoTracking().Where(i => i.Id == inquiry.Id))
                 .FirstAsync(ct);

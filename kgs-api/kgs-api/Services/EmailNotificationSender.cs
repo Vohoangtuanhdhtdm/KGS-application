@@ -1,5 +1,6 @@
 using kgs_api.Domain.Entity;
 using kgs_api.Interfaces;
+using kgs_api.Services.Email;
 using kgs_api.Utility;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -21,8 +22,8 @@ namespace kgs_api.Services
     /// 3. **Sai mô tả.** Chân trang ghi "email nhắc lịch tự động" cho cả email duyệt tin và
     ///    cảnh báo tin mới.
     ///
-    /// Lưu ý cho người sửa sau: `body` được HTML-encode và đặt trong MỘT thẻ p, nên ký tự
-    /// xuống dòng trong chuỗi sẽ không hiện ra. Viết body thành một đoạn liền.</summary>
+    /// Giao diện thư nằm ở EmailLayout (KiGi động, nhãn loại thư, khung chi tiết, nút, mẹo). Muốn
+    /// xuống đoạn trong `body` thì viết "\n\n".</summary>
     public class EmailNotificationSender : INotificationSender
     {
         private readonly IEmailSender _email;
@@ -48,7 +49,8 @@ namespace kgs_api.Services
             string body,
             string? linkPath = null,
             string? linkLabel = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            IReadOnlyList<EmailDetail>? details = null)
         {
             var user = await _userManager.FindByIdAsync(userId);
 
@@ -65,24 +67,22 @@ namespace kgs_api.Services
             var path = string.IsNullOrWhiteSpace(linkPath) ? "/" : linkPath;
             if (!path.StartsWith('/')) path = "/" + path;
 
-            var url = System.Net.WebUtility.HtmlEncode(baseUrl + path);
-            var label = System.Net.WebUtility.HtmlEncode(
-                string.IsNullOrWhiteSpace(linkLabel) ? "Mở trên KGS" : linkLabel);
+            var (eyebrow, tip) = EmailLayout.KindFor(path);
+            var paragraphs = new List<string>();
+            if (!string.IsNullOrWhiteSpace(user.Name)) paragraphs.Add($"Chào {user.Name},");
+            paragraphs.AddRange(EmailLayout.SplitParagraphs(body));
 
-            var html = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                  <h2>{System.Net.WebUtility.HtmlEncode(title)}</h2>
-                  <p>{System.Net.WebUtility.HtmlEncode(body)}</p>
-                  <p style='margin-top:24px;'>
-                    <a href='{url}'
-                       style='background:#1E2761;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;'>
-                       {label}</a>
-                  </p>
-                  <p style='font-size:12px;color:#6b7280;margin-top:32px;'>
-                     Email tự động từ KGS — nền tảng tìm kiếm và kết nối bất động sản.</p>
-                </div>";
+            var (html, text) = EmailLayout.Render(new EmailContent(
+                Title: title,
+                Preheader: body.Length <= 140 ? body : body[..139] + "…",
+                Eyebrow: eyebrow,
+                Paragraphs: paragraphs,
+                Details: details ?? Array.Empty<EmailDetail>(),
+                CtaLabel: string.IsNullOrWhiteSpace(linkLabel) ? "Mở trên KGS" : linkLabel,
+                CtaUrl: baseUrl + path,
+                Tip: tip));
 
-            await _email.SendAsync(user.Email, title, html, ct);
+            await _email.SendAsync(user.Email, title, html, ct, text);
         }
     }
 }

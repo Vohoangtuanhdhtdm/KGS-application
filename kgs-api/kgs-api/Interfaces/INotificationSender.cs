@@ -1,3 +1,5 @@
+using kgs_api.Services.Email;
+
 namespace kgs_api.Interfaces
 {
     /// <summary>Gửi thông báo tới một người dùng. Hiện cài đặt bằng email.</summary>
@@ -12,12 +14,15 @@ namespace kgs_api.Interfaces
         /// email nói về việc duyệt tin. Người nhận bấm vào là rơi vào hư không.
         ///
         /// null = nút trỏ về trang chủ.</summary>
+        /// <param name="details">Thông tin dạng dòng (người gửi, số điện thoại, giờ hẹn…). Email
+        /// hiện thành khung chi tiết; thông báo trong ứng dụng nối vào cuối nội dung.</param>
         Task SendAsync(
             string userId,
             string title,
             string body,
             string? linkPath = null,
             string? linkLabel = null,
-            CancellationToken ct = default);
+            CancellationToken ct = default,
+            IReadOnlyList<EmailDetail>? details = null);
     }
 }
