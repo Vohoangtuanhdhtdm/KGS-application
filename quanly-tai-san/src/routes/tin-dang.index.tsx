@@ -62,7 +62,10 @@ import { PropertyMapClient } from "@/components/map/PropertyMapClient";
 import type { PropertyMapPoint } from "@/components/map/PropertyMap";
 import { LocationSearchPopover } from "@/components/public/LocationSearchPopover";
 import { SavedSearchesPopover } from "@/components/public/SavedSearchesPopover";
-import type { SavedSearchCriteria } from "@/lib/api/savedSearches";
+import { toCriteria, type SavedSearchCriteria } from "@/lib/api/savedSearches";
+import { PostDemandDialog } from "@/components/demand/PostDemandDialog";
+import { DemandPulseLine } from "@/components/demand/DemandPulseLine";
+import { useDemandDraftResume } from "@/components/demand/useDemandDraftResume";
 import { DemandSearchSheet, type DemandSearchResult } from "@/components/public/DemandSearchSheet";
 import { useGeolocationOnDemand, type LatLng } from "@/hooks/useGeolocationOnDemand";
 import { useViewportKind } from "@/hooks/useViewportKind";
@@ -101,6 +104,7 @@ import {
   Target,
   X,
   ArrowUpDown,
+  Handshake,
 } from "lucide-react";
 
 /**
@@ -129,6 +133,8 @@ export interface ListingsSearchParams {
   tinh?: string;
   /** 1 = vừa đến từ trợ lý giọng nói KiGi: áp kết quả bàn giao trong sessionStorage. */
   tro_ly?: 1;
+  /** 1 = mở ngay hộp "Đăng nhu cầu" (nút "Đăng nhu cầu này" của KiGi). */
+  dang_nhu_cau?: 1;
 }
 
 const numParam = (v: unknown): number | undefined => {
@@ -162,6 +168,7 @@ export const Route = createFileRoute("/tin-dang/")({
       phuong: codeParam(s.phuong),
       tinh: codeParam(s.tinh),
       tro_ly: s.tro_ly === 1 || s.tro_ly === "1" ? 1 : undefined,
+      dang_nhu_cau: s.dang_nhu_cau === 1 || s.dang_nhu_cau === "1" ? 1 : undefined,
     };
   },
   head: () => ({ meta: [{ title: "Tin đăng bất động sản — KGS" }] }),
@@ -404,6 +411,12 @@ function PublicListingsPage() {
   }, [keywordInput]);
 
   const [demandSheetOpen, setDemandSheetOpen] = useState(false);
+  // "Đăng nhu cầu": khách vừa đăng nhập xong thì mở lại hộp với bản nháp đã điền.
+  const [postDemandOpen, setPostDemandOpen] = useState(false);
+  const [demandDraft, clearDemandDraft] = useDemandDraftResume();
+  useEffect(() => {
+    if (demandDraft) setPostDemandOpen(true);
+  }, [demandDraft]);
 
   // Áp toàn bộ lựa chọn từ form "Tìm theo nhu cầu" vào bộ lọc hiện có — tái sử dụng
   // đúng state/logic sẵn có (ô địa chỉ, city/district, luồng xin quyền vị trí), không
@@ -922,6 +935,7 @@ function PublicListingsPage() {
       const handed = takeHandoff();
       if (handed) applyAssistant(handed);
     }
+    if (u.dang_nhu_cau) setPostDemandOpen(true);
     if (u.q) {
       const q = u.q;
       toast.promise(assistantApi.searchIntent(q, null), {
@@ -1005,45 +1019,70 @@ function PublicListingsPage() {
   // Trên điện thoại khung danh sách đã ghi số kết quả ở tay nắm — không lặp lại ở đây, nhường
   // chỗ cho hàng nút (trước đây số "43 bất động sản" bị ép xuống ba dòng).
   const resultsBar = (
-    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-      {viewportKind !== "mobile" && (
-        <p className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
-          {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center gap-1">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 px-2 text-sm"
-          onClick={() => setDemandSheetOpen(true)}
-        >
-          <Target className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-          Tìm theo nhu cầu
-        </Button>
-        <SavedSearchesPopover
-          currentFilters={savedSearchFilters}
-          suggestedName={suggestedSearchName}
-          hasAnyFilter={appliedFilters.length > 0}
-          onApply={applySavedSearch}
-        />
-        <Select
-          value={String(sortBy)}
-          onValueChange={(v) => setSortBy(Number(v) as ListingSortCode)}
-        >
-          <SelectTrigger className="h-8 w-auto gap-1.5 border-none shadow-none px-2 text-sm">
-            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end">
-            {sortOptions.map((code) => (
-              <SelectItem key={code} value={String(code)}>
-                {LISTING_SORT[code]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        {viewportKind !== "mobile" && (
+          <p className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
+            {query.isLoading ? "Đang tải..." : `${totalCount} bất động sản`}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-sm"
+            onClick={() => setDemandSheetOpen(true)}
+          >
+            <Target className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+            Tìm theo nhu cầu
+          </Button>
+          <SavedSearchesPopover
+            currentFilters={savedSearchFilters}
+            suggestedName={suggestedSearchName}
+            hasAnyFilter={appliedFilters.length > 0}
+            onApply={applySavedSearch}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 px-2 text-sm"
+            onClick={() => setPostDemandOpen(true)}
+          >
+            <Handshake className="h-3.5 w-3.5 mr-1.5 text-primary" />
+            Đăng nhu cầu
+          </Button>
+          <Select
+            value={String(sortBy)}
+            onValueChange={(v) => setSortBy(Number(v) as ListingSortCode)}
+          >
+            <SelectTrigger className="h-8 w-auto gap-1.5 border-none shadow-none px-2 text-sm">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {sortOptions.map((code) => (
+                <SelectItem key={code} value={String(code)}>
+                  {LISTING_SORT[code]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+      <DemandPulseLine type={type} city={city} district={district} />
+      {/* Ít kết quả là lúc người tìm dễ bỏ đi nhất — và cũng là lúc đăng nhu cầu có ích nhất:
+        căn hợp với họ có thể chưa được đăng, chủ nhà đăng sau sẽ tự tìm tới. */}
+      {!query.isLoading && totalCount < 5 && (
+        <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm">
+            <span className="font-medium">Chưa có nhiều căn khớp</span> — đăng nhu cầu này, chủ nhà
+            phù hợp sẽ mời bạn khi có căn.
+          </p>
+          <Button size="sm" onClick={() => setPostDemandOpen(true)} className="shrink-0">
+            <Handshake className="mr-1.5 h-4 w-4" /> Đăng nhu cầu
+          </Button>
+        </div>
+      )}
     </div>
   );
 
@@ -1674,6 +1713,17 @@ function PublicListingsPage() {
           </MobileListSheet>
         </div>
       )}
+
+      <PostDemandDialog
+        open={postDemandOpen}
+        onOpenChange={(v) => {
+          setPostDemandOpen(v);
+          if (!v) clearDemandDraft();
+        }}
+        criteria={toCriteria(savedSearchFilters)}
+        suggestedName={suggestedSearchName}
+        draft={demandDraft}
+      />
 
       <DemandSearchSheet
         open={demandSheetOpen}

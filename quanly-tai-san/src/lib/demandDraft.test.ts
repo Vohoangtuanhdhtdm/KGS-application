@@ -1,5 +1,10 @@
 import { expect, test } from "vitest";
-import { DEMAND_DRAFT_KEY, saveDemandDraft, takeDemandDraft, type DemandDraft } from "./demandDraft";
+import {
+  DEMAND_DRAFT_KEY,
+  saveDemandDraft,
+  takeDemandDraft,
+  type DemandDraft,
+} from "./demandDraft";
 
 class MemoryStorage implements Storage {
   private m = new Map<string, string>();
