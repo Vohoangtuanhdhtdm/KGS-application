@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Check, Handshake, ImageIcon, Loader2, X } from "lucide-react";
-import { matchmakingApi, type SeekerInvitation } from "@/lib/api/matchmaking";
+import { INVITATIONS_KEY, matchmakingApi, type SeekerInvitation } from "@/lib/api/matchmaking";
 import { formatListingPrice } from "@/lib/api/listings";
 import { getErrorMessage } from "@/lib/api/errors";
 import { formatDateTime } from "@/lib/format";
@@ -14,8 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-
-const INVITATIONS_KEY = ["my-invitations"];
 
 /**
  * Hộp lời mời xem nhà của người tìm — phía nhận của ghép đôi hai chiều.

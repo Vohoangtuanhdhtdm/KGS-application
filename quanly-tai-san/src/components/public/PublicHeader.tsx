@@ -3,6 +3,7 @@ import {
   Building,
   Building2,
   Calculator,
+  Handshake,
   Heart,
   LineChart,
   LogIn,
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/dinh-gia", label: "Định giá", icon: Calculator, authOnly: false },
   { to: "/chi-so-gia", label: "Chỉ số giá", icon: LineChart, authOnly: false },
   { to: "/da-luu", label: "Đã lưu", icon: Heart, authOnly: true },
+  { to: "/nhu-cau", label: "Nhu cầu", icon: Handshake, authOnly: true },
 ] as const;
 
 export function PublicHeader() {

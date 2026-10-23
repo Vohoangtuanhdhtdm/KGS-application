@@ -50,6 +50,13 @@ export interface SeekerInvitation {
   respondedAt: string | null;
 }
 
+/** Khoá truy vấn lời mời của người tìm — dùng chung cho danh sách và huy hiệu trên menu. */
+export const INVITATIONS_KEY = ["my-invitations"];
+
+/** Lời mời còn chờ người tìm trả lời (chưa hết hạn). */
+export const pendingInvitations = (list: SeekerInvitation[] | undefined) =>
+  (list ?? []).filter((i) => i.status === 1 && !i.expired).length;
+
 export const matchmakingApi = {
   demandCounts: () => api<ListingDemandCount[]>("/matchmaking/my-listings/demand-counts"),
 

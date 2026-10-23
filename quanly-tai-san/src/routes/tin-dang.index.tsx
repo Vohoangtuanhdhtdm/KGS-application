@@ -62,7 +62,7 @@ import { PropertyMapClient } from "@/components/map/PropertyMapClient";
 import type { PropertyMapPoint } from "@/components/map/PropertyMap";
 import { LocationSearchPopover } from "@/components/public/LocationSearchPopover";
 import { SavedSearchesPopover } from "@/components/public/SavedSearchesPopover";
-import { toCriteria, type SavedSearchCriteria } from "@/lib/api/savedSearches";
+import { savedSearchesApi, toCriteria, type SavedSearchCriteria } from "@/lib/api/savedSearches";
 import { PostDemandDialog } from "@/components/demand/PostDemandDialog";
 import { DemandPulseLine } from "@/components/demand/DemandPulseLine";
 import { useDemandDraftResume } from "@/components/demand/useDemandDraftResume";
@@ -135,6 +135,8 @@ export interface ListingsSearchParams {
   tro_ly?: 1;
   /** 1 = mở ngay hộp "Đăng nhu cầu" (nút "Đăng nhu cầu này" của KiGi). */
   dang_nhu_cau?: 1;
+  /** Mã một bộ lọc đã lưu của chính người dùng — "Đang khớp N căn" ở trang Nhu cầu của tôi. */
+  bo_loc?: string;
 }
 
 const numParam = (v: unknown): number | undefined => {
@@ -169,6 +171,7 @@ export const Route = createFileRoute("/tin-dang/")({
       tinh: codeParam(s.tinh),
       tro_ly: s.tro_ly === 1 || s.tro_ly === "1" ? 1 : undefined,
       dang_nhu_cau: s.dang_nhu_cau === 1 || s.dang_nhu_cau === "1" ? 1 : undefined,
+      bo_loc: strParam(s.bo_loc),
     };
   },
   head: () => ({ meta: [{ title: "Tin đăng bất động sản — KGS" }] }),
@@ -936,6 +939,17 @@ function PublicListingsPage() {
       if (handed) applyAssistant(handed);
     }
     if (u.dang_nhu_cau) setPostDemandOpen(true);
+    if (u.bo_loc) {
+      // Áp ĐỦ tiêu chí của bộ lọc đã lưu (số người ở, tiện nghi...), không chỉ phần chở được trên URL.
+      const id = u.bo_loc;
+      void savedSearchesApi
+        .list()
+        .then((all) => {
+          const found = all.find((s) => s.id === id);
+          if (found) applySavedSearch(found.criteria);
+        })
+        .catch(() => {});
+    }
     if (u.q) {
       const q = u.q;
       toast.promise(assistantApi.searchIntent(q, null), {

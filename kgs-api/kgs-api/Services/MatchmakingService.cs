@@ -158,7 +158,7 @@ namespace kgs_api.Services
                 $"Chủ nhà mời bạn xem nhà: {listing.Title}",
                 $"Tin này khớp nhu cầu \"{demand.Name}\" bạn đang tìm.{loiNhan} " +
                 "Chủ nhà chưa biết bạn là ai — thông tin liên hệ chỉ được gửi đi khi bạn nhận lời.",
-                "/yeu-cau?tab=invites", "Xem lời mời", ct);
+                "/nhu-cau", "Xem lời mời", ct);
 
             return ToAnonymous(demand, listing.Location, invitation);
         }

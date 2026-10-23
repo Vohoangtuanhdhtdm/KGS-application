@@ -889,7 +889,7 @@ namespace kgs_api.Services.Seeding
                 Add(inv.SeekerUserId, $"Chủ nhà mời bạn xem nhà: {inv.Listing.Title}",
                     $"Tin này khớp nhu cầu \"{inv.SavedSearch?.Name}\" bạn đang tìm. Lời nhắn của chủ nhà: \"{inv.Message}\". " +
                     "Chủ nhà chưa biết bạn là ai — thông tin liên hệ chỉ được gửi đi khi bạn nhận lời.",
-                    "/yeu-cau?tab=invites", "Xem lời mời", 20);
+                    "/nhu-cau", "Xem lời mời", 20);
 
             foreach (var l in listings.Where(l => l.Status == ListingStatus.ChangesRequested))
                 Add(l.Asset.UserId, $"Tin đăng cần chỉnh sửa: {l.Title}", l.ModerationNote ?? "",

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -16,7 +16,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarClock, Inbox, Mail, Phone, Send } from "lucide-react";
-import { InvitationsList } from "@/components/matchmaking/InvitationsList";
 
 export const Route = createFileRoute("/yeu-cau/")({
   head: () => ({ meta: [{ title: "Yêu cầu xem nhà — KGS" }] }),
@@ -25,6 +24,11 @@ export const Route = createFileRoute("/yeu-cau/")({
   // tham số này — xem resolveWorkspace() trong lib/workspace.ts.
   validateSearch: (s: Record<string, unknown>): { tab?: "received" | "sent" | "invites" } =>
     s.tab === "sent" || s.tab === "invites" ? { tab: s.tab } : {},
+  // Lời mời xem nhà đã chuyển sang trang "Nhu cầu của tôi" — liên kết cũ (email, thông báo đã
+  // gửi) vẫn dẫn đúng chỗ.
+  beforeLoad: ({ search }) => {
+    if (search.tab === "invites") throw redirect({ to: "/nhu-cau" });
+  },
   component: InquiriesPage,
 });
 
@@ -46,7 +50,7 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
         value={tab}
         onValueChange={(v) =>
           navigate({
-            search: v === "sent" || v === "invites" ? { tab: v } : {},
+            search: v === "sent" ? { tab: v } : {},
             replace: true,
           })
         }
@@ -54,7 +58,6 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
         <TabsList>
           <TabsTrigger value="received">Nhận được</TabsTrigger>
           <TabsTrigger value="sent">Đã gửi</TabsTrigger>
-          <TabsTrigger value="invites">Lời mời xem nhà</TabsTrigger>
         </TabsList>
 
         <TabsContent value="received" className="pt-4">
@@ -62,9 +65,6 @@ function InquiriesPage({ embedded = false }: { embedded?: boolean } = {}) {
         </TabsContent>
         <TabsContent value="sent" className="pt-4">
           <SentList />
-        </TabsContent>
-        <TabsContent value="invites" className="pt-4">
-          <InvitationsList />
         </TabsContent>
       </Tabs>
     </div>
