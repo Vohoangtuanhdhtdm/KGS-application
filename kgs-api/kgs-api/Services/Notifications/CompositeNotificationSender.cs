@@ -2,6 +2,7 @@ using kgs_api.Data;
 using kgs_api.Domain.Entity.SubEntity;
 using kgs_api.Hubs;
 using kgs_api.Interfaces;
+using kgs_api.Services.Email;
 using Microsoft.AspNetCore.SignalR;
 
 namespace kgs_api.Services.Notifications
@@ -32,8 +33,13 @@ namespace kgs_api.Services.Notifications
 
         public async Task SendAsync(
             string userId, string title, string body, string? linkPath = null, string? linkLabel = null,
-            CancellationToken ct = default)
+            CancellationToken ct = default, IReadOnlyList<EmailDetail>? details = null)
         {
+            // Thông báo trong ứng dụng là một đoạn chữ: nối các dòng chi tiết vào cuối để không mất
+            // thông tin (email thì hiện chúng thành khung riêng).
+            var inAppBody = details is { Count: > 0 }
+                ? body + " " + string.Join(" ", details.Select(d => $"{d.Label}: {d.Value}."))
+                : body;
             try
             {
                 using var scope = _scopes.CreateScope();
@@ -42,7 +48,7 @@ namespace kgs_api.Services.Notifications
                 {
                     UserId = userId,
                     Title = Cut(title, 200),
-                    Body = Cut(body, 1000),
+                    Body = Cut(inAppBody, 1000),
                     LinkPath = string.IsNullOrWhiteSpace(linkPath) ? null : Cut(linkPath, 300),
                     LinkLabel = string.IsNullOrWhiteSpace(linkLabel) ? null : Cut(linkLabel, 100),
                     CreatedAt = DateTime.UtcNow,
@@ -67,7 +73,7 @@ namespace kgs_api.Services.Notifications
                 _logger.LogWarning(ex, "Không đẩy được sự kiện thời gian thực cho {UserId}", userId);
             }
 
-            await _email.SendAsync(userId, title, body, linkPath, linkLabel, ct);
+            await _email.SendAsync(userId, title, body, linkPath, linkLabel, ct, details);
         }
 
         private static string Cut(string s, int max) => s.Length <= max ? s : s[..(max - 1)] + "…";

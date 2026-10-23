@@ -34,6 +34,8 @@
     <EmbeddedResource Include="Data\vn-admin-units.json" />
     <EmbeddedResource Include="Data\vn-admin-2025.json" />
     <EmbeddedResource Include="Data\vn-ward-boundaries.geojson" />
+    <!-- Ảnh nhúng vào email: KiGi động và biểu tượng (sinh bằng các script trong kgs-api/tools). -->
+    <EmbeddedResource Include="Assets\Email\*.gif;Assets\Email\*.png" />
   </ItemGroup>
 
   <ItemGroup>
