@@ -60,5 +60,14 @@ namespace kgs_api.Domain.Entity.SubEntity
 
         /// <summary>Lúc đã nhắc "sắp hết hạn" — mỗi kỳ hạn chỉ nhắc một lần.</summary>
         public DateTime? ExpiryRemindedAt { get; set; }
+
+        /// <summary>Kiểm duyệt khi mở cho chủ nhà: sạch thì Approved ngay, có dấu hiệu spam thì
+        /// Pending chờ quản trị. Xem DemandScreening.</summary>
+        public Enums.DemandReviewStatus DemandReview { get; set; } = Enums.DemandReviewStatus.Approved;
+
+        /// <summary>Lý do bị giữ lại hoặc bị từ chối — câu cho người tìm đọc.</summary>
+        [MaxLength(300)] public string? DemandReviewReason { get; set; }
+
+        public DateTime? DemandReviewedAt { get; set; }
     }
 }

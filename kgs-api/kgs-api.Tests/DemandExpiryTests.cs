@@ -60,6 +60,18 @@ public class DemandExpiryTests
     }
 
     [Fact]
+    public void OpenAt_BoQuaChuaDuyet()
+    {
+        var data = new[]
+        {
+            new SavedSearch { DiscoverableByOwners = true, DiscoverableUntil = Now.AddDays(3) },
+            new SavedSearch { DiscoverableByOwners = true, DiscoverableUntil = Now.AddDays(3), DemandReview = kgs_api.Domain.Enums.DemandReviewStatus.Pending },
+            new SavedSearch { DiscoverableByOwners = true, DiscoverableUntil = Now.AddDays(3), DemandReview = kgs_api.Domain.Enums.DemandReviewStatus.Rejected },
+        };
+        Assert.Single(data.AsQueryable().Where(DemandExpiry.OpenAt(Now)));
+    }
+
+    [Fact]
     public void OpenAt_LocDungTrenDanhSach()
     {
         var data = new[]

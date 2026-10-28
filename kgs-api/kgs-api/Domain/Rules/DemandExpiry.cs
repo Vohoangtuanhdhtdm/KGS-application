@@ -28,7 +28,8 @@ namespace kgs_api.Domain.Rules
         /// đọc "nhu cầu đang mở" phải đi qua đây: job tắt nhu cầu hết hạn chỉ chạy mỗi sáng,
         /// trong lúc chờ thì cờ vẫn bật dù đã quá hạn.</summary>
         public static Expression<Func<SavedSearch, bool>> OpenAt(DateTime now)
-            => s => s.DiscoverableByOwners && (s.DiscoverableUntil == null || s.DiscoverableUntil > now);
+            => s => s.DiscoverableByOwners && (s.DiscoverableUntil == null || s.DiscoverableUntil > now)
+                    && s.DemandReview == Enums.DemandReviewStatus.Approved;
 
         /// <summary>Nhu cầu chỉ được mở cho chủ nhà khi có KHU VỰC (tỉnh/thành, mã tỉnh mới, hoặc
         /// vòng bán kính quanh một điểm). Không có thì nó khớp mọi tin cả nước: mọi chủ nhà đều thấy
