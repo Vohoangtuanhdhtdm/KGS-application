@@ -1,9 +1,9 @@
-// Ô tìm địa chỉ nổi trên bản đồ GL. Dùng Geocoding v6 "tạm thời" (100k lượt/tháng miễn phí):
-// kết quả CHỈ dùng để đưa camera tới, không đặt ghim, không lưu — đúng điều khoản của loại
-// geocoding này. Không dùng Search Box API vì hạn mức miễn phí chỉ 500 phiên/tháng.
+// Ô tìm địa chỉ nổi trên bản đồ GL. Geocoding v6 trước (miễn phí, nhiều lượt), Search Box chỉ
+// khi v6 không ra địa điểm khớp tên — trường học, chợ, bệnh viện (xem lib/geocode.ts). Kết quả
+// CHỈ dùng để đưa camera tới, không đặt ghim, không lưu — đúng điều khoản của Mapbox.
 import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
-import { geocodeForward, type GeocodeHit } from "@/lib/geocode";
+import { geocodeForward, newSearchSession, resolveHit, type GeocodeHit } from "@/lib/geocode";
 
 type Suggestion = GeocodeHit;
 
@@ -36,6 +36,9 @@ export function GeocodeBox({
   // Chọn gợi ý thì ô được điền lại bằng tên đó — không được coi là người dùng gõ mới (sẽ
   // tìm lại, tốn thêm một lượt và bật lại danh sách vừa đóng).
   const skipNext = useRef(false);
+  // Một mã phiên Search Box cho cả lần gõ (các lượt gợi ý cùng phiên chỉ tính một phiên); chọn
+  // xong thì mở phiên mới.
+  const session = useRef(newSearchSession());
 
   useEffect(() => {
     const text = q.trim();
@@ -56,6 +59,7 @@ export function GeocodeBox({
           text,
           { lat: prox.current[0], lng: prox.current[1] },
           ctrl.signal,
+          session.current,
         );
         if (!hits) return setItems([]);
         setItems(hits);
@@ -72,11 +76,13 @@ export function GeocodeBox({
     };
   }, [q]);
 
-  const choose = (s: Suggestion) => {
-    onSelect(s.lat, s.lng);
+  const choose = async (s: Suggestion) => {
     setOpen(false);
     skipNext.current = true;
     setQ(s.name);
+    const at = await resolveHit(s, session.current).catch(() => null);
+    session.current = newSearchSession();
+    if (at) onSelect(at.lat, at.lng);
   };
 
   return (
@@ -124,8 +130,8 @@ export function GeocodeBox({
             floating ? "" : "absolute inset-x-0 bottom-full z-10 mb-1"
           }`}
         >
-          Không tìm thấy. Ô này tìm được tên đường, số nhà, phường — chưa tìm được tên toà nhà hay
-          công ty. Thử gõ như "Hàm Nghi" hoặc "12 Nguyễn Huệ".
+          Không tìm thấy. Thử gõ tên địa điểm (ví dụ "Đại học Thủ Dầu Một") hoặc tên đường ("12
+          Nguyễn Huệ"), không cần kèm tỉnh hay quận.
         </p>
       )}
       {open && items.length > 0 && (

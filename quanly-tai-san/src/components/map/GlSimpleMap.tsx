@@ -50,6 +50,9 @@ export default function GlSimpleMap({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // Tâm bản đồ ĐANG xem — ô tìm ưu tiên kết quả quanh đây, không phải quanh tâm lúc mở bản đồ
+  // (người dùng thường kéo hoặc tìm tới khu khác rồi mới gõ tên đường).
+  const [viewCenter, setViewCenter] = useState<[number, number]>(center);
   const cb = useRef({ onPick, onFatalError, onFirstIdle });
   cb.current = { onPick, onFatalError, onFirstIdle };
 
@@ -116,6 +119,10 @@ export default function GlSimpleMap({
     const ro = new ResizeObserver(() => m.resize());
     ro.observe(containerRef.current);
     mapRef.current = m;
+    m.on("moveend", () => {
+      const c = m.getCenter();
+      setViewCenter([c.lat, c.lng]);
+    });
     setMap(m);
     return () => {
       ro.disconnect();
@@ -230,7 +237,7 @@ export default function GlSimpleMap({
       <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
       {geocodeSearch && map && (
         <GeocodeBox
-          proximity={center}
+          proximity={viewCenter}
           onSelect={(lat, lng) => map.flyTo({ center: [lng, lat], zoom: 16, duration: 700 })}
         />
       )}
