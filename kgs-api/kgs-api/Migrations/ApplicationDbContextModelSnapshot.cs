@@ -956,6 +956,16 @@ namespace kgs_api.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
+                    b.Property<int>("DemandReview")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DemandReviewReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime?>("DemandReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("DiscoverableByOwners")
                         .HasColumnType("boolean");
 

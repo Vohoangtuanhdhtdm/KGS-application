@@ -5,9 +5,11 @@ using kgs_api.Domain.Rules;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using kgs_api.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using static kgs_api.Common.Common;
+using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Services
 {
@@ -22,16 +24,18 @@ namespace kgs_api.Services
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
         private readonly GeometryFactory _geometryFactory;
+        private readonly UserManager<ApplicationUser> _users;
 
         public SavedSearchService(
             IRepository<SavedSearch> searches,
             IRepository<Listing> listings,
             IUnitOfWork uow,
             ICurrentUserService currentUser,
-            GeometryFactory geometryFactory)
+            GeometryFactory geometryFactory,
+            UserManager<ApplicationUser> users)
         {
             _searches = searches; _listings = listings; _uow = uow;
-            _currentUser = currentUser; _geometryFactory = geometryFactory;
+            _currentUser = currentUser; _geometryFactory = geometryFactory; _users = users;
         }
 
         public async Task<IReadOnlyList<SavedSearchDto>> GetMineAsync(CancellationToken ct = default)
@@ -85,6 +89,7 @@ namespace kgs_api.Services
             {
                 RequireArea(criteria);
                 Open(entity, now);
+                await ScreenAsync(entity, ct);
             }
 
             await _searches.AddAsync(entity, ct);
@@ -105,10 +110,18 @@ namespace kgs_api.Services
             Guid id, SetDiscoverableRequest request, CancellationToken ct = default)
         {
             var entity = await GetOwnedAsync(id, ct);
+            var oldNote = entity.DemandNote;
+            entity.DemandNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
             if (request.Enabled)
             {
                 RequireArea(Deserialize(entity.CriteriaJson));
+                var reopening = !entity.DiscoverableByOwners;
                 Open(entity, DateTime.UtcNow);
+                // Bật lại, gửi lại sau khi bị từ chối, hoặc lời nhắn đổi nội dung: kiểm tra lại — nhu
+                // cầu đã duyệt mà bị sửa thêm số điện thoại phải quay về chờ duyệt.
+                if (reopening || entity.DemandReview == DemandReviewStatus.Rejected
+                    || DemandScreening.NeedsRescreen(oldNote, entity.DemandNote))
+                    await ScreenAsync(entity, ct);
             }
             else
             {
@@ -116,7 +129,6 @@ namespace kgs_api.Services
                 // Tự tắt khác hết hạn: xoá hạn để giao diện không ghi "Đã hết hạn".
                 entity.DiscoverableUntil = null;
             }
-            entity.DemandNote = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim();
             await _uow.SaveChangesAsync(ct);
             return await ToDtoAsync(entity, ct);
         }
@@ -125,7 +137,11 @@ namespace kgs_api.Services
         {
             var entity = await GetOwnedAsync(id, ct);
             RequireArea(Deserialize(entity.CriteriaJson));
+            var reopening = !entity.DiscoverableByOwners;
             Open(entity, DateTime.UtcNow);
+            // Gia hạn giữ nguyên kết quả duyệt; chỉ nhu cầu bị từ chối hoặc đang tắt mới kiểm tra lại.
+            if (reopening || entity.DemandReview == DemandReviewStatus.Rejected)
+                await ScreenAsync(entity, ct);
             await _uow.SaveChangesAsync(ct);
             return await ToDtoAsync(entity, ct);
         }
@@ -160,6 +176,22 @@ namespace kgs_api.Services
             return entity;
         }
 
+        /// <summary>Chạy bộ lọc tự động (DemandScreening): sạch thì duyệt ngay, có dấu hiệu thì chờ
+        /// quản trị. Đếm "mở trong 24 giờ" trên các nhu cầu KHÁC của cùng người.</summary>
+        private async Task ScreenAsync(SavedSearch s, CancellationToken ct)
+        {
+            var user = await _users.FindByIdAsync(s.UserId);
+            var since = DateTime.UtcNow.AddHours(-24);
+            var opened = await _searches.Query()
+                .CountAsync(x => x.UserId == s.UserId && x.Id != s.Id && x.DiscoverableSince >= since, ct);
+            var (status, reason) = DemandScreening.Decide(
+                DemandScreening.Screen(s.Name, s.DemandNote, user?.EmailConfirmed ?? false, opened),
+                s.DemandReview);
+            s.DemandReview = status;
+            s.DemandReviewReason = reason;
+            s.DemandReviewedAt = null;
+        }
+
         private static void RequireArea(PublicListingSearchQuery c)
         {
             if (!DemandExpiry.HasArea(c))
@@ -192,7 +224,8 @@ namespace kgs_api.Services
 
             return new SavedSearchDto(
                 s.Id, s.Name, criteria, s.NotifyEnabled, s.CreatedAt, s.LastNotifiedAt, newCount,
-                s.DiscoverableByOwners, s.DemandNote, s.DiscoverableUntil, listings, owners);
+                s.DiscoverableByOwners, s.DemandNote, s.DiscoverableUntil, listings, owners,
+                s.DemandReview, s.DemandReviewReason);
         }
 
         /// <summary>Dựng truy vấn "tin khớp bộ lọc này". Dùng chung với job đối chiếu để hai

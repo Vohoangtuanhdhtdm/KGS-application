@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Dtos
 {
@@ -29,5 +30,9 @@ namespace kgs_api.Dtos
         DateTime? DiscoverableUntil,
         /// <summary>Số tin đang hiển thị khớp nhu cầu, và số chủ nhà khác nhau của chúng.</summary>
         int MatchingListings,
-        int MatchingOwners);
+        int MatchingOwners,
+        /// <summary>Kiểm duyệt (chỉ có nghĩa khi DiscoverableByOwners). Chờ duyệt / bị từ chối thì
+        /// DemandReviewReason nói vì sao.</summary>
+        DemandReviewStatus DemandReview,
+        string? DemandReviewReason);
 }

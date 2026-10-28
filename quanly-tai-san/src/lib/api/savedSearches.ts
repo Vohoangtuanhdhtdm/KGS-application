@@ -59,6 +59,10 @@ export interface SavedSearchDto {
   /** "Đang khớp N căn của M chủ nhà". */
   matchingListings: number;
   matchingOwners: number;
+  /** Kiểm duyệt khi mở cho chủ nhà: 1 = đã duyệt · 2 = chờ duyệt · 3 = bị từ chối. */
+  demandReview: 1 | 2 | 3;
+  /** Lý do chờ duyệt hoặc bị từ chối — câu cho người dùng đọc. */
+  demandReviewReason: string | null;
 }
 
 /** Đổi bộ lọc của trang tìm kiếm thành tiêu chí lưu được: `""` thành `null`. */

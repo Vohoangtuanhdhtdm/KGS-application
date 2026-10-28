@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toastIfPendingReview } from "@/components/demand/demandToast";
 import { Bell, BellOff, BookmarkPlus, Handshake, Loader2, Search, Trash2 } from "lucide-react";
 import {
   savedSearchesApi,
@@ -67,6 +68,7 @@ export function SavedSearchesPopover({
       setName("");
       setOpenToOwners(false);
       invalidate();
+      if (toastIfPendingReview(s)) return;
       toast.success(
         s.discoverableByOwners
           ? "Đã lưu và mở cho chủ nhà phù hợp mời bạn."
@@ -95,6 +97,7 @@ export function SavedSearchesPopover({
     onSuccess: (s) => {
       invalidate();
       setShareId(null);
+      if (toastIfPendingReview(s)) return;
       toast.success(
         s.discoverableByOwners
           ? "Đã mở cho chủ nhà phù hợp mời bạn xem nhà."

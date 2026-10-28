@@ -131,6 +131,10 @@
         // hết hạn lúc đọc — không cần job dọn dẹp chỉ để đổi một cột.
         public enum InvitationStatus { Pending = 1, Accepted = 2, Declined = 3 }
 
+        /// <summary>Kiểm duyệt nhu cầu mở cho chủ nhà. Chỉ Approved mới hiện cho chủ nhà và được
+        /// đếm vào Nhịp cầu (xem DemandExpiry.OpenAt, DemandScreening).</summary>
+        public enum DemandReviewStatus { Approved = 1, Pending = 2, Rejected = 3 }
+
         // Domain/Enums.cs — MỞ FILE ĐÃ CÓ, thêm dòng này vào bên trong class Enums hiện tại,
         // cạnh các enum khác (AssetType, ContractStatus...)
         public enum ListingType { Sale = 1, Rent = 2 }

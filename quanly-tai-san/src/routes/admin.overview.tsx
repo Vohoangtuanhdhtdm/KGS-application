@@ -460,6 +460,7 @@ function MatchmakingCard({
     ["Lời mời đã gửi", String(m.invitationsSent), `trong ${days} ngày qua`],
     ["Tỉ lệ nhận lời", pct(m.acceptRate), `${m.accepted}/${m.invitationsSent} lời mời`],
     ["Lời mời có ưu đãi", pct(m.offerRate), `${m.withOffer}/${m.invitationsSent} lời mời`],
+    ["Nhu cầu chờ duyệt", String(m.pendingReview ?? 0), "bị bộ lọc tự động giữ lại"],
   ];
   return (
     <Card>
@@ -468,7 +469,7 @@ function MatchmakingCard({
           <Handshake className="h-4 w-4 text-muted-foreground" /> Ghép đôi người tìm và chủ nhà
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {items.map(([label, value, sub]) => (
           <div key={label}>
             <div className="text-xs text-muted-foreground">{label}</div>

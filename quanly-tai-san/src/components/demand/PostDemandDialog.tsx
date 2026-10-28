@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getErrorMessage } from "@/lib/api/errors";
 import { savedSearchesApi, type SavedSearchCriteria } from "@/lib/api/savedSearches";
+import { toastIfPendingReview } from "./demandToast";
 import { saveDemandDraft, withPostDemandFlag, type DemandDraft } from "@/lib/demandDraft";
 import { listingsApi } from "@/lib/api/listings";
 import { CurrencyInput } from "@/components/CurrencyInput";
@@ -123,9 +124,10 @@ export function PostDemandDialog({
   const post = useMutation({
     mutationFn: () =>
       savedSearchesApi.create(name.trim(), fullCriteria(), notify, true, note.trim() || null),
-    onSuccess: () => {
+    onSuccess: (s) => {
       qc.invalidateQueries({ queryKey: ["saved-searches"] });
       onOpenChange(false);
+      if (toastIfPendingReview(s)) return;
       toast.success("Đã đăng — chủ nhà phù hợp có thể mời bạn", {
         description:
           "Bạn không cần để lại số điện thoại. Chỉ khi bạn nhận lời mời, chủ nhà mới biết bạn là ai.",

@@ -350,6 +350,8 @@ export interface AdminOverview {
     withOffer: number;
     acceptRate: number;
     offerRate: number;
+    /** Nhu cầu đang chờ quản trị duyệt. */
+    pendingReview?: number;
   } | null;
 }
 

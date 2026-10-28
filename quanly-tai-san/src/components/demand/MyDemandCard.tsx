@@ -22,16 +22,10 @@ import { LISTING_TYPE } from "@/constants/enums";
 import { getErrorMessage } from "@/lib/api/errors";
 import { savedSearchesApi, type SavedSearchDto } from "@/lib/api/savedSearches";
 import { daysUntil, formatCurrency } from "@/lib/format";
+import { demandState } from "@/lib/demandState";
+import { toastIfPendingReview } from "./demandToast";
 
 const KEY = ["saved-searches"];
-
-type DemandState = "open" | "expired" | "alerts";
-
-export function demandState(s: SavedSearchDto): DemandState {
-  if (s.discoverableByOwners) return "open";
-  if (s.discoverableUntil && new Date(s.discoverableUntil) <= new Date()) return "expired";
-  return "alerts";
-}
 
 /** "Cho thuê · Quận Bình Thạnh · dưới 5 triệu · 2 người". */
 function summary(s: SavedSearchDto) {
@@ -68,7 +62,10 @@ export function MyDemandCard({ search }: { search: SavedSearchDto }) {
 
   const renew = useMutation({
     mutationFn: () => savedSearchesApi.renew(search.id),
-    onSuccess: done("Đã gia hạn thêm 30 ngày."),
+    onSuccess: (s) => {
+      if (toastIfPendingReview(s)) return void qc.invalidateQueries({ queryKey: KEY });
+      done("Đã gia hạn thêm 30 ngày.")();
+    },
     onError: fail("Chưa gia hạn được"),
   });
   const setOpen = useMutation({
@@ -76,6 +73,7 @@ export function MyDemandCard({ search }: { search: SavedSearchDto }) {
       savedSearchesApi.setDiscoverable(search.id, enabled, note.trim() || null),
     onSuccess: (s) => {
       setEditing(false);
+      if (toastIfPendingReview(s)) return void qc.invalidateQueries({ queryKey: KEY });
       done(
         s.discoverableByOwners
           ? "Đã mở cho chủ nhà phù hợp mời bạn."
@@ -104,6 +102,17 @@ export function MyDemandCard({ search }: { search: SavedSearchDto }) {
               <Handshake className="h-3 w-3" /> Đang mở cho chủ nhà
               {daysLeft !== null && ` · còn ${Math.max(daysLeft, 0)} ngày`}
             </Badge>
+          ) : state === "pending" ? (
+            <Badge
+              variant="outline"
+              className="border-amber-500/50 text-amber-700 dark:text-amber-400"
+            >
+              Chờ duyệt
+            </Badge>
+          ) : state === "rejected" ? (
+            <Badge variant="outline" className="border-destructive/50 text-destructive">
+              Bị từ chối
+            </Badge>
           ) : state === "expired" ? (
             <Badge
               variant="outline"
@@ -115,6 +124,20 @@ export function MyDemandCard({ search }: { search: SavedSearchDto }) {
             <Badge variant="secondary">Chỉ nhận báo tin mới</Badge>
           )}
         </div>
+
+        {(state === "pending" || state === "rejected") && (
+          <p
+            className={`rounded-md px-3 py-2 text-sm ${
+              state === "pending"
+                ? "bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                : "bg-destructive/10 text-destructive"
+            }`}
+          >
+            {state === "pending"
+              ? `Chủ nhà chưa thấy nhu cầu này cho tới khi được duyệt. Lý do cần kiểm tra: ${search.demandReviewReason ?? "—"}.`
+              : `Lý do: ${search.demandReviewReason ?? "—"}. Sửa lời nhắn rồi gửi lại để được duyệt.`}
+          </p>
+        )}
 
         <Link
           to="/tin-dang"
@@ -161,10 +184,10 @@ export function MyDemandCard({ search }: { search: SavedSearchDto }) {
               Gia hạn 30 ngày
             </Button>
           )}
-          {state === "open" ? (
+          {state === "open" || state === "pending" || state === "rejected" ? (
             <>
               <Button size="sm" variant="outline" disabled={busy} onClick={() => setEditing(true)}>
-                Sửa lời nhắn
+                {state === "rejected" ? "Sửa lời nhắn và gửi lại" : "Sửa lời nhắn"}
               </Button>
               <Button
                 size="sm"
