@@ -20,7 +20,7 @@ import { PropertyFiltersPanel } from "@/components/public/PropertyFiltersPanel";
 import { AssistantBar } from "@/components/public/AssistantBar";
 import { takeHandoff } from "@/lib/voice/handoff";
 import { assistantApi, type AssistantAnchor, type AssistantResult } from "@/lib/api/assistant";
-import { geocodeForward } from "@/lib/geocode";
+import { geocodeFirst } from "@/lib/geocode";
 import { matchReasons } from "@/lib/matchReasons";
 import {
   EMPTY_RENT_TERMS,
@@ -858,14 +858,14 @@ function PublicListingsPage() {
       return;
     }
     const prox = searchCenter ?? { lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1] };
-    const hit = (await geocodeForward(a.text, prox).catch(() => null))?.[0];
+    const hit = await geocodeFirst(a.text, prox).catch(() => null);
     if (!hit) {
       toast.warning(`Không tìm thấy “${a.text}” trên bản đồ`, {
         description: "Bấm lên bản đồ đúng chỗ đó để tìm quanh điểm ấy.",
       });
       return;
     }
-    setSearchCenter({ lat: hit.lat, lng: hit.lng });
+    setSearchCenter({ lat: hit.lat!, lng: hit.lng! });
     setCenterLabel(a.text);
     setUsingMyLocation(false);
     setShowSearchAreaButton(false);
