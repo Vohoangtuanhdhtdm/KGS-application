@@ -169,7 +169,9 @@ namespace kgs_api.Services.Admin
                 await _db.SavedSearches.AsNoTracking().CountAsync(DemandExpiry.OpenAt(nowUtc), ct),
                 await invitations.CountAsync(ct),
                 await invitations.CountAsync(i => i.Status == InvitationStatus.Accepted, ct),
-                await invitations.CountAsync(i => i.OfferPrice != null || i.OfferNote != null, ct));
+                await invitations.CountAsync(i => i.OfferPrice != null || i.OfferNote != null, ct),
+                await _db.SavedSearches.AsNoTracking()
+                    .CountAsync(s => s.DiscoverableByOwners && s.DemandReview == DemandReviewStatus.Pending, ct));
 
             return new AdminOverviewDto(days, kpis, daily, moderation, reportStats, byType, byCity, buildings, closes,
                 matchmaking);
