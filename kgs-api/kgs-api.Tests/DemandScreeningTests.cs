@@ -73,4 +73,28 @@ public class DemandScreeningTests
     [Fact]
     public void Decide_CoLyDo_ChoDuyet_GopLyDo()
         => Assert.Equal((DemandReviewStatus.Pending, "A; B"), DemandScreening.Decide(new[] { "A", "B" }));
+
+    [Theory]
+    [InlineData("Cần bạn ở ghép gần trường")]
+    [InlineData("Cho thuê Bình Thạnh")]
+    [InlineData("Yêu cầu căn bản: có chỗ để xe")]
+    public void CumTuThuong_KhongBiCoiLaRaoVat(string note) => Assert.DoesNotContain("Lời nhắn giống tin rao vặt", S(note));
+
+    [Theory]
+    [InlineData("Cần bán nhà gấp")]
+    [InlineData("moi gioi nha dat")]
+    public void RaoVat_VanBat(string note) => Assert.Contains("Lời nhắn giống tin rao vặt", S(note));
+
+    [Fact]
+    public void Decide_GuiLaiSauKhiBiTuChoi_LuonChoDuyet()
+    {
+        var (status, reason) = DemandScreening.Decide(Array.Empty<string>(), DemandReviewStatus.Rejected);
+        Assert.Equal(DemandReviewStatus.Pending, status);
+        Assert.Equal("Gửi lại sau khi bị từ chối", reason);
+    }
+
+    [Fact]
+    public void Decide_GuiLaiSauKhiBiTuChoi_GopLyDo()
+        => Assert.Equal((DemandReviewStatus.Pending, "Gửi lại sau khi bị từ chối; A"),
+            DemandScreening.Decide(new[] { "A" }, DemandReviewStatus.Rejected));
 }

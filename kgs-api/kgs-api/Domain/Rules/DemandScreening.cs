@@ -20,6 +20,7 @@ namespace kgs_api.Domain.Rules
         public const string Ad = "Lời nhắn giống tin rao vặt";
         public const string Unverified = "Tài khoản chưa xác thực email";
         public const string Burst = "Đăng nhiều nhu cầu trong thời gian ngắn";
+        public const string Resubmit = "Gửi lại sau khi bị từ chối";
 
         /// <summary>Từ nhu cầu mở thứ 4 trong 24 giờ thì giữ lại.</summary>
         public const int BurstLimit = 3;
@@ -34,7 +35,10 @@ namespace kgs_api.Domain.Rules
         private static readonly Regex PhoneJoin = new(@"(?<=\d)[\s.\-()]+(?=\d)", RegexOptions.Compiled);
 
         private static readonly string[] ChannelWords = { "zalo", "facebook", "fb.com", "telegram", "messenger" };
-        private static readonly string[] AdWords = { "cho thue", "can ban", "moi gioi", "vay von", "tuyen dung", "khuyen mai" };
+        // Rao vặt so trên cả cụm từ. "cần bán" chỉ so khi còn dấu — bỏ dấu thì trùng "cần bạn (ở ghép)",
+        // "căn bản". Không có "cho thuê": người tìm nhà vẫn gõ "tìm phòng cho thuê".
+        private static readonly string[] AdWordsAccented = { "cần bán" };
+        private static readonly string[] AdWordsPlain = { "moi gioi", "vay von", "tuyen dung", "khuyen mai" };
 
         public static IReadOnlyList<string> Screen(string name, string? note, bool emailConfirmed, int openedLast24h)
         {
@@ -46,7 +50,9 @@ namespace kgs_api.Domain.Rules
             if (PhoneRe.IsMatch(PhoneJoin.Replace(text.Replace("+", ""), ""))) reasons.Add(Phone);
             if (EmailRe.IsMatch(text)) reasons.Add(Email);
             if (ChannelWords.Any(plain.Contains)) reasons.Add(Channel);
-            if (AdWords.Any(plain.Contains)) reasons.Add(Ad);
+            var lower = text.ToLowerInvariant();
+            if (AdWordsAccented.Any(w => HasPhrase(lower, w)) || AdWordsPlain.Any(w => HasPhrase(plain, w)))
+                reasons.Add(Ad);
             if (!emailConfirmed) reasons.Add(Unverified);
             if (openedLast24h >= BurstLimit) reasons.Add(Burst);
             return reasons.Distinct().ToList();
@@ -55,8 +61,18 @@ namespace kgs_api.Domain.Rules
         /// <summary>Lời nhắn đổi nội dung (không tính khoảng trắng) thì phải kiểm tra lại.</summary>
         public static bool NeedsRescreen(string? oldNote, string? newNote) => Squash(oldNote) != Squash(newNote);
 
-        public static (DemandReviewStatus Status, string? Reason) Decide(IReadOnlyList<string> reasons)
-            => reasons.Count == 0 ? (DemandReviewStatus.Approved, null) : (DemandReviewStatus.Pending, string.Join("; ", reasons));
+        /// <summary>Nhu cầu từng bị quản trị từ chối thì gửi lại luôn phải qua người xem — nếu không,
+        /// lý do giữ lần trước (đăng dày, chưa xác thực) hết hiệu lực là nó tự được duyệt với đúng nội
+        /// dung đã bị từ chối.</summary>
+        public static (DemandReviewStatus Status, string? Reason) Decide(
+            IReadOnlyList<string> reasons, DemandReviewStatus previous = DemandReviewStatus.Approved)
+        {
+            var all = previous == DemandReviewStatus.Rejected ? reasons.Prepend(Resubmit).ToList() : reasons;
+            return all.Count == 0 ? (DemandReviewStatus.Approved, null) : (DemandReviewStatus.Pending, string.Join("; ", all));
+        }
+
+        private static bool HasPhrase(string text, string phrase)
+            => Regex.IsMatch(text, $@"(?<![\p{{L}}\d]){Regex.Escape(phrase)}(?![\p{{L}}\d])");
 
         private static string Squash(string? s) => Regex.Replace(s ?? "", @"\s+", " ").Trim();
 

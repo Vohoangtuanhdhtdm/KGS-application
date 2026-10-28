@@ -117,9 +117,10 @@ namespace kgs_api.Services
                 RequireArea(Deserialize(entity.CriteriaJson));
                 var reopening = !entity.DiscoverableByOwners;
                 Open(entity, DateTime.UtcNow);
-                // Bật lại, hoặc lời nhắn đổi nội dung: kiểm tra lại — nhu cầu đã duyệt mà bị sửa
-                // thêm số điện thoại phải quay về chờ duyệt.
-                if (reopening || DemandScreening.NeedsRescreen(oldNote, entity.DemandNote))
+                // Bật lại, gửi lại sau khi bị từ chối, hoặc lời nhắn đổi nội dung: kiểm tra lại — nhu
+                // cầu đã duyệt mà bị sửa thêm số điện thoại phải quay về chờ duyệt.
+                if (reopening || entity.DemandReview == DemandReviewStatus.Rejected
+                    || DemandScreening.NeedsRescreen(oldNote, entity.DemandNote))
                     await ScreenAsync(entity, ct);
             }
             else
@@ -184,7 +185,8 @@ namespace kgs_api.Services
             var opened = await _searches.Query()
                 .CountAsync(x => x.UserId == s.UserId && x.Id != s.Id && x.DiscoverableSince >= since, ct);
             var (status, reason) = DemandScreening.Decide(
-                DemandScreening.Screen(s.Name, s.DemandNote, user?.EmailConfirmed ?? false, opened));
+                DemandScreening.Screen(s.Name, s.DemandNote, user?.EmailConfirmed ?? false, opened),
+                s.DemandReview);
             s.DemandReview = status;
             s.DemandReviewReason = reason;
             s.DemandReviewedAt = null;
