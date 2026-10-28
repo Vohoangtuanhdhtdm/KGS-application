@@ -28,6 +28,7 @@ import { Route as TinCuaToiRouteImport } from './routes/tin-cua-toi'
 import { Route as AdminAllListingsRouteImport } from './routes/admin.all-listings'
 import { Route as AdminBuildingsRouteImport } from './routes/admin.buildings'
 import { Route as AdminListingsRouteImport } from './routes/admin.listings'
+import { Route as AdminNhuCauRouteImport } from './routes/admin.nhu-cau'
 import { Route as AdminOverviewRouteImport } from './routes/admin.overview'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
@@ -134,6 +135,11 @@ const AdminListingsRoute = AdminListingsRouteImport.update({
   path: '/admin/listings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminNhuCauRoute = AdminNhuCauRouteImport.update({
+  id: '/admin/nhu-cau',
+  path: '/admin/nhu-cau',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminOverviewRoute = AdminOverviewRouteImport.update({
   id: '/admin/overview',
   path: '/admin/overview',
@@ -205,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/admin/all-listings': typeof AdminAllListingsRoute
   '/admin/buildings': typeof AdminBuildingsRoute
   '/admin/listings': typeof AdminListingsRoute
+  '/admin/nhu-cau': typeof AdminNhuCauRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -236,6 +243,7 @@ export interface FileRoutesByTo {
   '/admin/all-listings': typeof AdminAllListingsRoute
   '/admin/buildings': typeof AdminBuildingsRoute
   '/admin/listings': typeof AdminListingsRoute
+  '/admin/nhu-cau': typeof AdminNhuCauRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/admin/all-listings': typeof AdminAllListingsRoute
   '/admin/buildings': typeof AdminBuildingsRoute
   '/admin/listings': typeof AdminListingsRoute
+  '/admin/nhu-cau': typeof AdminNhuCauRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/admin/all-listings'
     | '/admin/buildings'
     | '/admin/listings'
+    | '/admin/nhu-cau'
     | '/admin/overview'
     | '/admin/reports'
     | '/admin/users'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/admin/all-listings'
     | '/admin/buildings'
     | '/admin/listings'
+    | '/admin/nhu-cau'
     | '/admin/overview'
     | '/admin/reports'
     | '/admin/users'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/admin/all-listings'
     | '/admin/buildings'
     | '/admin/listings'
+    | '/admin/nhu-cau'
     | '/admin/overview'
     | '/admin/reports'
     | '/admin/users'
@@ -395,6 +407,7 @@ export interface RootRouteChildren {
   AdminAllListingsRoute: typeof AdminAllListingsRoute
   AdminBuildingsRoute: typeof AdminBuildingsRoute
   AdminListingsRoute: typeof AdminListingsRoute
+  AdminNhuCauRoute: typeof AdminNhuCauRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -542,6 +555,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminListingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/nhu-cau': {
+      id: '/admin/nhu-cau'
+      path: '/admin/nhu-cau'
+      fullPath: '/admin/nhu-cau'
+      preLoaderRoute: typeof AdminNhuCauRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/overview': {
       id: '/admin/overview'
       path: '/admin/overview'
@@ -635,6 +655,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAllListingsRoute: AdminAllListingsRoute,
   AdminBuildingsRoute: AdminBuildingsRoute,
   AdminListingsRoute: AdminListingsRoute,
+  AdminNhuCauRoute: AdminNhuCauRoute,
   AdminOverviewRoute: AdminOverviewRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminUsersRoute: AdminUsersRoute,
