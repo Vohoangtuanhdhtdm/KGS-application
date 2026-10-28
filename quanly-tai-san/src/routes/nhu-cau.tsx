@@ -3,7 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Handshake, Plus } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { MyDemandCard, demandState } from "@/components/demand/MyDemandCard";
+import { MyDemandCard } from "@/components/demand/MyDemandCard";
+import { demandState } from "@/lib/demandState";
 import { PostDemandDialog } from "@/components/demand/PostDemandDialog";
 import { useDemandDraftResume } from "@/components/demand/useDemandDraftResume";
 import { InvitationsList } from "@/components/matchmaking/InvitationsList";
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/nhu-cau")({
   ),
 });
 
-const ORDER = { open: 0, expired: 1, alerts: 2 } as const;
+const ORDER = { pending: 0, rejected: 1, open: 2, expired: 3, alerts: 4 } as const;
 
 /**
  * "Nhu cầu của tôi": các nhu cầu đã đăng (bộ lọc đã lưu, có hoặc không mở cho chủ nhà) và lời
