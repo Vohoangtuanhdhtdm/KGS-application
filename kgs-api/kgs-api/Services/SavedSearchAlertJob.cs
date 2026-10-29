@@ -5,6 +5,7 @@ using kgs_api.Domain.Rules;
 using kgs_api.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
+using static kgs_api.Domain.Enums;
 
 namespace kgs_api.Services
 {
@@ -56,7 +57,9 @@ namespace kgs_api.Services
                         s.DiscoverableByOwners = false;
                         closed++;
                         break;
-                    case ExpiryAction.Remind:
+                    // Nhu cầu đang chờ hoặc bị từ chối thì chủ nhà vốn chưa thấy — nhắc "sắp không mời
+                    // được bạn" là sai. Hạn của chúng đặt lại khi được duyệt.
+                    case ExpiryAction.Remind when s.DemandReview == DemandReviewStatus.Approved:
                         var days = Math.Max(1, (int)Math.Ceiling((s.DiscoverableUntil!.Value - now).TotalDays));
                         try
                         {

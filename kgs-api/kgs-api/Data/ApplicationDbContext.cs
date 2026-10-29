@@ -24,6 +24,7 @@ namespace kgs_api.Data
         public DbSet<ListingReport> ListingReports => Set<ListingReport>();
         public DbSet<ListingModerationEvent> ListingModerationEvents => Set<ListingModerationEvent>();
         public DbSet<ListingView> ListingViews => Set<ListingView>();
+        public DbSet<DemandOpening> DemandOpenings => Set<DemandOpening>();
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {

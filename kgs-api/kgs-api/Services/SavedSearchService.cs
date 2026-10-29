@@ -21,6 +21,7 @@ namespace kgs_api.Services
 
         private readonly IRepository<SavedSearch> _searches;
         private readonly IRepository<Listing> _listings;
+        private readonly IRepository<DemandOpening> _openings;
         private readonly IUnitOfWork _uow;
         private readonly ICurrentUserService _currentUser;
         private readonly GeometryFactory _geometryFactory;
@@ -29,12 +30,13 @@ namespace kgs_api.Services
         public SavedSearchService(
             IRepository<SavedSearch> searches,
             IRepository<Listing> listings,
+            IRepository<DemandOpening> openings,
             IUnitOfWork uow,
             ICurrentUserService currentUser,
             GeometryFactory geometryFactory,
             UserManager<ApplicationUser> users)
         {
-            _searches = searches; _listings = listings; _uow = uow;
+            _searches = searches; _listings = listings; _openings = openings; _uow = uow;
             _currentUser = currentUser; _geometryFactory = geometryFactory; _users = users;
         }
 
@@ -89,7 +91,7 @@ namespace kgs_api.Services
             {
                 RequireArea(criteria);
                 Open(entity, now);
-                await ScreenAsync(entity, ct);
+                await ScreenAsync(entity, ct, opening: true);
             }
 
             await _searches.AddAsync(entity, ct);
@@ -121,7 +123,7 @@ namespace kgs_api.Services
                 // cầu đã duyệt mà bị sửa thêm số điện thoại phải quay về chờ duyệt.
                 if (reopening || entity.DemandReview == DemandReviewStatus.Rejected
                     || DemandScreening.NeedsRescreen(oldNote, entity.DemandNote))
-                    await ScreenAsync(entity, ct);
+                    await ScreenAsync(entity, ct, reopening);
             }
             else
             {
@@ -141,7 +143,7 @@ namespace kgs_api.Services
             Open(entity, DateTime.UtcNow);
             // Gia hạn giữ nguyên kết quả duyệt; chỉ nhu cầu bị từ chối hoặc đang tắt mới kiểm tra lại.
             if (reopening || entity.DemandReview == DemandReviewStatus.Rejected)
-                await ScreenAsync(entity, ct);
+                await ScreenAsync(entity, ct, reopening);
             await _uow.SaveChangesAsync(ct);
             return await ToDtoAsync(entity, ct);
         }
@@ -177,13 +179,18 @@ namespace kgs_api.Services
         }
 
         /// <summary>Chạy bộ lọc tự động (DemandScreening): sạch thì duyệt ngay, có dấu hiệu thì chờ
-        /// quản trị. Đếm "mở trong 24 giờ" trên các nhu cầu KHÁC của cùng người.</summary>
-        private async Task ScreenAsync(SavedSearch s, CancellationToken ct)
+        /// quản trị. Đếm "mở trong 24 giờ" trên các nhu cầu KHÁC của cùng người, kể cả nhu cầu đã
+        /// xoá (bảng DemandOpening). <paramref name="opening"/>: lần này là đăng mới hoặc bật lại.</summary>
+        private async Task ScreenAsync(SavedSearch s, CancellationToken ct, bool opening = false)
         {
             var user = await _users.FindByIdAsync(s.UserId);
-            var since = DateTime.UtcNow.AddHours(-24);
-            var opened = await _searches.Query()
-                .CountAsync(x => x.UserId == s.UserId && x.Id != s.Id && x.DiscoverableSince >= since, ct);
+            var now = DateTime.UtcNow;
+            var since = now.AddHours(-24);
+            var opened = await _openings.Query()
+                .Where(x => x.UserId == s.UserId && x.SavedSearchId != s.Id && x.OpenedAt >= since)
+                .Select(x => x.SavedSearchId).Distinct().CountAsync(ct);
+            if (opening)
+                await _openings.AddAsync(new DemandOpening { UserId = s.UserId, SavedSearchId = s.Id, OpenedAt = now }, ct);
             var (status, reason) = DemandScreening.Decide(
                 DemandScreening.Screen(s.Name, s.DemandNote, user?.EmailConfirmed ?? false, opened),
                 s.DemandReview);

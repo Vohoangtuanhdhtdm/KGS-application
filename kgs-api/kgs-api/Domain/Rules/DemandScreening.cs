@@ -29,12 +29,18 @@ namespace kgs_api.Domain.Rules
             @"(https?://|www\.|\b[\w-]+\.(com|vn|net|org|info|xyz|me|ly|io)\b)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly Regex EmailRe = new(@"[\w.+-]+@[\w-]+\.[\w.]+", RegexOptions.Compiled);
-        // Chữ số liền nhau sau khi bỏ dấu cách, chấm, gạch, ngoặc: 0xxxxxxxx(x) hoặc 84xxxxxxxxx.
-        // Số tiền ("5.000.000") không bắt đầu bằng 0 hay 84 nên không khớp.
-        private static readonly Regex PhoneRe = new(@"(?<!\d)(0\d{8,10}|84\d{9,10})(?!\d)", RegexOptions.Compiled);
-        private static readonly Regex PhoneJoin = new(@"(?<=\d)[\s.\-()]+(?=\d)", RegexOptions.Compiled);
+        // Chữ số liền nhau sau khi bỏ dấu cách, chấm, gạch, phẩy, ngoặc (không nối qua xuống dòng):
+        // di động 0[35789] + 8 số, bàn 02 + 9 số, hoặc 84 thay số 0. Số tiền ("5.000.000", "84 tỷ")
+        // không có đầu số đó nên không khớp.
+        private static readonly Regex PhoneRe = new(@"(?<!\d)(0[35789]\d{8}|02\d{9}|84[35789]\d{8})(?!\d)", RegexOptions.Compiled);
+        private static readonly Regex PhoneJoin = new(@"(?<=\d)[ 	.\-()_,]+(?=\d)", RegexOptions.Compiled);
+        // Ngày "05.11.2026" bỏ ra trước khi nối số, kẻo nối với số đứng sau thành dãy giống số điện thoại.
+        private static readonly Regex DateRe = new(@"(?<!\d)\d{1,2}[./-]\d{1,2}[./-]\d{2,4}(?!\d)", RegexOptions.Compiled);
+        // Chữ O đứng thay số 0 ở đầu dãy số: "O901234567".
+        private static readonly Regex LetterO = new(@"(?<!\p{L})[oO](?=[ 	.\-()_,]*\d)", RegexOptions.Compiled);
 
-        private static readonly string[] ChannelWords = { "zalo", "facebook", "fb.com", "telegram", "messenger" };
+        // So trên chuỗi đã bỏ hết dấu cách, chấm: "za lo", "z.a.l.o" vẫn là "zalo".
+        private static readonly string[] ChannelWords = { "zalo", "facebook", "telegram", "messenger" };
         // Rao vặt so trên cả cụm từ. "cần bán" chỉ so khi còn dấu — bỏ dấu thì trùng "cần bạn (ở ghép)",
         // "căn bản". Không có "cho thuê": người tìm nhà vẫn gõ "tìm phòng cho thuê".
         private static readonly string[] AdWordsAccented = { "cần bán" };
@@ -47,9 +53,10 @@ namespace kgs_api.Domain.Rules
             var reasons = new List<string>();
             // Bỏ email ra trước: "an@gmail.com" là email, không phải đường liên kết.
             if (LinkRe.IsMatch(EmailRe.Replace(text, " "))) reasons.Add(Link);
-            if (PhoneRe.IsMatch(PhoneJoin.Replace(text.Replace("+", ""), ""))) reasons.Add(Phone);
-            if (EmailRe.IsMatch(text)) reasons.Add(Email);
-            if (ChannelWords.Any(plain.Contains)) reasons.Add(Channel);
+            if (PhoneRe.IsMatch(PhoneDigits(text))) reasons.Add(Phone);
+            if (EmailRe.IsMatch(CompactEmail(text))) reasons.Add(Email);
+            var compact = Regex.Replace(plain, @"[^\p{L}\d]", "");
+            if (ChannelWords.Any(compact.Contains) || HasPhrase(plain, "fb")) reasons.Add(Channel);
             var lower = text.ToLowerInvariant();
             if (AdWordsAccented.Any(w => HasPhrase(lower, w)) || AdWordsPlain.Any(w => HasPhrase(plain, w)))
                 reasons.Add(Ad);
@@ -70,6 +77,16 @@ namespace kgs_api.Domain.Rules
             var all = previous == DemandReviewStatus.Rejected ? reasons.Prepend(Resubmit).ToList() : reasons;
             return all.Count == 0 ? (DemandReviewStatus.Approved, null) : (DemandReviewStatus.Pending, string.Join("; ", all));
         }
+
+        /// <summary>Lý do của quản trị được chèn vào câu "Lý do: …." — bỏ dấu câu cuối để không ra "..".</summary>
+        public static string CleanReason(string reason) => reason.Trim().TrimEnd('.', '!', '?', ',', ';', ' ');
+
+        private static string PhoneDigits(string text)
+            => PhoneJoin.Replace(LetterO.Replace(DateRe.Replace(text.Replace("+", ""), " "), "0"), "");
+
+        /// <summary>"an @ gmail . com" → "an@gmail.com".</summary>
+        private static string CompactEmail(string text)
+            => Regex.Replace(Regex.Replace(text, @"\s*@\s*", "@"), @"(?<=@[\w.-]*)\s*\.\s*(?=\w)", ".");
 
         private static bool HasPhrase(string text, string phrase)
             => Regex.IsMatch(text, $@"(?<![\p{{L}}\d]){Regex.Escape(phrase)}(?![\p{{L}}\d])");

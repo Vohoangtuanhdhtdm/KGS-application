@@ -564,6 +564,29 @@ namespace kgs_api.Migrations
                     b.ToTable("AssetUnits", (string)null);
                 });
 
+            modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.DemandOpening", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("OpenedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SavedSearchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "OpenedAt");
+
+                    b.ToTable("DemandOpenings");
+                });
+
             modelBuilder.Entity("kgs_api.Domain.Entity.SubEntity.ListingImage", b =>
                 {
                     b.Property<Guid>("Id")

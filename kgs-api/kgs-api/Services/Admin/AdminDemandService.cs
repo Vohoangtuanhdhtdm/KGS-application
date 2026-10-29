@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using kgs_api.Data;
 using kgs_api.Domain.Entity.SubEntity;
+using kgs_api.Domain.Rules;
 using kgs_api.Dtos;
 using kgs_api.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +18,7 @@ namespace kgs_api.Services.Admin
 
     public sealed record RejectDemandRequest([Required, MaxLength(300)] string Reason);
 
-    public sealed record BulkDemandRequest(List<Guid> Ids, bool Approve, [MaxLength(300)] string? Reason);
+    public sealed record BulkDemandRequest(List<Guid>? Ids, bool Approve, [MaxLength(300)] string? Reason);
 
     public sealed record BulkDemandResultDto(int Handled, int Skipped);
 
@@ -74,11 +75,12 @@ namespace kgs_api.Services.Admin
 
         public async Task<BulkDemandResultDto> BulkAsync(BulkDemandRequest request, CancellationToken ct)
         {
-            if (request.Ids.Count == 0) throw new ValidationFailedException("Chưa chọn nhu cầu nào.");
+            var ids = request.Ids?.Distinct().ToList() ?? new();
+            if (ids.Count == 0) throw new ValidationFailedException("Chưa chọn nhu cầu nào.");
             if (!request.Approve && string.IsNullOrWhiteSpace(request.Reason))
                 throw new ValidationFailedException("Từ chối phải nêu lý do.");
 
-            var items = await Pending().Where(s => request.Ids.Contains(s.Id)).ToListAsync(ct);
+            var items = await Pending().Where(s => ids.Contains(s.Id)).ToListAsync(ct);
             foreach (var s in items)
             {
                 if (request.Approve) Approve(s);
@@ -89,7 +91,7 @@ namespace kgs_api.Services.Admin
             foreach (var s in items)
                 if (request.Approve) await NotifyApprovedAsync(s, ct);
                 else await NotifyRejectedAsync(s, ct);
-            return new BulkDemandResultDto(items.Count, request.Ids.Count - items.Count);
+            return new BulkDemandResultDto(items.Count, ids.Count - items.Count);
         }
 
         private async Task<SavedSearch> LoadPendingAsync(Guid id, CancellationToken ct)
@@ -104,15 +106,20 @@ namespace kgs_api.Services.Admin
 
         private static void Approve(SavedSearch s)
         {
+            // Hạn 30 ngày tính từ lúc chủ nhà bắt đầu thấy, không từ lúc gửi — thời gian chờ duyệt
+            // không bị trừ vào hạn.
+            var now = DateTime.UtcNow;
+            s.DiscoverableUntil = DemandExpiry.UntilFrom(now);
+            s.ExpiryRemindedAt = null;
             s.DemandReview = DemandReviewStatus.Approved;
             s.DemandReviewReason = null;
-            s.DemandReviewedAt = DateTime.UtcNow;
+            s.DemandReviewedAt = now;
         }
 
         private static void Reject(SavedSearch s, string reason)
         {
             s.DemandReview = DemandReviewStatus.Rejected;
-            s.DemandReviewReason = reason.Trim();
+            s.DemandReviewReason = DemandScreening.CleanReason(reason);
             s.DemandReviewedAt = DateTime.UtcNow;
         }
 

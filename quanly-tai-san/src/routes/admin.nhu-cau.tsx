@@ -56,7 +56,13 @@ function AdminDemandsPage() {
     void qc.invalidateQueries({ queryKey: ADMIN_DEMANDS_KEY });
     void qc.invalidateQueries({ queryKey: ["admin-demands-count"] });
   };
-  const fail = (e: unknown) => toast.error(getErrorMessage(e, "Chưa xử lý được"));
+  // Lỗi thường là 409 — người đăng vừa tắt, hoặc quản trị khác vừa xử lý: tải lại để bỏ dòng cũ.
+  const fail = (e: unknown) => {
+    toast.error(getErrorMessage(e, "Chưa xử lý được"));
+    refresh();
+  };
+  const skippedNote = (skipped: number) =>
+    skipped > 0 ? ` ${skipped} nhu cầu đã được xử lý hoặc bị tắt trước đó nên bỏ qua.` : "";
 
   const approve = useMutation({
     mutationFn: adminDemandsApi.approve,
@@ -69,10 +75,14 @@ function AdminDemandsPage() {
   const reject = useMutation({
     mutationFn: ({ id, why }: { id: string; why: string }) =>
       id === "bulk"
-        ? adminDemandsApi.bulk([...selected], false, why).then(() => undefined)
-        : adminDemandsApi.reject(id, why),
-    onSuccess: () => {
-      toast.success("Đã từ chối và báo lý do cho người đăng.");
+        ? adminDemandsApi.bulk([...selected], false, why)
+        : adminDemandsApi.reject(id, why).then(() => null),
+    onSuccess: (r) => {
+      toast.success(
+        r
+          ? `Đã từ chối ${r.handled} nhu cầu và báo lý do cho người đăng.${skippedNote(r.skipped)}`
+          : "Đã từ chối và báo lý do cho người đăng.",
+      );
       setRejecting(null);
       setReason("");
       refresh();
@@ -82,7 +92,7 @@ function AdminDemandsPage() {
   const bulkApprove = useMutation({
     mutationFn: () => adminDemandsApi.bulk([...selected], true, null),
     onSuccess: (r) => {
-      toast.success(`Đã duyệt ${r.handled} nhu cầu.`);
+      toast.success(`Đã duyệt ${r.handled} nhu cầu.${skippedNote(r.skipped)}`);
       refresh();
     },
     onError: fail,
