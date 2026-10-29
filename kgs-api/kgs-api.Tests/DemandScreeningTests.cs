@@ -97,4 +97,32 @@ public class DemandScreeningTests
     public void Decide_GuiLaiSauKhiBiTuChoi_GopLyDo()
         => Assert.Equal((DemandReviewStatus.Pending, "Gửi lại sau khi bị từ chối; A"),
             DemandScreening.Decide(new[] { "A" }, DemandReviewStatus.Rejected));
+
+    [Theory]
+    [InlineData("Dọn vào 05.11.2026 8 giờ sáng")]
+    [InlineData("Ngân sách mua sau này 84.000.000.000")]
+    [InlineData("Dọn vào 05.11.2026 10 giờ")]
+    public void NgayVaSoTien_KhongPhaiSoDienThoai(string note) => Assert.DoesNotContain("Lời nhắn có số điện thoại", S(note));
+
+    [Theory]
+    [InlineData("Gọi O901234567")]
+    [InlineData("Số 0901,234,567")]
+    [InlineData("Số 0901_234_567")]
+    [InlineData("+84 90 123 4567")]
+    public void SoDienThoai_VietLach_VanBat(string note) => Assert.Contains("Lời nhắn có số điện thoại", S(note));
+
+    [Theory]
+    [InlineData("Nhắn za lo cho mình")]
+    [InlineData("Liên hệ z.a.l.o nhé")]
+    [InlineData("Ib fb mình")]
+    public void KenhRieng_VietLach_VanBat(string note) => Assert.Contains("Lời nhắn có kênh liên lạc riêng", S(note));
+
+    [Fact]
+    public void Email_CoDauCach_VanBat() => Assert.Contains("Lời nhắn có địa chỉ email", S("Mail an @ gmail . com"));
+
+    [Theory]
+    [InlineData("Có số điện thoại.", "Có số điện thoại")]
+    [InlineData("  Spam!!  ", "Spam")]
+    [InlineData("Lý do rõ ràng", "Lý do rõ ràng")]
+    public void CleanReason_BoDauCauCuoi(string input, string expected) => Assert.Equal(expected, DemandScreening.CleanReason(input));
 }
