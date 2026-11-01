@@ -12,6 +12,7 @@ import { saveHandoff } from "@/lib/voice/handoff";
 import { runCapNhatNhuCau, type KiGiToolPayload } from "@/lib/voice/kigiTools";
 import { useGeminiLive, type VoiceState } from "@/lib/voice/useGeminiLive";
 import { KiGiMascot } from "./KiGiMascot";
+import { voiceErrorText } from "./voiceErrorText";
 
 const TALK_LABEL: Partial<Record<VoiceState, string>> = {
   ready: "Chạm để nói",
@@ -117,8 +118,8 @@ export function VoiceAssistant({ focusTyping }: { focusTyping: () => void }) {
       <div className="min-w-0 flex-1 space-y-2">
         <p className="text-sm">
           <span className="font-medium text-primary">KiGi: </span>
-          {busy
-            ? "Trợ lý giọng nói đang bận — bạn gõ vào ô phía trên nhé."
+          {busy && voice.error && voice.error !== "mic-denied"
+            ? voiceErrorText(voice.error)
             : voice.agentText || "…"}
         </p>
         {voice.userText && (
