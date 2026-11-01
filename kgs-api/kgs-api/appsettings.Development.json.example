@@ -61,5 +61,9 @@
   "Valuation": {
     "BaseUrl": "http://localhost:8000",
     "TimeoutSeconds": 5
+  },
+  "RateLimits": {
+    "//": "Chỉ cho máy dev để tập demo; production giữ mặc định (Voice 5, Assistant 20 / 10 phút).",
+    "Voice": 50
   }
 }
